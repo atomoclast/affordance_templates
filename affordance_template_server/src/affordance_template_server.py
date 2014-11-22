@@ -20,6 +20,7 @@ from affordance_template_markers.affordance_template import *
 from affordance_template_markers.template_utilities import *
 from affordance_template_markers.recognition_object import *
 from affordance_template_markers.affordance_template_data import *
+from affordance_template_markers.affordance_template_collection import *
 
 from service_interface import ServiceInterface
 
@@ -27,11 +28,10 @@ from service_interface import ServiceInterface
 class AffordanceTemplateServer(Thread):
     """Affordance Template server."""
 
-    def __init__(self, topic_arg=None):
+    def __init__(self, robot_yaml=""):
         Thread.__init__(self)
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         
-        self.topic_arg = topic_arg
         self.robot_interface = None
         self.structure = {}
       
@@ -43,23 +43,25 @@ class AffordanceTemplateServer(Thread):
         # get path to actual template source files
         self.template_path = os.path.join(self.library_package_path, 'templates')
         self.robot_path = os.path.join(self.library_package_path, 'robots')
-        # self.recognition_object_path = os.path.join(self.library_package_path, 'recognition_objects')
+        self.recognition_object_path = os.path.join(self.library_package_path, 'recognition_objects')
 
+        # get data from library
+        self.robot_map = self.get_available_robots(self.robot_path)
         self.at_data = self.get_available_templates(self.template_path)
-        self.robot_map = self.get_robots(self.robot_path)
-        # self.recognition_object_map, self.recognition_object_info, self.recognition_object_subscribers = self.get_recognition_objects(self.recognition_object_path)
+        self.ro_data = self.get_available_recognition_objects(self.recognition_object_path)
 
         self.running_templates = {}
-        # self.running_recog_objects = {}
+        self.running_recog_objects = {}
 
-        # put something here to laod robot config to debug faster
-        # print "creating dummy robot interface"
-        # self.robot_interface = RobotInterface()
-        # self.robot_interface.load_from_file('/home/swhart/ros_workspace/catkin_workspace/src/affordance_templates/affordance_template_library/robots/r2.yaml')
-        # print "configuring...."
-        # self.robot_interface.configure()
-        # self.add_template('Wheel', 0)
-
+        # create the robot interface and configure if there is an input yaml
+        if not os.path.isfile(robot_yaml) :
+            robot_yaml = self.robot_path + "/" + robot_yaml
+            
+        if os.path.isfile(robot_yaml) : 
+            self.robot_interface = RobotInterface(yaml_file=robot_yaml)
+            self.robot_interface.configure()
+        else :
+            self.robot_interface = RobotInterface()
 
     def configure_server(self):
         """Configure the interface connections for clients."""
@@ -232,7 +234,7 @@ class AffordanceTemplateServer(Thread):
                 at_data.image_map[at_name] = image
                 at_data.file_map[at_name] = os.path.join(path,atfn)
 
-                rospy.loginfo(str("AffordanceTemplateServer::get_available_templates() -- found AT File: " + at_name))
+                rospy.loginfo(str("AffordanceTemplateServer() -- found AT File: " + at_name))
 
                 for traj in structure['end_effector_trajectory'] :
                     traj_name = str(traj['name'])
@@ -252,7 +254,7 @@ class AffordanceTemplateServer(Thread):
     def load_from_file(self, filename) :
         return json.loads(open(filename).read())
 
-    def get_robots(self, path):
+    def get_available_robots(self, path):
         """Parse parses available robots from fs."""
 
         # robot data storage
@@ -266,28 +268,34 @@ class AffordanceTemplateServer(Thread):
             if self.get_package_path(ri.robot_config.moveit_config_package) :
                 robot_map[r] = ri
             else :
-                rospy.logwarn("AffordanceTemplateServer::get_robots(" + r + ") - MoveIt! config package not found, not adding")
+                rospy.logwarn("AffordanceTemplateServer::get_available_robots(" + r + ") - MoveIt! config package not found, not adding")
 
         return robot_map
 
-    # def get_recognition_objects(self, path):
-    #     """Parse parses available robots from fs."""
-    #     recognition_object_map = {}
-    #     recognition_object_info = {}
-    #     recognition_object_subscribers = {}
-    #     import glob
-    #     os.chdir(path)
-    #     for r in glob.glob("*.yaml") :
-    #         print "found recognition_object yaml: ", r
-    #         ro = RecognitionObject()
-    #         ro.load_from_file(r)
-    #         recognition_object_map[ro.type] = {}
-    #         recognition_object_info[ro.type] = ro
-    #         recognition_object_subscribers[ro.type] = {}
+    def get_available_recognition_objects(self, path):
+        """Parse parses available robots from fs."""
 
-    #     return recognition_object_map, recognition_object_info, recognition_object_subscribers
+        ro_data = RecognitionObjectCollection()
+        ro_data.object_map = {}
+        ro_data.image_map = {}
+        ro_data.launch_map = {}
+        ro_data.package_map = {}
+        ro_data.marker_topic_map = {}
+        
+        import glob
+        os.chdir(path)
+        for r in glob.glob("*.yaml") :
+            print "found recognition_object yaml: ", r
+            ro = RecognitionObject()
+            ro.load_from_file(r)
+            ro_data.object_map[ro.type] = {}
+            ro_data.image_map[ro.type] = ro.image_path
+            ro_data.launch_map[ro.type] = ro.launch_file
+            ro_data.package_map[ro.type] = ro.package
+            ro_data.marker_topic_map[ro.type] = ro.topic
+                        
+        return ro_data #recognition_object_map, recognition_object_info, recognition_object_subscribers
 
-   
 
     # def load_recognition_object_from_msg(self, recognition_object) :
     #     r = RecogntionObject()

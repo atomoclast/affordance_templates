@@ -69,10 +69,27 @@ class ServiceInterface(object):
                 response.templates.append(at_config)
         return response
 
-    def handle_template_request(self, request) :
+    def handle_object_request(self, request) :
         rospy.loginfo(str("ServiceInterface::handle_object_request() -- requested object info " + request.name))
-        rospy.logwarn(str("ServiceInterface::handle_object_request() -- not implemeneted yet"))
         response = GetRecognitionObjectConfigInfoResponse()
+        if request.name and request.name in self.server.ro_data.object_map.keys() :
+            object_type = request.name
+            ro_config = RecognitionObjectConfig()
+            ro_config.type = object_type
+            ro_config.image_path = self.server.ro_data.image_map[object_type]
+            ro_config.package = self.server.ro_data.package_map[object_type]
+            ro_config.launch_file = self.server.ro_data.launch_map[object_type]
+            ro_config.marker_topic = self.server.ro_data.marker_topic_map[object_type]
+            response.recognition_objects.append(ro_config)
+        else :
+            for object_type in self.server.ro_data.object_map.keys():
+                ro_config = RecognitionObjectConfig()
+                ro_config.type = object_type
+                ro_config.image_path = self.server.ro_data.image_map[object_type]
+                ro_config.package = self.server.ro_data.package_map[object_type]
+                ro_config.launch_file = self.server.ro_data.launch_map[object_type]
+                ro_config.marker_topic = self.server.ro_data.marker_topic_map[object_type]
+                response.recognition_objects.append(ro_config)
         return response
 
     def handle_load_robot(self, request):
@@ -80,17 +97,16 @@ class ServiceInterface(object):
         response = LoadRobotConfigResponse()
         response.status = False
         try:
+            print self.server.robot_interface.configured 
             if self.server.robot_interface.configured :
                 self.server.robot_interface.tear_down() 
-
             if request.filename :
-                self.server.robot_interface.load_from_msg(request.filename)
+                self.server.robot_interface.load_from_file(request.filename)
             else :
                 self.server.robot_interface.load_from_msg(request.robot_config)
-
             response.status = self.server.robot_interface.configure()
         except:
-            rospy.logerror("ServiceInterface::handle_load_robot()  -- Error trying to load robot from message")
+            rospy.logerr("ServiceInterface::handle_load_robot()  -- Error trying to load robot from message")
         return response
 
     def handle_add_template(self, request):

@@ -6,8 +6,7 @@ using namespace std;
 Controls::Controls(Ui::RVizAffordanceTemplatePanel* ui) :
     ui_(ui) {}
 
-void Controls::updateTable(std::map<std::pair<int,int> > waypointData) {
-
+void Controls::updateTable(std::map<int, std::pair<int,int> > waypointData) {
     for (auto& wp : waypointData) {
         for (auto& e: (*robotMap_[robotName_]).endeffectorMap) {
             if (e.second->id() != wp.first) {
@@ -32,7 +31,7 @@ void Controls::sendCommand(int command_type) {
 
     string key = ui_->control_template_box->currentText().toUtf8().constData();
     vector<string> stuff = util::split(key, ':');
-    map< pair<int,int> > waypointData;
+    map< int, pair<int,int> > waypointData;
 
     ROS_INFO("Sending Command request for a %s", key.c_str());      
 
@@ -53,14 +52,11 @@ void Controls::sendCommand(int command_type) {
     {
         ROS_INFO("Command successful");
         for(auto &wp : srv.response.waypoint_info) {
-
             pair<int,int> waypointPair;
             waypointPair = make_pair(int(wp.waypoint_index), int(wp.num_waypoints));
-            waypointData[srv.request.id] = waypointPair;
-
+            waypointData[int(wp.id)] = waypointPair;
         }
         updateTable(waypointData);
-
     }
     else
     {

@@ -30,7 +30,7 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     delete_template_client_ = nh_.serviceClient<affordance_template_msgs::DeleteAffordanceTemplate>("/affordance_template_server/delete_template");
     delete_object_client_ = nh_.serviceClient<affordance_template_msgs::DeleteRecognitionObject>("/affordance_template_server/delete_recognition_object");
     get_robots_client_ = nh_.serviceClient<affordance_template_msgs::GetRobotConfigInfo>("/affordance_template_server/get_robots");
-    get_objects_client_ = nh_.serviceClient<affordance_template_msgs::GetRecognitionObjectsConfigInfo>("/affordance_template_server/get_recognition_objects");
+    get_objects_client_ = nh_.serviceClient<affordance_template_msgs::GetRecognitionObjectConfigInfo>("/affordance_template_server/get_recognition_objects");
     get_running_client_ = nh_.serviceClient<affordance_template_msgs::GetRunningAffordanceTemplates>("/affordance_template_server/get_running");
     get_templates_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateConfigInfo>("/affordance_template_server/get_templates");
     load_robot_client_ = nh_.serviceClient<affordance_template_msgs::LoadRobotConfig>("/affordance_template_server/load_robot");
@@ -120,7 +120,7 @@ void RVizAffordanceTemplatePanel::update_robot_config(const QString& text) {
     (*robotMap_[key]).gripper_service(ui_->gripper_service->text().toUtf8().constData());
 
     vector<float> root_offset(7);
-    vector<float> q = util::RPYToQuaternion(ui_->robot_rr->text().toFloat();, ui_->robot_rp->text().toFloat();, ui_->robot_ry->text().toFloat(););
+    vector<float> q = util::RPYToQuaternion(ui_->robot_rr->text().toFloat(), ui_->robot_rp->text().toFloat(), ui_->robot_ry->text().toFloat());
     root_offset[0] = ui_->robot_tx->text().toFloat();
     root_offset[1] = ui_->robot_ty->text().toFloat();
     root_offset[2] = ui_->robot_tz->text().toFloat();
@@ -140,7 +140,7 @@ void RVizAffordanceTemplatePanel::update_end_effector_group_map(const QString& t
             e.second->id(ui_->ee_id->text().toInt());
             
             vector<float> pose_offset(7);
-            vector<float> q = util::RPYToQuaternion(ui_->ee_rr->text().toFloat();, ui_->ee_rp->text().toFloat();, ui_->ee_ry->text().toFloat(););
+            vector<float> q = util::RPYToQuaternion(ui_->ee_rr->text().toFloat(), ui_->ee_rp->text().toFloat(), ui_->ee_ry->text().toFloat());
             pose_offset[0] = ui_->ee_tx->text().toFloat();
             pose_offset[1] = ui_->ee_ty->text().toFloat();
             pose_offset[2] = ui_->ee_tz->text().toFloat();
@@ -234,14 +234,13 @@ void RVizAffordanceTemplatePanel::getAvailableTemplates() {
 
 void RVizAffordanceTemplatePanel::getAvailableRecognitionObjects() {
     ROS_INFO("querying available recognition objects");    
-    affordance_template_msgs::GetRecognitionObjectsConfigInfo srv;
+    affordance_template_msgs::GetRecognitionObjectConfigInfo srv;
     if (get_objects_client_.call(srv))
     {
         int yoffset = YOFFSET;
-        for (auto& o: srv.response.objects) {
+        for (auto& o: srv.response.recognition_objects) {
             string image_path = util::resolvePackagePath(o.image_path);
             RecognitionObjectSharedPtr pitem(new RecognitionObject(o.type, o.launch_file, o.package, image_path));
-        
             pitem->setPos(XOFFSET, yoffset);
             yoffset += PIXMAP_SIZE + YOFFSET;
             if(!checkRecognitionObject(pitem)) {
@@ -281,7 +280,7 @@ void RVizAffordanceTemplatePanel::getAvailableRobots() {
             pitem->frame_id(r.frame_id);
             pitem->gripper_service(r.gripper_service);
 
-            vector<float> root_offset == util::poseMsgToVector(r.root_offset);
+            vector<float> root_offset = util::poseMsgToVector(r.root_offset);
             pitem->root_offset(root_offset);
 
             for (auto& e: r.end_effectors) {
@@ -289,11 +288,11 @@ void RVizAffordanceTemplatePanel::getAvailableRobots() {
                 EndEffectorConfigSharedPtr eitem(new EndEffectorConfig(e.name));
                 eitem->id(int(e.id));
 
-                vector<float> pose_offset == util::poseMsgToVector(e.pose_offset);
+                vector<float> pose_offset = util::poseMsgToVector(e.pose_offset);
                 eitem->pose_offset(pose_offset);
                 pitem->endeffectorMap[e.name] = eitem;
 
-                vector<float> tool_offset == util::poseMsgToVector(e.tool_offset);
+                vector<float> tool_offset = util::poseMsgToVector(e.tool_offset);
                 eitem->tool_offset(tool_offset);
                 pitem->endeffectorMap[e.name] = eitem;
 

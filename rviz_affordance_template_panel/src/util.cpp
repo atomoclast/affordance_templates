@@ -2,19 +2,6 @@
 
 namespace util {
 
-/** \brief Helper function to return a new socket.
- */
-zmq::socket_t* client_socket (zmq::context_t& context, const string& addr) {
-    zmq::socket_t* client = new zmq::socket_t (context, ZMQ_REQ);
-    string serv = "tcp://" + addr;
-    client->connect(serv.c_str());
-
-    // configure socket to not wait at close time
-    int linger = 0;
-    client->setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
-    return client;
-}
-
 vector<string> &split(const string &s, char delim, vector<string> &elems) {
     stringstream ss(s);
     string item;

@@ -12,3 +12,5 @@ string package
 # the name of the image to be displayed in the RO panel in rviz in  affordance_template_library/images/
 string image_path
 
+# the name of the marker topic to subscribe to
+string marker_topic

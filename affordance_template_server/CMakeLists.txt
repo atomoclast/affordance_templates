@@ -6,7 +6,6 @@ find_package(catkin REQUIRED COMPONENTS
   interactive_markers
   rospy
   affordance_template_markers
-  affordance_template_server_protobuf
   visualization_msgs
   nasa_robot_teleop
 )

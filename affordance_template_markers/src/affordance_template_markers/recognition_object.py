@@ -25,7 +25,7 @@ class RecognitionObject(object) :
             self.launch_file = self.yaml_config['launch_file']
             self.topic = self.yaml_config['marker_topic']
 
-            self.print_yaml()
+            # self.print_yaml()
 
             return True
 

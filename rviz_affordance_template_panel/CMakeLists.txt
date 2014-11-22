@@ -6,14 +6,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-# find ZMQ
-find_package(ZeroMQ REQUIRED)
-include_directories(${ZeroMQ_INCLUDE_DIR})
-
-# add protobuf include
-find_package(affordance_template_server_protobuf)
-include_directories(${affordance_template_server_protobuf_DIR}/proto_gen/cpp)
-# include_directories(${rviz_affordance_template_panel_DIR})
 
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
 include(${QT_USE_FILE})
@@ -49,7 +41,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rviz
   affordance_template_server
-  affordance_template_server_protobuf
   visualization_msgs
 )
 
@@ -69,7 +60,7 @@ find_library(KDL_LIBRARY REQUIRED NAMES orocos-kdl HINTS ${orocos_kdl_LIBRARY_DI
 catkin_package(
   # INCLUDE_DIRS include
   LIBRARIES rviz_affordance_template_panel ${KDL_LIBRARY}
-  CATKIN_DEPENDS geometry_msgs interactive_markers roscpp roslib rviz affordance_template_server affordance_template_server_protobuf visualization_msgs
+  CATKIN_DEPENDS geometry_msgs interactive_markers roscpp roslib rviz affordance_template_server visualization_msgs
   DEPENDS system_lib orocos_kdl
 )
 
@@ -95,5 +86,5 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 add_library(${PROJECT_NAME} ${SRC_FILES} ${QT_FORMS_HPP} ${QT_RESOURCES})
 
 # Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${ZeroMQ_LIBRARIES} ${PROTOBUF_LIBRARY} ${orocos_kdl_LIBRARIES} AffordanceTemplateServerCmd)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 

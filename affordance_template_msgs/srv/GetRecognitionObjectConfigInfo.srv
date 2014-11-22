@@ -4,5 +4,5 @@
 string name
 ---
 # object data to be returned
-RecognitionObjectConfig[] recog_objects
+RecognitionObjectConfig[] recognition_objects
 

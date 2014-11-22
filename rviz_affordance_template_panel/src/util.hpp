@@ -5,7 +5,7 @@
 #include <ros/package.h>
 
 #include <vector>
-#include <assert>
+#include <assert.h>
 #include <iostream>
 #include <sstream>
 #include <string>

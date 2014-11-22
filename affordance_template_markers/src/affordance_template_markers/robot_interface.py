@@ -18,7 +18,7 @@ from nasa_robot_teleop.end_effector_helper import *
 
 class RobotInterface(object) :
     
-    def __init__(self, joint_states_topic="/joint_states", yaml_file="", robot_config=None) :
+    def __init__(self, joint_states_topic="/joint_states", yaml_file=None, robot_config=None) :
     
         self.reset()
     
@@ -28,16 +28,18 @@ class RobotInterface(object) :
         if yaml_file and robot_config :
             rospy.logerr("RobotInterface() -- can't load from both yaml and robot_config!")
         elif yaml_file :
+            rospy.loginfo(("RobotInterface() -- loading with input yaml: " + yaml_file))
             self.load_from_file(yaml_file)
         elif robot_config :
+            rospy.loginfo(("RobotInterface() -- loading from input robot config: " + robot_config.name))
             self.load_from_msg(robot_config)
+        else:
+            rospy.logwarn("RobotInterface() -- no robot configuration given...")
 
     def reset(self) :
 
         self.robot_config = RobotConfig()
 
-        # self.robot_name = ""
-        # self.config_package =  ""
         self.moveit_ee_groups = []
         self.end_effector_names = []
         self.end_effector_name_map = {}
@@ -48,8 +50,6 @@ class RobotInterface(object) :
         self.end_effector_id_map = {}
         self.end_effector_link_data = {}
         self.end_effector_markers = {}
-        # self.frame_id = "world"
-        # self.root_offset = geometry_msgs.msg.Pose()
         self.stored_poses = {}
         self.gripper_service = None
 
@@ -57,7 +57,23 @@ class RobotInterface(object) :
 
     def load_from_msg(self, robot_config) :
         self.robot_config = robot_config
-        # print self.robot_config
+
+        for ee_config in self.robot_config.end_effectors:
+            self.manipulator_pose_map[ee_config.name] = ee_config.pose_offset
+            self.tool_offset_map[ee_config.name] = ee_config.tool_offset
+            self.end_effector_names.append(ee_config.name)
+            self.end_effector_name_map[ee_config.id] = ee_config.name
+            self.manipulator_id_map[ee_config.name] = ee_config.id
+
+        for ee_pose in self.robot_config.end_effector_pose_data :
+            if not ee_pose.group in self.end_effector_pose_map:
+                self.end_effector_pose_map[ee_pose.group] = {}
+                self.end_effector_id_map[ee_pose.group] = {}
+            self.end_effector_pose_map[ee_pose.group][ee_pose.name] = int(ee_pose.id)
+            self.end_effector_id_map[ee_pose.group][int(ee_pose.id)] = ee_pose.name
+
+        self.configured = True
+
         return True
 
     def load_from_file(self, filename) :
@@ -122,16 +138,6 @@ class RobotInterface(object) :
                 self.manipulator_id_map[ee['name']] = ee['id']
                 
                 self.robot_config.end_effectors.append(ee_config)
-                # p = Pose()
-                # q = (kdl.Rotation.RPY(ee['pose_offset'][3],ee['pose_offset'][4],ee['pose_offset'][5])).GetQuaternion()
-                # p.position.x = float(ee['pose_offset'][0])
-                # p.position.y = float(ee['pose_offset'][1])
-                # p.position.z = float(ee['pose_offset'][2])
-                # p.orientation.x = q[0]
-                # p.orientation.y = q[1]
-                # p.orientation.z = q[2]
-                # p.orientation.w = q[3]
-                # self.manipulator_pose_map[ee['name']] = p
 
                 # if there is a tool offset
                 # t = geometry_msgs.msg.Pose()
@@ -169,7 +175,7 @@ class RobotInterface(object) :
             try :
                 gs = self.yaml_config['gripper_service']
                 self.robot_config.gripper_service = gs
-                rospy.loginfo(str("RobotInterface::load_from_file() -- found gripper service : " + self.robot_config.gripper_service))
+                rospy.loginfo(str("RobotInterface() -- found gripper service : " + self.robot_config.gripper_service))
             except :
                 self.robot_config.gripper_service = ""
                 
@@ -235,30 +241,6 @@ class RobotInterface(object) :
         
         self.moveit_interface.print_basic_info()
         return True
-
-    # def print_yaml(self) :
-    #     if not self.yaml_config == None:
-    #         print "============================="
-    #         print "Robot Config Info: "
-    #         print "============================="
-    #         print " robot name: ", self.yaml_config['robot_name']
-    #         print " root offset: ", self.yaml_config['root_offset']
-    #         print " moveit_config: ", self.yaml_config['moveit_config_package']
-    #         for ee in self.yaml_config['end_effector_group_map']:
-    #             print "\t", "map: ", ee['name'], " --> ", ee['id']
-    #             print "\t", "pose_offset: ", ee['pose_offset']
-    #             try :
-    #                 ee['tool_offset']
-    #                 print "\t", "tool_offset: ", ee['tool_offset']
-    #             except :
-    #                 pass
-
-
-    #         try :
-    #             print " gripper service: ", self.yaml_config['gripper_service']
-    #         except :
-    #             pass
-    #         print "============================="
 
     def joint_state_callback(self, data) :
         self.joint_data = data
