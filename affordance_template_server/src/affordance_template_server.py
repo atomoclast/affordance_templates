@@ -1,30 +1,18 @@
 import os
-import subprocess
-import imp
 import sys
 import signal
-import zmq
 import yaml
 import json
 import glob
+
+from threading import Thread
         
 import rospy
 import roslib; roslib.load_manifest("affordance_template_markers")
 import rospkg
 
-import affordance_template_markers
-import affordance_template_server_protobuf
-
-from json_interface import JSONInterface
-from protobuf_interface import ProtobufInterface
-from service_interface import ServiceInterface
-
-from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose, PoseStamped
-
-from threading import Thread
-
-
+from visualization_msgs.msg import Marker, MarkerArray
 from interactive_markers.interactive_marker_server import *
 
 from affordance_template_markers.robot_interface import *
@@ -32,7 +20,8 @@ from affordance_template_markers.affordance_template import *
 from affordance_template_markers.template_utilities import *
 from affordance_template_markers.recognition_object import *
 from affordance_template_markers.affordance_template_data import *
-# import affordance_template_markers.atdf_parser
+
+from service_interface import ServiceInterface
 
 
 class AffordanceTemplateServer(Thread):
@@ -64,79 +53,25 @@ class AffordanceTemplateServer(Thread):
         # self.running_recog_objects = {}
 
         # put something here to laod robot config to debug faster
-        print "creating dummy robot interface"
-        self.robot_interface = RobotInterface()
-        self.robot_interface.load_from_file('/home/swhart/ros_workspace/catkin_workspace/src/affordance_templates/affordance_template_library/robots/r2.yaml')
-        print "configuring...."
-        self.robot_interface.configure()
+        # print "creating dummy robot interface"
+        # self.robot_interface = RobotInterface()
+        # self.robot_interface.load_from_file('/home/swhart/ros_workspace/catkin_workspace/src/affordance_templates/affordance_template_library/robots/r2.yaml')
+        # print "configuring...."
+        # self.robot_interface.configure()
         # self.add_template('Wheel', 0)
 
-        # self.start()
-        # self.configure_server()
-
-
-    # @property
-    # def resource_path(self):
-    #     """Return the path to the RViz images."""
-    #     return str(self._resource_path)
-
-    # @property
-    # def plugin_description(self):   
-    #     """Return the path to the plugin_description.xml associated with the server."""
-    #     return str(self._plugin_description[0])
-
-    # @property
-    # def template_path(self):
-    #     """Return the path to the template nodes."""
-    #     return str(self._template_path)
 
     def configure_server(self):
         """Configure the interface connections for clients."""
-
-        # # TODO: add dynamic reconfigure to change subscriber topic
-        # # configure ROS subscriber for bootstrapping templates
-        # sub = rospy.Subscriber("/foo", Marker, self.markerSub)
-
-        # # init zmq to port 6789
-        # context = zmq.Context()
-        # self.socket = context.socket(zmq.REP)
-        # self.socket.bind("tcp://*:6789")
-        # self.poller = zmq.Poller()
-        # self.poller.register(self.socket, zmq.POLLIN)
-        # print "Affordance Template Server started on port 6789"
-
         # self.recognition_object_update_flags = {}
-
         self.interfaces = {}
-        # self.interfaces['json'] = JSONInterface(self)
-        # self.interfaces['protobuf'] = ProtobufInterface(self)
         self.interfaces['service'] = ServiceInterface(self)
 
 
     def run(self):
         self.configure_server()
-        # process mapping
         while not rospy.is_shutdown():
             rospy.sleep(1)
-            # # poll every second
-            # try:
-            #     socks = self.poller.poll(1000)
-            # except zmq.ZMQError, e:
-            #     break
-
-            # for sock, state in socks:
-
-            #     if state != zmq.POLLIN:
-            #         continue
-
-            #     msg = sock.recv()
-
-            #     try:
-            #         response = self.interfaces['protobuf'].parse_request(msg)
-            #     except:
-            #         response = self.interfaces['json'].parse_request(msg)
-
-            #     self.socket.send(response)
 
     def remove_template(self, class_type, instance_id):
         """Stop a template process and remove it from the server's map.
@@ -189,11 +124,8 @@ class AffordanceTemplateServer(Thread):
         @returns The Popen object started by the server.
         """
         if class_type in self.at_data.class_map:
-            print "Trying to add ", class_type
             at = AffordanceTemplate(self.server, instance_id, robot_interface=self.robot_interface)
-            print "Created new AT class"
             filename = self.at_data.file_map[class_type]
-            print "Trying to load: ", filename
             at.load_from_file(filename)
             self.running_templates[instance_id] = class_type
             self.at_data.class_map[class_type][instance_id] = at  # TODO this is dumb, need to just have a local list of multiple ATs
@@ -247,6 +179,7 @@ class AffordanceTemplateServer(Thread):
             else:
                 return i
         return i
+
     # def get_next_recog_object_id(self, object_type):
     #     ids = self.recognition_object_map[object_type].keys()
     #     i = 0
@@ -274,22 +207,8 @@ class AffordanceTemplateServer(Thread):
             rospy.logwarn('AffordanceTemplateServer::get_template_path() -- No package found: affordance_template_markers')
             return ""
 
-    # def get_plugin_description(self, pkg):
-    #     """Return the plugin_description.xml for a ROS package."""
-    #     import rospkg
-    #     try :
-    #         rp = rospkg.RosPack()
-    #         man = rp.get_manifest(pkg)
-    #         return man.get_export(pkg, 'plugin')
-    #     except:
-    #         rospy.logwarn(str('AffordanceTemplateServer::get_plugin_description() -- No package found: ' + pkg))
-    #         return ""
-
     def get_available_templates(self, path):
         """Parse affordance_templates manifest for available classes."""
-        # if os.path.exists(manifest):
-
-        # from xml.etree.ElementTree import ElementTree
 
         at_data = AffordanceTemplateCollection()
         at_data.class_map = {}
@@ -317,7 +236,6 @@ class AffordanceTemplateServer(Thread):
 
                 for traj in structure['end_effector_trajectory'] :
                     traj_name = str(traj['name'])
-                    # print traj_name
                     at_data.traj_map[at_name].append(traj_name)
                     key = (at_name,traj_name)
                     at_data.waypoint_map[key] = {}
@@ -326,12 +244,9 @@ class AffordanceTemplateServer(Thread):
                         ee_id = ee_group['id']
                         wp_id = len(ee_group['end_effector_waypoint'])
                         at_data.waypoint_map[key][ee_id] = wp_id
-                        # rospy.loginfo(str("AffordanceTemplateServer::get_available_templates() -- adding " + str(wp_id) + " waypoints for ee " + str(ee_id) + " in " + str(key[0]) + ", " + str(key[1])))
             except :
                 rospy.logwarn(str("AffordanceTemplateServer::get_available_templates() -- error parsing " + atfn))
-            # self.structure[at_name] = structure
 
-        # return traj_map, class_map, image_map, file_map, waypoint_map
         return at_data
 
     def load_from_file(self, filename) :
@@ -372,144 +287,7 @@ class AffordanceTemplateServer(Thread):
 
     #     return recognition_object_map, recognition_object_info, recognition_object_subscribers
 
-    # def load_robot_from_msg(self, robot_config) :
-    #     r = robot
-    #     try:
-    #         r = 
-    #         r.name = robot.name
-    #         r.moveit_config_package = robot.moveit_config_package
-    #         r.frame_id = robot.frame_id
-    #         print "loading robot: " , r.robot_name
-
-    #         r.root_offset = Pose()
-    #         r.root_offset.position.x = robot.root_offset.position.x
-    #         r.root_offset.position.y = robot.root_offset.position.y
-    #         r.root_offset.position.z = robot.root_offset.position.z
-    #         r.root_offset.orientation.x = robot.root_offset.orientation.x
-    #         r.root_offset.orientation.y = robot.root_offset.orientation.y
-    #         r.root_offset.orientation.z = robot.root_offset.orientation.z
-    #         r.root_offset.orientation.w = robot.root_offset.orientation.w
-
-    #         # r.end_effector_names = []
-    #         # r.end_effector_name_map = {}
-    #         # r.manipulator_id_map = {}
-    #         # r.manipulator_pose_map = {}
-    #         # r.tool_offset_map = {}
-
-    #         r.gripper_service = robot.gripper_service
-
-    #         for ee in robot.end_effectors.end_effector:
-
-    #             ee_config = EndEffectorConfig()
-    #             ee_config.name == ee.name
-    #             ee_config.id = ee.id
-                
-    #             ee_config.pose_offset = Pose()
-    #             ee_config.position.x = ee.pose_offset.position.x
-    #             ee_config.position.y = ee.pose_offset.position.y
-    #             ee_config.position.z = ee.pose_offset.position.z
-    #             ee_config.orientation.x = ee.pose_offset.orientation.x
-    #             ee_config.orientation.y = ee.pose_offset.orientation.y
-    #             ee_config.orientation.z = ee.pose_offset.orientation.z
-    #             ee_config.orientation.w = ee.pose_offset.orientation.w
-                
-    #             # NEED TO FIX THE REST BELOW THIS
-    #             r.end_effector_names.append(ee.name)
-    #             r.end_effector_name_map[ee.id] = ee.name
-    #             r.manipulator_id_map[ee.name] = ee.id
-                
-    #             p = geometry_msgs.msg.Pose()
-    #             p.position.x = ee.pose_offset.position.x
-    #             p.position.y = ee.pose_offset.position.y
-    #             p.position.z = ee.pose_offset.position.z
-    #             p.orientation.x = ee.pose_offset.orientation.x
-    #             p.orientation.y = ee.pose_offset.orientation.y
-    #             p.orientation.z = ee.pose_offset.orientation.z
-    #             p.orientation.w = ee.pose_offset.orientation.w
-    #             r.manipulator_pose_map[ee.name] = p
-
-    #             t = geometry_msgs.msg.Pose()
-    #             t.position.x = ee.tool_offset.position.x
-    #             t.position.y = ee.tool_offset.position.y
-    #             t.position.z = ee.tool_offset.position.z
-    #             t.orientation.x = ee.tool_offset.orientation.x
-    #             t.orientation.y = ee.tool_offset.orientation.y
-    #             t.orientation.z = ee.tool_offset.orientation.z
-    #             t.orientation.w = ee.tool_offset.orientation.w
-    #             r.tool_offset_map[ee.name] = t
-
-    #         for ee_pid in robot.end_effector_pose_ids.pose_group:
-    #             if not ee_pid.group in r.end_effector_pose_map :
-    #                 r.end_effector_pose_map[ee_pid.group] = {}
-    #             if not ee_pid.group in r.end_effector_id_map :
-    #                 r.end_effector_id_map[ee_pid.group] = {}
-    #             # print "*********************************ee[", ee_pid.group, "] adding group [", ee_pid.name, "] with id [", ee_pid.id, "]"
-    #             r.end_effector_pose_map[ee_pid.group][ee_pid.name] = int(ee_pid.id)
-    #             r.end_effector_id_map[ee_pid.group][int(ee_pid.id)] = ee_pid.name
-
-    #         # print "done!"
-    #         return r
-
-    #     except :
-    #         rospy.logerr("AffordanceTemplateServer::loadRobotFromMsg() -- error parsing robot protobuf file - trying JSON")
-    #         r.robot_name = robot['name']
-    #         r.config_package = robot['moveit_config_package']
-    #         r.frame_id = robot['frame_id']
-    #         print "loading robot: " , r.robot_name
-
-    #         r.root_offset.position.x = robot['root_offset']['position']['x']
-    #         r.root_offset.position.y = robot['root_offset']['position']['y']
-    #         r.root_offset.position.z = robot['root_offset']['position']['z']
-    #         r.root_offset.orientation.x = robot['root_offset']['orientation']['x']
-    #         r.root_offset.orientation.y = robot['root_offset']['orientation']['y']
-    #         r.root_offset.orientation.z = robot['root_offset']['orientation']['z']
-    #         r.root_offset.orientation.w = robot['root_offset']['orientation']['w']
-
-    #         r.end_effector_names = []
-    #         r.end_effector_name_map = {}
-    #         r.manipulator_id_map = {}
-    #         r.manipulator_pose_map = {}
-    #         r.tool_offset_map = {}
-
-    #         r.gripper_service = robot['gripper_service']
-            
-    #         for ee in robot['end_effectors']:
-    #             r.end_effector_names.append(ee['name'])
-    #             r.end_effector_name_map[ee['id']] = ee['name']
-    #             r.manipulator_id_map[ee['name']] = ee['id']
-                
-    #             p = geometry_msgs.msg.Pose()
-    #             p.position.x = ee['pose_offset']['position']['x']
-    #             p.position.y = ee['pose_offset']['position']['y']
-    #             p.position.z = ee['pose_offset']['position']['z']
-    #             p.orientation.x = ee['pose_offset']['orientation']['x']
-    #             p.orientation.y = ee['pose_offset']['orientation']['y']
-    #             p.orientation.z = ee['pose_offset']['orientation']['z']
-    #             p.orientation.w = ee['pose_offset']['orientation']['w']
-    #             r.manipulator_pose_map[ee['name']] = p
-
-    #             t = geometry_msgs.msg.Pose()
-    #             t.position.x = ee['tool_offset']['position']['x']
-    #             t.position.y = ee['tool_offset']['position']['y']
-    #             t.position.z = ee['tool_offset']['position']['z']
-    #             t.orientation.x = ee['tool_offset']['orientation']['x']
-    #             t.orientation.y = ee['tool_offset']['orientation']['y']
-    #             t.orientation.z = ee['tool_offset']['orientation']['z']
-    #             t.orientation.w = ee['tool_offset']['orientation']['w']
-    #             r.tool_offset_map[ee['name']] = t
-
-    #         for ee_pid in robot['end_effector_pose_ids']:
-    #             if not ee_pid['group'] in r.end_effector_pose_map :
-    #                 r.end_effector_pose_map[ee_pid['group']] = {}
-    #             if not ee_pid['group'] in r.end_effector_id_map :
-    #                 r.end_effector_id_map[ee_pid['group']] = {}
-    #             # print "*********************************ee[", ee_pid.group, "] adding group [", ee_pid.name, "] with id [", ee_pid.id, "]"
-    #             r.end_effector_pose_map[ee_pid['group']][ee_pid['name']] = int(ee_pid['id'])
-    #             r.end_effector_id_map[ee_pid['group']][int(ee_pid['id'])] = ee_pid['name']
-
-    #         # print "done!"
-    #         return r
-    #         # return None
+   
 
     # def load_recognition_object_from_msg(self, recognition_object) :
     #     r = RecogntionObject()
@@ -567,16 +345,6 @@ class AffordanceTemplateServer(Thread):
     #     except :
     #         rospy.logerr("AffordanceTemplateServer::load_recog_object_from_msg() -- error parsing robot protobuf file")
     #         return None
-
-    def get_raw_name(self, name):
-        """Parse the class_name and return just the type."""
-        if '/' in name:
-            return name.rsplit('/',1)[1]
-        if '::' in name:
-            return name.rsplit('::',1)[1]
-
-    # def marker_sub(self, data):
-    #     print 'marker_sub: ', data
 
     # def recognition_object_callback(self, data) :
     #     for m in data.markers :

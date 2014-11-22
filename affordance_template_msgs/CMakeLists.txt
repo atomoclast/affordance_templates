@@ -54,6 +54,7 @@ add_message_files(
   WaypointInfo.msg
   WaypointTrajectory.msg
   AffordanceTemplateConfig.msg
+  RecognitionObjectConfig.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -61,10 +62,13 @@ add_service_files(
   FILES
   GetRobotConfigInfo.srv
   GetAffordanceTemplateConfigInfo.srv
+  GetRecognitionObjectConfigInfo.srv
   GetRunningAffordanceTemplates.srv
   LoadRobotConfig.srv
   AddAffordanceTemplate.srv
   DeleteAffordanceTemplate.srv
+  AddRecognitionObject.srv
+  DeleteRecognitionObject.srv
   AffordanceTemplateCommand.srv
 )
 

@@ -24,6 +24,7 @@ namespace rviz_affordance_template_panel
     class Controls
     {
     public:
+
     	typedef boost::shared_ptr<RobotConfig> RobotConfigSharedPtr;
         Controls(Ui::RVizAffordanceTemplatePanel* ui);
         ~Controls() {};
@@ -34,12 +35,15 @@ namespace rviz_affordance_template_panel
         void sendCommand(int command_type);
 
     private:
+
+        void updateTable(std::map<int, std::pair<int,int> > waypointData);
+        std::vector<std::string> getSelectedEndEffectors();
+
         Ui::RVizAffordanceTemplatePanel* ui_;
-        void updateTable(vector<int> waypoint_ids, vector<int> waypoint_ns);
+        ros::ServiceClient controlsService_;
         std::map<std::string, RobotConfigSharedPtr> robotMap_;
         std::string robotName_;
-        std::vector<std::string> getSelectedEndEffectors();
-        ros::ServiceClient controlsService_;
+
     };
 }
 

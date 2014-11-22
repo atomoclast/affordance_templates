@@ -6,32 +6,22 @@ using namespace std;
 Controls::Controls(Ui::RVizAffordanceTemplatePanel* ui) :
     ui_(ui) {}
 
-void Controls::updateTable(vector<int> waypoint_ids, vector<int> waypoint_ns) {
-    for (size_t idx=0 ; idx<waypoint_ids.size(); idx++) {
+void Controls::updateTable(std::map<std::pair<int,int> > waypointData) {
+
+    for (auto& wp : waypointData) {
         for (auto& e: (*robotMap_[robotName_]).endeffectorMap) {
-            if (e.second->id() != idx) {
+            if (e.second->id() != wp.first) {
                 continue;
             }
             for (int r=0; r<ui_->end_effector_table->rowCount(); r++ ) {
                 if (e.second->name() != ui_->end_effector_table->item(r,0)->text().toStdString()) {
                     continue;
                 }
-                QTableWidgetItem* item = ui_->end_effector_table->item(r, 1);
-                item->setText(QString::number(waypoint_ids[idx]));
-            }
-        }
-    }
-    for (size_t idx=0 ; idx<waypoint_ns.size(); idx++) {
-        for (auto& e: (*robotMap_[robotName_]).endeffectorMap) {
-            if (e.second->id() != idx) {
-                continue;
-            }
-            for (int r=0; r<ui_->end_effector_table->rowCount(); r++ ) {
-                if (e.second->name() != ui_->end_effector_table->item(r,0)->text().toStdString()) {
-                    continue;
-                }
-                QTableWidgetItem* item = ui_->end_effector_table->item(r, 2);
-                item->setText(QString::number(waypoint_ns[idx]));
+                QTableWidgetItem* item_idx = ui_->end_effector_table->item(r, 1);
+                item_idx->setText(QString::number(wp.second.first));
+
+                QTableWidgetItem* item_n = ui_->end_effector_table->item(r, 2);
+                item_n->setText(QString::number(wp.second.second));
             }
         }
     }
@@ -42,8 +32,7 @@ void Controls::sendCommand(int command_type) {
 
     string key = ui_->control_template_box->currentText().toUtf8().constData();
     vector<string> stuff = util::split(key, ':');
-    vector<int> waypoint_ids;
-    vector<int> waypoint_ns;
+    map< pair<int,int> > waypointData;
 
     ROS_INFO("Sending Command request for a %s", key.c_str());      
 
@@ -64,10 +53,13 @@ void Controls::sendCommand(int command_type) {
     {
         ROS_INFO("Command successful");
         for(auto &wp : srv.response.waypoint_info) {
-            waypoint_ids.push_back(int(wp.waypoint_index));
-            waypoint_ns.push_back(int(wp.num_waypoints));
+
+            pair<int,int> waypointPair;
+            waypointPair = make_pair(int(wp.waypoint_index), int(wp.num_waypoints));
+            waypointData[srv.request.id] = waypointPair;
+
         }
-        updateTable(waypoint_ids, waypoint_ns);
+        updateTable(waypointData);
 
     }
     else

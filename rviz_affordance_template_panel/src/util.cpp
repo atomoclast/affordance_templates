@@ -58,6 +58,38 @@ vector<float> RPYToQuaternion(float rr, float rp, float ry) {
     return q;
 }
 
+
+/** \brief ROS helper function convert Pose to vector
+*/
+vector<float> poseMsgToVector(geometry_msgs::Pose msg) {
+    vector<float> pose(7);
+    pose[0] = (float)(msg.position.x);
+    pose[1] = (float)(msg.position.y);
+    pose[2] = (float)(msg.position.z);
+    pose[3] = (float)(msg.orientation.x);
+    pose[4] = (float)(msg.orientation.y);
+    pose[5] = (float)(msg.orientation.z);
+    pose[6] = (float)(msg.orientation.w);
+    return pose;
+}
+
+/** \brief ROS helper function convert Pose to vector
+*/
+geometry_msgs::Pose vectorToPoseMsg(vector<float> pose) {
+    
+    assert(pose.size() == 7);
+
+    geometry_msgs::Pose msg;
+    msg.position.x = pose[0];
+    msg.position.y = pose[1];
+    msg.position.z = pose[2];
+    msg.orientation.x = pose[3];
+    msg.orientation.y = pose[4];
+    msg.orientation.z = pose[5];
+    msg.orientation.w = pose[6];
+    return msg;
+}
+
 string resolvePackagePath(const string& str) {
     string package_prefix_str ("package://");
     size_t found = str.find(package_prefix_str);
@@ -70,36 +102,5 @@ string resolvePackagePath(const string& str) {
     return package_path + file_path;
 }
 
-bool send_request(zmq::socket_t* socket, const Request& request, Response& response, long timeout) {
-    try {
-        string req;
-        request.SerializeToString(&req);
-
-        zmq::message_t msg(req.size());
-        memcpy((void*) msg.data(), req.data(), req.size());
-        socket->send(msg);
-
-        string rep;
-        zmq::pollitem_t poller[] = { {*socket, 0, ZMQ_POLLIN, 0} };
-        zmq::poll(&poller[0], 1, timeout);
-
-        // poll for 1 second
-        if (poller[0].revents & ZMQ_POLLIN) {
-
-            zmq::message_t reply;
-            socket->recv(&reply);
-
-            response.ParseFromArray(reply.data(), reply.size());
-
-        } else {
-            return false;
-        }
-    } catch (const zmq::error_t& ex) {
-        cerr << ex.what() << endl;
-        return false;
-    }
-
-    return true;
-}
 
 }
