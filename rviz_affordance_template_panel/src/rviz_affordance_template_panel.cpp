@@ -28,6 +28,7 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
 
     add_template_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplate>("/affordance_template_server/add_template");
     add_object_client_ = nh_.serviceClient<affordance_template_msgs::AddRecognitionObject>("/affordance_template_server/add_recognition_object");
+    add_trajectory_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplateTrajectory>("/affordance_template_server/add_trajectory");
     command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplateCommand>("/affordance_template_server/command");
     delete_template_client_ = nh_.serviceClient<affordance_template_msgs::DeleteAffordanceTemplate>("/affordance_template_server/delete_template");
     delete_object_client_ = nh_.serviceClient<affordance_template_msgs::DeleteRecognitionObject>("/affordance_template_server/delete_recognition_object");
@@ -76,6 +77,7 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->server_output_status, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(killAffordanceTemplate(QListWidgetItem*)));
     QObject::connect(ui_->delete_template_button, SIGNAL(clicked()), this, SLOT(deleteButton()));
     QObject::connect(ui_->save_as_button, SIGNAL(clicked()), this, SLOT(saveButton()));
+    QObject::connect(ui_->add_traj_button, SIGNAL(clicked()), this, SLOT(addTrajectoryButton()));
 
     QObject::connect(ui_->load_config_button, SIGNAL(clicked()), this, SLOT(safeLoadConfig()));
     QObject::connect(ui_->robot_select, SIGNAL(currentIndexChanged(int)), this, SLOT(changeRobot(int)));
@@ -112,8 +114,10 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->ee_rp, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
     QObject::connect(ui_->ee_ry, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
 
+/*
     QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
-
+    QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));
+*/
 }
 
 void RVizAffordanceTemplatePanel::update_robot_config(const QString& text) {
@@ -215,7 +219,7 @@ void RVizAffordanceTemplatePanel::getAvailableTemplates() {
             string image_path = util::resolvePackagePath(t.image_path);
             string filename = t.filename;
             QMap<QString, QVariant> trajectory_map;
-            ROS_INFO("Got Affordance Template: %s", t.type.c_str());
+            ROS_INFO("Found Affordance Template: %s", t.type.c_str());
             for (auto& traj: t.trajectory_info) {
                 QMap<QString, QVariant> waypoint_map;
                 for (auto& wp: traj.waypoint_info) {
@@ -223,16 +227,15 @@ void RVizAffordanceTemplatePanel::getAvailableTemplates() {
                 }
                 trajectory_map[QString(traj.name.c_str())] = waypoint_map;
             }       
-            cout << "============================ ADDING AFFORDANCE " << t.type.c_str() << endl;
             AffordanceSharedPtr pitem(new Affordance(t.type.c_str(), image_path, trajectory_map, filename));
             pitem->setPos(XOFFSET, yoffset);
             yoffset += PIXMAP_SIZE + YOFFSET;
             if(!checkAffordance(pitem)) {
-                cout << "====REALLY ADDING" << endl;
                 affordanceTemplateGraphicsScene_->addItem(pitem.get());
                 addAffordance(pitem);
             }
         }
+        QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
         affordanceTemplateGraphicsScene_->update();
     }
     else
@@ -257,8 +260,8 @@ void RVizAffordanceTemplatePanel::getAvailableRecognitionObjects() {
                 addRecognitionObject(pitem);
             }
         }
-        QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));
         recognitionObjectGraphicsScene_->update();
+        QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));
     }
     else
     {
@@ -481,6 +484,10 @@ void RVizAffordanceTemplatePanel::saveButton() {
     saveAffordanceTemplate();
 }
 
+void RVizAffordanceTemplatePanel::addTrajectoryButton() {
+    addTrajectory();
+}
+
 void RVizAffordanceTemplatePanel::removeAffordanceTemplates() {
     affordanceTemplateGraphicsScene_->disconnect(SIGNAL(selectionChanged()));
     for (auto& pitem: affordanceTemplateGraphicsScene_->items()) {
@@ -593,6 +600,10 @@ void RVizAffordanceTemplatePanel::saveAffordanceTemplate() {
     getRunningItems();
 }
 
+void RVizAffordanceTemplatePanel::addTrajectory() {
+    sendAddTrajectory();
+}
+
 void RVizAffordanceTemplatePanel::sendSaveAffordanceTemplate() {
     
     string key = ui_->save_template_combo_box->currentText().toUtf8().constData();
@@ -609,6 +620,24 @@ void RVizAffordanceTemplatePanel::sendSaveAffordanceTemplate() {
     srv.request.new_class_type = ui_->new_save_type->text().toStdString();
     srv.request.image = ui_->new_image->text().toStdString();
     srv.request.filename = ui_->new_filename->text().toStdString();
+
+    bool abort_flag = false;
+
+    if(srv.request.new_class_type=="") {
+        ROS_WARN("No Class Name entered, not sending anything...");
+        abort_flag = true;  
+    }
+    if(srv.request.image=="") {
+        ROS_WARN("No Image entered, not sending anything...");
+        abort_flag = true;  
+    }
+    if(srv.request.filename=="") {
+        ROS_WARN("No Filename entered, not sending anything...");
+        abort_flag = true;  
+    }
+    if(abort_flag) {
+        return;
+    }
 
     ROS_INFO("Sending save to %s:%d, with image %s to file: %s", srv.request.new_class_type.c_str(), id, srv.request.image.c_str(), srv.request.filename.c_str());      
 
@@ -629,6 +658,36 @@ void RVizAffordanceTemplatePanel::sendSaveAffordanceTemplate() {
     else
     {
         ROS_ERROR("Failed to save template");
+    }
+}
+
+void RVizAffordanceTemplatePanel::sendAddTrajectory() {
+    
+    string key = ui_->save_template_combo_box->currentText().toUtf8().constData();
+    vector<string> stuff = util::split(key, ':');
+
+    string class_type = stuff[0];
+    int id = int(atoi(stuff[1].c_str()));
+
+    affordance_template_msgs::AddAffordanceTemplateTrajectory srv;
+    srv.request.class_type = class_type;
+    srv.request.id = id;
+    srv.request.trajectory_name = ui_->new_traj_name->text().toStdString();
+
+    if(srv.request.trajectory_name=="") {
+        ROS_WARN("No Trajectory Name entered, not sending anything...");
+        return;      
+    }
+     
+    ROS_INFO("Sending add traj [%s] to %s:%d", srv.request.trajectory_name.c_str(), srv.request.class_type.c_str(), id);      
+
+    if (add_trajectory_client_.call(srv))
+    {
+        ROS_INFO("Add Trajectory successful");
+    }
+    else
+    {
+        ROS_ERROR("Failed to add trajectory");
     }
 }
 

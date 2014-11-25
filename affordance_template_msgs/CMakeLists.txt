@@ -71,6 +71,7 @@ add_service_files(
   DeleteRecognitionObject.srv
   AffordanceTemplateCommand.srv
   SaveAffordanceTemplate.srv
+  AddAffordanceTemplateTrajectory.srv
 )
 
 ## Generate actions in the 'action' folder

@@ -33,6 +33,7 @@
 #include <affordance_template_msgs/WaypointTrajectory.h>
 
 #include <affordance_template_msgs/AddAffordanceTemplate.h>
+#include <affordance_template_msgs/AddAffordanceTemplateTrajectory.h>
 #include <affordance_template_msgs/SaveAffordanceTemplate.h>
 #include <affordance_template_msgs/AddRecognitionObject.h>
 #include <affordance_template_msgs/AffordanceTemplateCommand.h>
@@ -81,6 +82,10 @@ namespace rviz_affordance_template_panel
         /** \brief save an affordance template with info from gui panel.
          */
         void saveAffordanceTemplate();
+
+        /** \brief adds a new trajectory to the selected template info from gui panel.
+         */
+        void addTrajectory();
 
         /** \brief Send a request to get available template and robot classes and populate the panel.
          */
@@ -133,6 +138,10 @@ namespace rviz_affordance_template_panel
         /** \brief Save Template button.
          */
         void saveButton();
+
+        /** \brief Add Trajectory button.
+         */
+        void addTrajectoryButton();
 
         /** \brief Send a service request to kill a running template.
          */
@@ -215,6 +224,7 @@ namespace rviz_affordance_template_panel
         int sendAffordanceTemplateAdd(const string& class_name);
         void sendAffordanceTemplateKill(const string& class_name, int id);
         void sendSaveAffordanceTemplate();
+        void sendAddTrajectory();
 
         void removeRecognitionObjects();
         void sendRecognitionObjectAdd(const string& object_name);
@@ -251,6 +261,7 @@ namespace rviz_affordance_template_panel
         // affordance template services
         ros::ServiceClient add_template_client_;
         ros::ServiceClient delete_template_client_;
+        ros::ServiceClient add_trajectory_client_;
         ros::ServiceClient add_object_client_;
         ros::ServiceClient delete_object_client_;
         ros::ServiceClient command_client_;

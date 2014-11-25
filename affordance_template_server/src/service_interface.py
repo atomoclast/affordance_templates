@@ -23,6 +23,7 @@ class ServiceInterface(object):
         self.get_running_service =     rospy.Service('/affordance_template_server/get_running', GetRunningAffordanceTemplates, self.handle_running)
         self.command_service =         rospy.Service('/affordance_template_server/command', AffordanceTemplateCommand, self.handle_command)
         self.save_service =            rospy.Service('/affordance_template_server/save_template', SaveAffordanceTemplate, self.handle_save_template)
+        self.add_trajectory =          rospy.Service('/affordance_template_server/add_trajectory', AddAffordanceTemplateTrajectory, self.handle_add_trajectory)
 
 
     def handle_robot_request(self, request) :
@@ -232,4 +233,16 @@ class ServiceInterface(object):
             response.status = save_status and remove_status and add_status
         except:
             rospy.logerr("ServiceInterface::handle_load_robot()  -- Error trying to save template")
+        return response
+
+    def handle_add_trajectory(self, request):
+        rospy.loginfo(str("ServiceInterface::handle_add_trajectory() -- add trajectory [" + request.trajectory_name +  "] to " + request.class_type + ":" + str(request.id)))
+        response = AddAffordanceTemplateTrajectoryResponse()
+        response.status = False    
+        try:
+            key = str(request.class_type) + ":" + str(request.id)
+            self.server.at_data.class_map[request.class_type][request.id].add_trajectory(request.trajectory_name)
+            response.status = True
+        except:
+            rospy.logerr("ServiceInterface::handle_add_trajectory()  -- Error trying to add trajectory")
         return response
