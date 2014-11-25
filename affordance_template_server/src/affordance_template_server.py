@@ -50,7 +50,7 @@ class AffordanceTemplateServer(Thread):
         self.at_data = self.get_available_templates(self.template_path)
         self.ro_data = self.get_available_recognition_objects(self.recognition_object_path)
 
-        self.running_templates = {}
+        # self.running_templates = {}
         self.running_recog_objects = {}
 
         # create the robot interface and configure if there is an input yaml
@@ -93,8 +93,8 @@ class AffordanceTemplateServer(Thread):
             # print " ids: ", self.at_data.class_map[class_type].keys()
             if instance_id in self.at_data.class_map[class_type]:
                 self.at_data.class_map[class_type][instance_id].terminate()
-                if self.running_templates[instance_id] == class_type:
-                    del self.running_templates[instance_id]
+                # if self.running_templates[instance_id] == class_type:
+                #     del self.running_templates[instance_id]
                 del self.at_data.class_map[class_type][instance_id]
         else :
             return False
@@ -132,7 +132,7 @@ class AffordanceTemplateServer(Thread):
             at = AffordanceTemplate(self.server, instance_id, robot_interface=self.robot_interface)
             filename = self.at_data.file_map[class_type]
             at.load_from_file(filename)
-            self.running_templates[instance_id] = class_type
+            # self.running_templates[instance_id] = class_type
             self.at_data.class_map[class_type][instance_id] = at  # TODO this is dumb, need to just have a local list of multiple ATs
             rospy.loginfo(str("AffordanceTemplateServer::add_template() -- adding template " + str(class_type) + " with id: " + str(instance_id)))
             return True

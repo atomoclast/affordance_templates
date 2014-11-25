@@ -114,10 +114,10 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->ee_rp, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
     QObject::connect(ui_->ee_ry, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
 
-/*
+
     QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
     QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));
-*/
+
 }
 
 void RVizAffordanceTemplatePanel::update_robot_config(const QString& text) {
@@ -215,6 +215,7 @@ void RVizAffordanceTemplatePanel::getAvailableTemplates() {
     if (get_templates_client_.call(srv))
     {
         int yoffset = YOFFSET;
+        affordanceTemplateGraphicsScene_->clear();
         for (auto& t: srv.response.templates) {
             string image_path = util::resolvePackagePath(t.image_path);
             string filename = t.filename;
@@ -231,11 +232,11 @@ void RVizAffordanceTemplatePanel::getAvailableTemplates() {
             pitem->setPos(XOFFSET, yoffset);
             yoffset += PIXMAP_SIZE + YOFFSET;
             if(!checkAffordance(pitem)) {
-                affordanceTemplateGraphicsScene_->addItem(pitem.get());
                 addAffordance(pitem);
             }
+            affordanceTemplateGraphicsScene_->addItem(pitem.get());
+
         }
-        QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
         affordanceTemplateGraphicsScene_->update();
     }
     else
@@ -250,18 +251,19 @@ void RVizAffordanceTemplatePanel::getAvailableRecognitionObjects() {
     if (get_objects_client_.call(srv))
     {
         int yoffset = YOFFSET;
+        recognitionObjectGraphicsScene_->clear();
         for (auto& o: srv.response.recognition_objects) {
             string image_path = util::resolvePackagePath(o.image_path);
             RecognitionObjectSharedPtr pitem(new RecognitionObject(o.type, o.launch_file, o.package, image_path));
             pitem->setPos(XOFFSET, yoffset);
             yoffset += PIXMAP_SIZE + YOFFSET;
             if(!checkRecognitionObject(pitem)) {
-                recognitionObjectGraphicsScene_->addItem(pitem.get());
                 addRecognitionObject(pitem);
             }
+            recognitionObjectGraphicsScene_->addItem(pitem.get());
+                
         }
         recognitionObjectGraphicsScene_->update();
-        QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));
     }
     else
     {
@@ -444,9 +446,9 @@ void RVizAffordanceTemplatePanel::changeSaveInfo(int id) {
         string image_name = list.at(i)->data(IMAGE).toString().toStdString();
         string filename = list.at(i)->data(FILENAME).toString().toStdString();
         
-        ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", class_name.c_str());
-        ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", image_name.c_str());
-        ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", filename.c_str());
+        ROS_DEBUG("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", class_name.c_str());
+        ROS_DEBUG("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", image_name.c_str());
+        ROS_DEBUG("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", filename.c_str());
         
         vector<string> image_tokens = util::split(image_name, '/');
         vector<string> fname_tokens = util::split(filename, '/');
@@ -489,7 +491,6 @@ void RVizAffordanceTemplatePanel::addTrajectoryButton() {
 }
 
 void RVizAffordanceTemplatePanel::removeAffordanceTemplates() {
-    affordanceTemplateGraphicsScene_->disconnect(SIGNAL(selectionChanged()));
     for (auto& pitem: affordanceTemplateGraphicsScene_->items()) {
         affordanceTemplateGraphicsScene_->removeItem(pitem);
     }
@@ -498,7 +499,6 @@ void RVizAffordanceTemplatePanel::removeAffordanceTemplates() {
 }
 
 void RVizAffordanceTemplatePanel::removeRecognitionObjects() {
-    recognitionObjectGraphicsScene_->disconnect(SIGNAL(selectionChanged()));
     for (auto& pitem: recognitionObjectGraphicsScene_->items()) {
         recognitionObjectGraphicsScene_->removeItem(pitem);
     }
@@ -705,7 +705,7 @@ void RVizAffordanceTemplatePanel::getRunningItems() {
             ui_->server_output_status->item(i)->setForeground(Qt::blue);
             ui_->control_template_box->addItem(QString(t.c_str()));
             int idx = ui_->save_template_combo_box->findText(t.c_str());
-            if ( idx == -1) {
+            if (idx == -1) {
                 ui_->save_template_combo_box->addItem(QString(t.c_str()));  
             }
         }
@@ -715,8 +715,6 @@ void RVizAffordanceTemplatePanel::getRunningItems() {
       ROS_ERROR("Failed to call service get_running");
     }
     ui_->server_output_status->sortItems();
-
-
 }
 
 void RVizAffordanceTemplatePanel::safeLoadConfig() {
@@ -839,11 +837,7 @@ void RVizAffordanceTemplatePanel::addAffordanceDisplayItem() {
 
         vector<string> image_tokens = util::split(image_name, '/');
         vector<string> fname_tokens = util::split(filename, '/');
-
         string at_full_name = class_name + ":" + to_string(idx);
-        cout << "at full name: " << at_full_name << endl;
-
-        cout << "adding item to combo box: " << at_full_name.c_str() << endl;
         if (ui_->save_template_combo_box->findText(at_full_name.c_str()) == -1) {
             ui_->save_template_combo_box->addItem(QString(at_full_name.c_str()));
             ui_->save_template_combo_box->setItemData(idx,QString(at_full_name.c_str()));
@@ -861,8 +855,6 @@ void RVizAffordanceTemplatePanel::addAffordanceDisplayItem() {
             }
         }
     }
-
-    getAvailableTemplates();
     getRunningItems();
 }
 
