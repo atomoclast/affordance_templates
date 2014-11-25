@@ -103,9 +103,9 @@ class AffordanceTemplate(threading.Thread) :
 
         if not isinstance(robot_interface, RobotInterface) :
             rospy.loginfo("AffordanceTemplate::init() -- problem setting robot config")
-        else :
-            print "FIX THIS"
-            print robot_interface
+        # else :
+        #     print "FIX THIS"
+        #     print robot_interface
         self.robot_interface = robot_interface
 
         # set up menu info
@@ -708,7 +708,7 @@ class AffordanceTemplate(threading.Thread) :
         new_structure['end_effector_trajectory'] = []
             
         for traj in self.structure['end_effector_trajectory'] :
-            print "Traj: ", traj['name']
+            # print "Traj: ", traj['name']
             traj_name = traj['name']
             new_structure['end_effector_trajectory'].append({})
             new_structure['end_effector_trajectory'][traj_id]['name'] = traj['name']
@@ -718,7 +718,7 @@ class AffordanceTemplate(threading.Thread) :
 
             # for ee in self.structure['end_effector_trajectory'][traj_id]['end_effector_group'] :
             for ee_id in self.waypoint_index[traj_name].keys() :               
-                print " ee: ", self.robot_interface.end_effector_name_map[ee_id], ", id: ", ee_id
+                # print " ee: ", self.robot_interface.end_effector_name_map[ee_id], ", id: ", ee_id
                 # self.end_effector_name_map[ee_id] 
                 # ee_id = ee['id']
                 new_structure['end_effector_trajectory'][traj_id]['end_effector_group'].append({})
@@ -728,8 +728,10 @@ class AffordanceTemplate(threading.Thread) :
                 wp_id = 0
                 for wp in self.waypoints[traj['name']] :
                     if int(wp.split(".")[0]) == int(ee_id) :
-                        print "  wp: ", wp
+                        # print "  wp: ", wp
+                        # print "  writing pose to disk: " 
                         parent_key = self.parent_map[(traj['name'],wp)].split("/")[1].split(":")[0]
+              
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'].append({})
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['ee_pose'] = self.waypoint_pose_map[traj['name']][wp]
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['display_object'] = parent_key
@@ -831,7 +833,7 @@ class AffordanceTemplate(threading.Thread) :
         old_name = self.create_waypoint_id(ee_id, old_id)
         new_name = self.create_waypoint_id(ee_id, new_id)
         self.create_waypoint(traj_name, ee_id, new_id, getPoseFromFrame(self.objTwp[traj_name][old_name]), self.parent_map[(traj_name,old_name)], 
-            self.waypoint_controls[traj_name][old_name], self.waypoint_origin[traj_name][old_name], self.waypoint_pose_map[traj_name][old_name])
+            copy.deepcopy(self.waypoint_controls[traj_name][old_name]), copy.deepcopy(self.waypoint_origin[traj_name][old_name]), copy.deepcopy(self.waypoint_pose_map[traj_name][old_name]))
 
     def swap_waypoints(self, traj_name, ee_id, wp_id1, wp_id2) :
         wp_name1 = self.create_waypoint_id(ee_id, wp_id1)
@@ -969,8 +971,10 @@ class AffordanceTemplate(threading.Thread) :
         if feedback.event_type == InteractiveMarkerFeedback.MOUSE_UP :
 
             if feedback.marker_name in self.waypoints[self.current_trajectory] :
+                print "updating pose for marker[", self.current_trajectory, "]: ", feedback.marker_name
                 self.objTwp[self.current_trajectory][feedback.marker_name] = getFrameFromPose(feedback.pose)
-
+                print self.objTwp[self.current_trajectory][feedback.marker_name]
+                
         elif feedback.event_type == InteractiveMarkerFeedback.MENU_SELECT:
 
             handle = feedback.menu_entry_id
@@ -984,6 +988,11 @@ class AffordanceTemplate(threading.Thread) :
 
                 if handle == self.menu_handles[(feedback.marker_name,"Save")] :
                     rospy.loginfo(str("AffordanceTemplate::process_feedback() -- Saving Affordance Template"))
+                    print "\nAbout to save:"
+                    for k in self.objTwp[self.current_trajectory].keys() :
+                        print k
+                        print self.objTwp[self.current_trajectory][k]
+                    print "====\n"
                     self.save_to_disk(self.filename)
 
                 if handle == self.menu_handles[(feedback.marker_name,"Hide Controls")] :
@@ -1056,8 +1065,8 @@ class AffordanceTemplate(threading.Thread) :
 
                     # print "creating waypoint at : ", new_id
                     old_name = self.create_waypoint_id(ee_id, str(1))
-                    self.create_waypoint(self.current_trajectory, ee_id, waypoint_id, new_pose, self.parent_map[(self.current_trajectory, old_name)], self.waypoint_controls[self.current_trajectory][old_name], 
-                        self.waypoint_origin[self.current_trajectory][old_name], self.waypoint_pose_map[self.current_trajectory][old_name])
+                    self.create_waypoint(self.current_trajectory, ee_id, waypoint_id, new_pose, self.parent_map[(self.current_trajectory, old_name)], copy.deepcopy(self.waypoint_controls[self.current_trajectory][old_name]), 
+                        copy.deepcopy(self.waypoint_origin[self.current_trajectory][old_name]), copy.deepcopy(self.waypoint_pose_map[self.current_trajectory][old_name]))
                     self.create_from_parameters(True, self.current_trajectory)
 
 
@@ -1089,12 +1098,12 @@ class AffordanceTemplate(threading.Thread) :
                         self.move_waypoint(self.current_trajectory, ee_id, k, k+1)
 
                     old_name = self.create_waypoint_id(ee_id, max_idx) 
-                    self.create_waypoint(self.current_trajectory, ee_id, new_id, new_pose, self.parent_map[(self.current_trajectory, old_name)], self.waypoint_controls[self.current_trajectory][old_name], 
-                        self.waypoint_origin[self.current_trajectory][old_name], self.waypoint_pose_map[self.current_trajectory][old_name])
+                    self.create_waypoint(self.current_trajectory, ee_id, new_id, new_pose, self.parent_map[(self.current_trajectory, old_name)], copy.deepcopy(self.waypoint_controls[self.current_trajectory][old_name]), 
+                        copy.deepcopy(self.waypoint_origin[self.current_trajectory][old_name]), copy.deepcopy(self.waypoint_pose_map[self.current_trajectory][old_name]))
                     self.create_from_parameters(True, self.current_trajectory)
 
                 if handle == self.menu_handles[(feedback.marker_name,"Delete Waypoint")] :
-                    rospy.info(str("Deleting Waypoint " + str(waypoint_id) + "for end effector: " + str(ee_id)))
+                    rospy.loginfo(str("Deleting Waypoint " + str(waypoint_id) + "for end effector: " + str(ee_id)))
                     self.remove_waypoint(self.current_trajectory, ee_id, waypoint_id)
                     self.create_from_parameters(True, self.current_trajectory)
 
@@ -1269,8 +1278,8 @@ class AffordanceTemplate(threading.Thread) :
                         old_name = self.create_waypoint_id(ee_id, str(k))
                         new_name = self.create_waypoint_id(ee_id, str(k+1))
                         self.move_waypoint(self.current_trajectory, ee_id, k, k+1)
-                    self.create_waypoint(self.current_trajectory, ee_id, wp_id, ps, feedback.marker_name, self.waypoint_controls[self.current_trajectory][wp_name], 
-                        self.waypoint_origin[self.current_trajectory][wp_name], pose_id)
+                    self.create_waypoint(self.current_trajectory, ee_id, wp_id, ps, feedback.marker_name, copy.deepcopy(self.waypoint_controls[self.current_trajectory][wp_name]), 
+                        copy.deepcopy(self.waypoint_origin[self.current_trajectory][wp_name]), pose_id)
 
                 self.create_from_parameters(True, self.current_trajectory)
 
