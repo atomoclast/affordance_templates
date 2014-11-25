@@ -1,5 +1,8 @@
 # Necessary configuration information for an affordance template 
 
+# the name of the affordance template filename
+string filename
+
 # the name of the affordance template, should match name stored in the corresponding json file in affordance_template_library/templates/ directory
 string type
 

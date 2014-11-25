@@ -22,6 +22,7 @@ class ServiceInterface(object):
         self.delete_object_service =   rospy.Service('/affordance_template_server/delete_recognition_object', DeleteRecognitionObject, self.handle_object_kill)
         self.get_running_service =     rospy.Service('/affordance_template_server/get_running', GetRunningAffordanceTemplates, self.handle_running)
         self.command_service =         rospy.Service('/affordance_template_server/command', AffordanceTemplateCommand, self.handle_command)
+        self.save_service =            rospy.Service('/affordance_template_server/save_template', SaveAffordanceTemplate, self.handle_save_template)
 
 
     def handle_robot_request(self, request) :
@@ -42,6 +43,7 @@ class ServiceInterface(object):
             at_config = AffordanceTemplateConfig()
             at_config.type = class_type
             at_config.image_path = self.server.at_data.image_map[class_type]
+            at_config.filename = self.server.at_data.file_map[class_type]
             for t in self.server.at_data.traj_map[class_type] :
                 wp_traj = WaypointTrajectory()
                 wp_traj.name = t
@@ -57,6 +59,7 @@ class ServiceInterface(object):
                 at_config = AffordanceTemplateConfig()
                 at_config.type = class_type
                 at_config.image_path = self.server.at_data.image_map[class_type]
+                at_config.filename = self.server.at_data.file_map[class_type]
                 for t in self.server.at_data.traj_map[class_type] :
                     wp_traj = WaypointTrajectory()
                     wp_traj.name = t
@@ -97,7 +100,6 @@ class ServiceInterface(object):
         response = LoadRobotConfigResponse()
         response.status = False
         try:
-            print self.server.robot_interface.configured 
             if self.server.robot_interface.configured :
                 self.server.robot_interface.tear_down() 
             if request.filename :
@@ -116,7 +118,7 @@ class ServiceInterface(object):
         try:
             pid = self.server.get_next_template_id(request.class_type)
             response.id = pid
-            response.status = self.server.add_template(request.class_type, response.id)
+            response.status = self.server.add_template(request.class_type, pid)
         except:
             rospy.logerr("ServiceInterface::handle_add_template() -- error adding template to server")
         return response
@@ -216,4 +218,18 @@ class ServiceInterface(object):
             rospy.logerr(str("ServiceInterface::handle_command() -- error performing command!!"))
         return response
 
-
+    def handle_save_template(self, request):
+        rospy.loginfo(str("ServiceInterface::handle_save_template() -- save request for robot " + request.original_class_type + ":" + str(request.id) + 
+            " as " + request.new_class_type + ":" + str(request.id) + " with " + request.filename + " with image: " + request.image))
+        response = SaveAffordanceTemplateResponse()
+        response.status = False    
+        try:
+            new_key = str(request.new_class_type) + ":" + str(request.id)
+            save_status = self.server.at_data.class_map[request.original_class_type][request.id].save_to_disk(filename=request.filename, image=request.image, new_class_type=new_key)
+            remove_status = self.server.remove_template(request.original_class_type, request.id)
+            self.server.at_data = self.server.get_available_templates(self.server.template_path, self.server.at_data)
+            add_status = self.server.add_template(request.new_class_type, request.id)
+            response.status = save_status and remove_status and add_status
+        except:
+            rospy.logerr("ServiceInterface::handle_load_robot()  -- Error trying to save template")
+        return response

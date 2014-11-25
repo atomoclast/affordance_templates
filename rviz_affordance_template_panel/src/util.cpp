@@ -1,5 +1,7 @@
 #include "util.hpp"
 
+using namespace std;
+
 namespace util {
 
 vector<string> &split(const string &s, char delim, vector<string> &elems) {
@@ -88,6 +90,5 @@ string resolvePackagePath(const string& str) {
     string file_path = sub_str.substr(package_name.length(),sub_str.length()-1);
     return package_path + file_path;
 }
-
 
 }

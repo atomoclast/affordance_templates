@@ -28,7 +28,6 @@ void Controls::updateTable(std::map<int, std::pair<int,int> > waypointData) {
 
 void Controls::sendCommand(int command_type) {
 
-
     string key = ui_->control_template_box->currentText().toUtf8().constData();
     vector<string> stuff = util::split(key, ':');
     map< int, pair<int,int> > waypointData;

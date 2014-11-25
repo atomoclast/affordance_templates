@@ -87,7 +87,10 @@ class AffordanceTemplateServer(Thread):
         @rtype bool
         @returns True if process was stopped/removed.
         """
+        rospy.loginfo(str("AffordanceTemplateServer::remove_template() -- " + class_type + ":" + str(instance_id)))
+        # print "class map keys: ", self.at_data.class_map.keys()
         if class_type in self.at_data.class_map.keys() :
+            # print " ids: ", self.at_data.class_map[class_type].keys()
             if instance_id in self.at_data.class_map[class_type]:
                 self.at_data.class_map[class_type][instance_id].terminate()
                 if self.running_templates[instance_id] == class_type:
@@ -209,15 +212,19 @@ class AffordanceTemplateServer(Thread):
             rospy.logwarn('AffordanceTemplateServer::get_template_path() -- No package found: affordance_template_markers')
             return ""
 
-    def get_available_templates(self, path):
+    def get_available_templates(self, path, input_at_data=None):
         """Parse affordance_templates manifest for available classes."""
 
         at_data = AffordanceTemplateCollection()
-        at_data.class_map = {}
-        at_data.traj_map = {}
-        at_data.image_map = {}
-        at_data.file_map = {}
-        at_data.waypoint_map = {}
+
+        if input_at_data :
+            at_data = input_at_data
+        else :
+            at_data.class_map = {}
+            at_data.traj_map = {}
+            at_data.image_map = {}
+            at_data.file_map = {}
+            at_data.waypoint_map = {}
 
         os.chdir(path)
 
@@ -229,10 +236,14 @@ class AffordanceTemplateServer(Thread):
 
                 at_name = str(structure['name'])
                 image = str(structure['image'])
-                at_data.class_map[at_name] = {}
-                at_data.traj_map[at_name] = []
-                at_data.image_map[at_name] = image
-                at_data.file_map[at_name] = os.path.join(path,atfn)
+                if not at_name in at_data.class_map :   
+                    at_data.class_map[at_name] = {}
+                if not at_name in at_data.traj_map :   
+                    at_data.traj_map[at_name] = []
+                if not at_name in at_data.image_map :   
+                    at_data.image_map[at_name] = image
+                if not at_name in at_data.file_map :   
+                    at_data.file_map[at_name] = os.path.join(path,atfn)
 
                 rospy.loginfo(str("AffordanceTemplateServer() -- found AT File: " + at_name))
 
@@ -240,7 +251,8 @@ class AffordanceTemplateServer(Thread):
                     traj_name = str(traj['name'])
                     at_data.traj_map[at_name].append(traj_name)
                     key = (at_name,traj_name)
-                    at_data.waypoint_map[key] = {}
+                    if not key in at_data.waypoint_map :
+                        at_data.waypoint_map[key] = {}
                     
                     for ee_group in traj['end_effector_group'] :
                         ee_id = ee_group['id']
@@ -285,7 +297,7 @@ class AffordanceTemplateServer(Thread):
         import glob
         os.chdir(path)
         for r in glob.glob("*.yaml") :
-            print "found recognition_object yaml: ", r
+            # print "found recognition_object yaml: ", r
             ro = RecognitionObject()
             ro.load_from_file(r)
             ro_data.object_map[ro.type] = {}

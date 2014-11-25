@@ -7,6 +7,8 @@
 
 #define CLASS_INDEX 0
 #define TRAJECTORY_DATA 1
+#define IMAGE 2
+#define FILENAME 3
 
 #define OBJECT_INDEX 0
 #define PACKAGE 1
@@ -34,6 +36,7 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     get_running_client_ = nh_.serviceClient<affordance_template_msgs::GetRunningAffordanceTemplates>("/affordance_template_server/get_running");
     get_templates_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateConfigInfo>("/affordance_template_server/get_templates");
     load_robot_client_ = nh_.serviceClient<affordance_template_msgs::LoadRobotConfig>("/affordance_template_server/load_robot");
+    save_template_client_ = nh_.serviceClient<affordance_template_msgs::SaveAffordanceTemplate>("/affordance_template_server/save_template");
 
     controls_->setService(command_client_);
 
@@ -72,10 +75,11 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
 
     QObject::connect(ui_->server_output_status, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(killAffordanceTemplate(QListWidgetItem*)));
     QObject::connect(ui_->delete_template_button, SIGNAL(clicked()), this, SLOT(deleteButton()));
+    QObject::connect(ui_->save_as_button, SIGNAL(clicked()), this, SLOT(saveButton()));
 
-    QObject::connect(ui_->connect_button, SIGNAL(clicked()), this, SLOT(refreshCallback()));
     QObject::connect(ui_->load_config_button, SIGNAL(clicked()), this, SLOT(safeLoadConfig()));
     QObject::connect(ui_->robot_select, SIGNAL(currentIndexChanged(int)), this, SLOT(changeRobot(int)));
+    QObject::connect(ui_->save_template_combo_box, SIGNAL(activated(int)), this, SLOT(changeSaveInfo(int)));
 
     QObject::connect(ui_->go_to_start_button, SIGNAL(clicked()), this, SLOT(go_to_start()));
     QObject::connect(ui_->go_to_end_button, SIGNAL(clicked()), this, SLOT(go_to_end()));
@@ -85,7 +89,7 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     //QObject::connect(ui_->play_backwards_button, SIGNAL(clicked()), this, SLOT(play_backward()));
     //QObject::connect(ui_->play_button, SIGNAL(clicked()), this, SLOT(play_forward()));
 
-    QObject::connect(ui_->refresh_button, SIGNAL(clicked()), this, SLOT(getAvailableInfo()));
+    QObject::connect(ui_->refresh_button, SIGNAL(clicked()), this, SLOT(refreshCallback()));
     QObject::connect(ui_->robot_lock, SIGNAL(stateChanged(int)), this, SLOT(enable_config_panel(int)));
 
     QObject::connect(ui_->robot_name, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
@@ -107,6 +111,9 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->ee_rr, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
     QObject::connect(ui_->ee_rp, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
     QObject::connect(ui_->ee_ry, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
+
+    QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
+
 }
 
 void RVizAffordanceTemplatePanel::update_robot_config(const QString& text) {
@@ -206,6 +213,7 @@ void RVizAffordanceTemplatePanel::getAvailableTemplates() {
         int yoffset = YOFFSET;
         for (auto& t: srv.response.templates) {
             string image_path = util::resolvePackagePath(t.image_path);
+            string filename = t.filename;
             QMap<QString, QVariant> trajectory_map;
             ROS_INFO("Got Affordance Template: %s", t.type.c_str());
             for (auto& traj: t.trajectory_info) {
@@ -215,15 +223,16 @@ void RVizAffordanceTemplatePanel::getAvailableTemplates() {
                 }
                 trajectory_map[QString(traj.name.c_str())] = waypoint_map;
             }       
-            AffordanceSharedPtr pitem(new Affordance(t.type.c_str(), image_path, trajectory_map));
+            cout << "============================ ADDING AFFORDANCE " << t.type.c_str() << endl;
+            AffordanceSharedPtr pitem(new Affordance(t.type.c_str(), image_path, trajectory_map, filename));
             pitem->setPos(XOFFSET, yoffset);
             yoffset += PIXMAP_SIZE + YOFFSET;
             if(!checkAffordance(pitem)) {
+                cout << "====REALLY ADDING" << endl;
                 affordanceTemplateGraphicsScene_->addItem(pitem.get());
                 addAffordance(pitem);
             }
         }
-        QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
         affordanceTemplateGraphicsScene_->update();
     }
     else
@@ -404,10 +413,72 @@ void RVizAffordanceTemplatePanel::changeEndEffector(int id) {
     setupEndEffectorConfigPanel(ee.toUtf8().constData());
 }
 
+void RVizAffordanceTemplatePanel::changeSaveInfo(int id) {
+
+    if (id >= ui_->save_template_combo_box->count() || ui_->save_template_combo_box->count()==0 ) {
+        ROS_WARN("RVizAffordanceTemplatePanel::changeSaveInfo() -- something funny!! clearing drop down");
+        ui_->save_template_combo_box->clear();
+        ui_->new_save_type->clear();
+        ui_->new_filename->clear();
+        ui_->new_image->clear();
+        return;
+    }  
+    QString key = ui_->save_template_combo_box->itemText(id);
+    vector<string> stuff = util::split(key.toStdString(), ':');
+    
+    string class_type = stuff[0];
+    int at_id = int(atoi(stuff[1].c_str()));
+
+    QList<QGraphicsItem*> list = affordanceTemplateGraphicsScene_->items();
+    for (int i=0; i < list.size(); ++i) {
+        // Get the object template class name from the first element in the QGraphicsItem's custom data
+        // field. This field is set in the derived Affordance class when setting up the widgets.
+        string class_name = list.at(i)->data(CLASS_INDEX).toString().toStdString();
+
+        if (class_name != class_type) {
+            continue;
+        }
+        string image_name = list.at(i)->data(IMAGE).toString().toStdString();
+        string filename = list.at(i)->data(FILENAME).toString().toStdString();
+        
+        ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", class_name.c_str());
+        ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", image_name.c_str());
+        ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", filename.c_str());
+        
+        vector<string> image_tokens = util::split(image_name, '/');
+        vector<string> fname_tokens = util::split(filename, '/');
+
+        ui_->new_save_type->setText(QString(class_name.c_str()));
+
+        if(image_tokens.size()>0) 
+        {
+            string stripped_image = image_tokens[image_tokens.size()-1];
+            ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", stripped_image.c_str());
+            ui_->new_image->setText(QString(stripped_image.c_str()));
+        } else {
+            ui_->new_image->setText(QString(image_name.c_str()));            
+        }
+
+        if(fname_tokens.size()>0) 
+        {
+            string stripped_fname = fname_tokens[fname_tokens.size()-1];
+            ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", stripped_fname.c_str());
+            ui_->new_filename->setText(QString(stripped_fname.c_str()));
+        } else {
+            ui_->new_filename->setText(QString(filename.c_str()));
+        }
+        break;
+    }   
+}
+
 void RVizAffordanceTemplatePanel::deleteButton() {
     if(ui_->server_output_status->currentItem()) {
         killAffordanceTemplate(ui_->server_output_status->currentItem());
     }
+}
+
+void RVizAffordanceTemplatePanel::saveButton() {
+    saveAffordanceTemplate();
 }
 
 void RVizAffordanceTemplatePanel::removeAffordanceTemplates() {
@@ -428,18 +499,20 @@ void RVizAffordanceTemplatePanel::removeRecognitionObjects() {
     recognitionObjectGraphicsScene_->update();
 }
 
-void RVizAffordanceTemplatePanel::sendAffordanceTemplateAdd(const string& class_name) {
+int RVizAffordanceTemplatePanel::sendAffordanceTemplateAdd(const string& class_name) {
     ROS_INFO("Sending Add Template request for a %s", class_name.c_str());      
     affordance_template_msgs::AddAffordanceTemplate srv;
     srv.request.class_type = class_name;
     if (add_template_client_.call(srv))
     {
         ROS_INFO("Add successful, new %s with id: %d", class_name.c_str(), (int)(srv.response.id));
+        return (int)(srv.response.id);
     }
     else
     {
         ROS_ERROR("Failed to call service add_template");
     }
+    return -1;
 }
 
 void RVizAffordanceTemplatePanel::sendRecognitionObjectAdd(const string& object_name) {
@@ -464,6 +537,19 @@ void RVizAffordanceTemplatePanel::sendAffordanceTemplateKill(const string& class
     if (delete_template_client_.call(srv))
     {
         ROS_INFO("Delete successful");
+
+        string full_name = class_name + ":" + to_string(id);
+        int idx = ui_->save_template_combo_box->findText(QString(full_name.c_str()));
+        if ( idx != -1) {
+            ui_->save_template_combo_box->removeItem(idx);  
+            if(ui_->save_template_combo_box->count()==0) {
+                ui_->save_template_combo_box->clear();  
+                ui_->new_save_type->clear();
+                ui_->new_filename->clear();
+                ui_->new_image->clear();
+            }
+        }
+
     }
     else
     {
@@ -502,6 +588,50 @@ void RVizAffordanceTemplatePanel::killRecognitionObject(QListWidgetItem* item) {
     getRunningItems();
 }
 
+void RVizAffordanceTemplatePanel::saveAffordanceTemplate() {
+    sendSaveAffordanceTemplate();
+    getRunningItems();
+}
+
+void RVizAffordanceTemplatePanel::sendSaveAffordanceTemplate() {
+    
+    string key = ui_->save_template_combo_box->currentText().toUtf8().constData();
+    vector<string> stuff = util::split(key, ':');
+
+    string class_type = stuff[0];
+    int id = int(atoi(stuff[1].c_str()));
+
+    affordance_template_msgs::SaveAffordanceTemplate srv;
+    srv.request.original_class_type = class_type;
+    srv.request.id = id;
+
+    //srv.request.new_class_type = ui_->new_save_type->text().toUtf8().constData());
+    srv.request.new_class_type = ui_->new_save_type->text().toStdString();
+    srv.request.image = ui_->new_image->text().toStdString();
+    srv.request.filename = ui_->new_filename->text().toStdString();
+
+    ROS_INFO("Sending save to %s:%d, with image %s to file: %s", srv.request.new_class_type.c_str(), id, srv.request.image.c_str(), srv.request.filename.c_str());      
+
+    if (save_template_client_.call(srv))
+    {
+        ROS_INFO("Save successful");
+        int idx = ui_->save_template_combo_box->findText(QString(key.c_str()));
+        if ( idx != -1) {
+            ui_->save_template_combo_box->removeItem(idx);  
+            if(ui_->save_template_combo_box->count()==0) {
+                ui_->save_template_combo_box->clear();  
+                ui_->new_save_type->clear();
+                ui_->new_filename->clear();
+                ui_->new_image->clear();
+            }
+        }
+    }
+    else
+    {
+        ROS_ERROR("Failed to save template");
+    }
+}
+
 void RVizAffordanceTemplatePanel::getRunningItems() {
     ROS_INFO("Requesting running affordance templates");      
     affordance_template_msgs::GetRunningAffordanceTemplates srv;
@@ -515,6 +645,10 @@ void RVizAffordanceTemplatePanel::getRunningItems() {
             ui_->server_output_status->addItem(QString::fromStdString(t.c_str()));
             ui_->server_output_status->item(i)->setForeground(Qt::blue);
             ui_->control_template_box->addItem(QString(t.c_str()));
+            int idx = ui_->save_template_combo_box->findText(t.c_str());
+            if ( idx == -1) {
+                ui_->save_template_combo_box->addItem(QString(t.c_str()));  
+            }
         }
     }
     else
@@ -522,6 +656,8 @@ void RVizAffordanceTemplatePanel::getRunningItems() {
       ROS_ERROR("Failed to call service get_running");
     }
     ui_->server_output_status->sortItems();
+
+
 }
 
 void RVizAffordanceTemplatePanel::safeLoadConfig() {
@@ -632,8 +768,28 @@ void RVizAffordanceTemplatePanel::addAffordanceDisplayItem() {
         // Get the object template class name from the first element in the QGraphicsItem's custom data
         // field. This field is set in the derived Affordance class when setting up the widgets.
         string class_name = list.at(i)->data(CLASS_INDEX).toString().toStdString();
+        string image_name = list.at(i)->data(IMAGE).toString().toStdString();
+        string filename = list.at(i)->data(FILENAME).toString().toStdString();
+        
         ROS_INFO("RVizAffordanceTemplatePanel::addAffordanceDisplayItem() -- %s", class_name.c_str());
-        sendAffordanceTemplateAdd(class_name);
+        int idx = sendAffordanceTemplateAdd(class_name);
+        if (idx < 0) {
+            ROS_ERROR("RVizAffordanceTemplatePanel::addAffordanceDisplayItem() something wrong!!");
+            return;
+        }
+
+        vector<string> image_tokens = util::split(image_name, '/');
+        vector<string> fname_tokens = util::split(filename, '/');
+
+        string at_full_name = class_name + ":" + to_string(idx);
+        cout << "at full name: " << at_full_name << endl;
+
+        cout << "adding item to combo box: " << at_full_name.c_str() << endl;
+        if (ui_->save_template_combo_box->findText(at_full_name.c_str()) == -1) {
+            ui_->save_template_combo_box->addItem(QString(at_full_name.c_str()));
+            ui_->save_template_combo_box->setItemData(idx,QString(at_full_name.c_str()));
+        }
+
         //cout << "RVizAffordanceTemplatePanel::addAffordanceDisplayItem() -- retrieving waypoint info" << endl;
         for (auto& c: list.at(i)->data(TRAJECTORY_DATA).toMap().toStdMap()) {
             string robot_key = ui_->robot_select->currentText().toUtf8().constData();
@@ -646,6 +802,8 @@ void RVizAffordanceTemplatePanel::addAffordanceDisplayItem() {
             }
         }
     }
+
+    getAvailableTemplates();
     getRunningItems();
 }
 
@@ -756,6 +914,7 @@ std::string RVizAffordanceTemplatePanel::getRobotFromDescription() {
     }
     return robot;
 }
+
 
 #include <pluginlib/class_list_macros.h>
 #if ROS_VERSION_MINIMUM(1,9,41)

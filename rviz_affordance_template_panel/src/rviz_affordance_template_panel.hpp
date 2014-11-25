@@ -33,6 +33,7 @@
 #include <affordance_template_msgs/WaypointTrajectory.h>
 
 #include <affordance_template_msgs/AddAffordanceTemplate.h>
+#include <affordance_template_msgs/SaveAffordanceTemplate.h>
 #include <affordance_template_msgs/AddRecognitionObject.h>
 #include <affordance_template_msgs/AffordanceTemplateCommand.h>
 #include <affordance_template_msgs/DeleteAffordanceTemplate.h>
@@ -77,6 +78,10 @@ namespace rviz_affordance_template_panel
          */
         void addObjectDisplayItem();
 
+        /** \brief save an affordance template with info from gui panel.
+         */
+        void saveAffordanceTemplate();
+
         /** \brief Send a request to get available template and robot classes and populate the panel.
          */
         void getAvailableInfo();
@@ -113,19 +118,27 @@ namespace rviz_affordance_template_panel
          */
         void changeRobot(int id);
 
+        /** \brief Save As Template Selection callback.
+         */
+        void changeSaveInfo(int id);
+
         /** \brief Robot Config End Effector Selection callback.
          */
         void changeEndEffector(int id);
 
-        /** \brief Delete Template callback.
+        /** \brief Delete Template button.
          */
         void deleteButton();
 
-        /** \brief Send a ZMQ request to kill a running template.
+        /** \brief Save Template button.
+         */
+        void saveButton();
+
+        /** \brief Send a service request to kill a running template.
          */
         void killAffordanceTemplate(QListWidgetItem* item);
 
-        /** \brief Send a ZMQ request to kill a running object recog.
+        /** \brief Send a service request to kill a running object recog.
          */
         void killRecognitionObject(QListWidgetItem* item);
 
@@ -199,8 +212,9 @@ namespace rviz_affordance_template_panel
         void setupEndEffectorConfigPanel(const string& key);
 
         void removeAffordanceTemplates();
-        void sendAffordanceTemplateAdd(const string& class_name);
+        int sendAffordanceTemplateAdd(const string& class_name);
         void sendAffordanceTemplateKill(const string& class_name, int id);
+        void sendSaveAffordanceTemplate();
 
         void removeRecognitionObjects();
         void sendRecognitionObjectAdd(const string& object_name);
@@ -245,7 +259,8 @@ namespace rviz_affordance_template_panel
         ros::ServiceClient get_templates_client_;
         ros::ServiceClient get_objects_client_;
         ros::ServiceClient load_robot_client_;
-        
+        ros::ServiceClient save_template_client_;
+
         ControlsSharedPtr controls_;
     };
 }

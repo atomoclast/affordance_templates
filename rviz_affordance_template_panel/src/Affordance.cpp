@@ -3,10 +3,12 @@
 #define PIXMAP_SIZE 100
 #define CLASS_INDEX 0
 #define TRAJECTORY_DATA 1
+#define IMAGE 2
+#define FILENAME 3
 
 using namespace rviz_affordance_template_panel;
 
-Affordance::Affordance(const string& class_type, const string& image_path, QMap<QString, QVariant> &trajectory_map) {
+Affordance::Affordance(const string& class_type, const string& image_path, QMap<QString, QVariant> &trajectory_map, const string& filename) {
     QPixmap pixmap(QSize(PIXMAP_SIZE,PIXMAP_SIZE));
 
     // set pixmap to image if it exists
@@ -29,7 +31,9 @@ Affordance::Affordance(const string& class_type, const string& image_path, QMap<
     // we'll use the class name to instantiate an object template using Pluginlib
     this->setData(CLASS_INDEX, QVariant(class_type.c_str()));
     this->setData(TRAJECTORY_DATA, QVariant(trajectory_map));
-
+    this->setData(IMAGE, QVariant(image_path.c_str()));
+    this->setData(FILENAME, QVariant(filename.c_str()));
+    
     this->key_ = class_type;
     this->map_ = trajectory_map;
 }

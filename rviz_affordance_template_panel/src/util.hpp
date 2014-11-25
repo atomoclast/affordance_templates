@@ -13,22 +13,20 @@
 
 #include <geometry_msgs/Pose.h>
 
-using namespace std;
-
 namespace util
 {
 
-    vector<string> &split(const string &s, char delim, vector<string> &elems);
-    vector<string> split(const string &s, char delim);
+    std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
+    std::vector<std::string> split(const std::string &s, char delim);
 
-    vector<float> quaternionToRPY(float x, float y, float z, float w);
-    vector<float> RPYToQuaternion(float rr, float rp, float ry);
+    std::vector<float> quaternionToRPY(float x, float y, float z, float w);
+    std::vector<float> RPYToQuaternion(float rr, float rp, float ry);
 
-    vector<float> poseMsgToVector(geometry_msgs::Pose msg);
-	geometry_msgs::Pose vectorToPoseMsg(vector<float> pose);
+    std::vector<float> poseMsgToVector(geometry_msgs::Pose msg);
+	geometry_msgs::Pose vectorToPoseMsg(std::vector<float> pose);
 
-    string resolvePackagePath(const string& str);
-
+    std::string resolvePackagePath(const std::string& str);
+ 
 }
 
 #endif // UTIL_HPP

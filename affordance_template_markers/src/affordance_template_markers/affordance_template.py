@@ -33,7 +33,10 @@ class AffordanceTemplate(threading.Thread) :
 
     def __init__(self, server, id, name="affordance_template", initial_pose=None, robot_interface=None):
         super(AffordanceTemplate,self).__init__()
+        
         self.mutex = threading.Lock()
+        self._stop = threading.Event()
+
         self.menu_handler = MenuHandler()
         self.menu_handler.insert("Delete", callback=self.delete_callback)
         self.server = server
@@ -98,11 +101,10 @@ class AffordanceTemplate(threading.Thread) :
         self.random = random.Random()
         self.random.seed(time.clock)
 
-        print "FIX THIS"
-        print robot_interface
         if not isinstance(robot_interface, RobotInterface) :
             rospy.loginfo("AffordanceTemplate::init() -- problem setting robot config")
         else :
+            print "FIX THIS"
             print robot_interface
         self.robot_interface = robot_interface
 
@@ -260,8 +262,9 @@ class AffordanceTemplate(threading.Thread) :
         rospy.loginfo("AffordanceTemplate::load_initial_parameters()")
         # can we just make a deep copy of the json structure here?
 
-        objs = self.frame_store_map.keys()
-        for k in objs: del self.frame_store_map[k]
+        frames = self.frame_store_map.keys()
+        for k in frames: 
+            del self.frame_store_map[k]
         self.frame_store_map = {}
 
         if self.robot_interface == None :
@@ -285,9 +288,10 @@ class AffordanceTemplate(threading.Thread) :
         ids = 0
         for obj in self.structure['display_objects'] :
 
-            rospy.loginfo(str("AffordanceTemplate::load_initial_parameters() -- adding object: " + obj['name']))
+            obj_name = self.name + "/" + obj['name']
 
-            obj_name = obj['name']
+            rospy.loginfo(str("AffordanceTemplate::load_initial_parameters() -- adding object: " + obj_name))
+
             self.display_objects.append(obj_name)
 
             # first object should have no parent, make it "robot" by default
@@ -296,7 +300,7 @@ class AffordanceTemplate(threading.Thread) :
                 self.parent_map[obj_name] = "robot"
             else :
                 try :
-                    self.parent_map[obj_name] = obj['parent']
+                    self.parent_map[obj_name] = self.name + "/" + obj['parent']
                 except :
                     pass
 
@@ -325,11 +329,14 @@ class AffordanceTemplate(threading.Thread) :
                     wp_name = self.append_id(str(ee_group['id']) + "." + str(wp_id))                   
                     ee_name = self.robot_interface.end_effector_name_map[ee_group['id']]
 
-                    if not wp['display_object'] in self.display_objects :
-                        rospy.logerr(str("AffordanceTemplate::create_from_structure() -- end-effector display object " + wp['display_object'] + "not found!"))
+                    wp_parent = wp['display_object'] 
+                    wp_parent_new = self.name + "/" + wp['display_object'] 
+                    
+                    if not wp_parent_new in self.display_objects :
+                        rospy.logerr(str("AffordanceTemplate::load_initial_parameters() -- end-effector display object " + wp_parent_new + " not found!"))
 
-                    if not wp['display_object'] == None :
-                        parent = wp['display_object']
+                    if not wp_parent_new == None :
+                        parent = self.name + "/" + wp['display_object']
                     else :
                         parent = self.get_root_object()
 
@@ -436,6 +443,7 @@ class AffordanceTemplate(threading.Thread) :
 
         for obj in self.display_objects :
 
+            # obj = self.name + "/" + obj
             int_marker = InteractiveMarker()
             control = InteractiveMarkerControl()
 
@@ -639,12 +647,12 @@ class AffordanceTemplate(threading.Thread) :
                         self.waypoint_origin[traj][wp]['rpy'][i] = rpy[i]
 
 
-    def save_to_disk(self, filename=None, package=None) :
+    def save_to_disk(self, filename=None, package=None, image="", new_class_type="") :
 
-        name = self.structure['name'].split(":")[0]
+        class_type = self.structure['name'].split(":")[0]
 
         if filename == None :
-            filename = name + str(".json")
+            filename = class_type + str(".json")
 
         filename_bak = filename + str(".bak.") + str(self.random.randint(0,100000))
         if package == None:
@@ -653,6 +661,7 @@ class AffordanceTemplate(threading.Thread) :
         # get package and file path
         package_path = self.get_package_path(package)
         template_path    = os.path.join(package_path, 'templates')
+        image_path    = "package://" + package + "/images/"
         output_file = os.path.join(template_path, filename)
 
         rospy.loginfo(("Writing template JSON to file: " + output_file))
@@ -669,16 +678,24 @@ class AffordanceTemplate(threading.Thread) :
 
         new_structure = {}
 
-        new_structure['name'] = name
-        new_structure['image'] = self.structure['image']
+        if new_class_type :
+            new_class_type = new_class_type.split(":")[0]
+            new_structure['name'] = new_class_type
+        else :
+            new_structure['name'] = class_type
+
+        if image :
+            image = os.path.join(image_path, image)
+            new_structure['image'] = image
+            self.structure['image'] = image
+        else :
+            new_structure['image'] = self.structure['image']
 
         new_structure['display_objects'] = []
         
-        print "parsing objects..."
-
         obj_id = 0
         for obj in self.display_objects :
-            key = obj.split(":")[0]
+            key = obj.split("/")[1].split(":")[0]
 
             new_structure['display_objects'].append({})
             new_structure['display_objects'][obj_id]['name'] = key
@@ -698,6 +715,7 @@ class AffordanceTemplate(threading.Thread) :
             new_structure['end_effector_trajectory'][traj_id]['end_effector_group'] = []
 
             idx = 0
+
             for ee in self.structure['end_effector_trajectory'][traj_id]['end_effector_group'] :
                 # print " ee: ", ee['id']
                 ee_id = ee['id']
@@ -709,7 +727,7 @@ class AffordanceTemplate(threading.Thread) :
                 for wp in self.waypoints[traj['name']] :
                     if int(wp.split(".")[0]) == int(ee_id) :
                         # print "  wp: ", wp
-                        parent_key = self.parent_map[(traj['name'],wp)].split(":")[0]
+                        parent_key = self.parent_map[(traj['name'],wp)].split("/")[1].split(":")[0]
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'].append({})
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['ee_pose'] = self.waypoint_pose_map[traj['name']][wp]
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['display_object'] = parent_key
@@ -719,9 +737,14 @@ class AffordanceTemplate(threading.Thread) :
                 idx += 1
             traj_id += 1
     
-        with open(str(output_file), 'w') as outfile :
-            print "writing out new structure JSON"
-            json.dump(new_structure, outfile, sort_keys = False, indent = 2)
+        try :
+            with open(str(output_file), 'w') as outfile :
+                rospy.loginfo(str("AffordanceTemplate::save_to_disk() -- writing out new JSON file: " + filename))
+                json.dump(new_structure, outfile, sort_keys = False, indent = 2)
+        except :
+            rospy.logerr(str("AffordanceTemplate::save_to_disk() -- problem writing out JSON file: " + filename))
+            return False
+        return True
 
 
     def create_trajectory_structures(self, traj_name) :
@@ -741,7 +764,7 @@ class AffordanceTemplate(threading.Thread) :
 
     def create_waypoint(self, traj_name, ee_id, wp_id, ps, parent, controls=None, origin=None, pose_id=None) :
 
-        # wp_name = str(ee_id) + "." + str(wp_id) + ":" + str(self.id) + "-" + str(self.name)
+        # wp_name = str(ee_id) + "." + str(wp_id) + ":" + str(self.id) + "/" + str(self.name)
         wp_name = self.create_waypoint_id(ee_id, wp_id)
         ee_name = self.robot_interface.end_effector_name_map[ee_id]
 
@@ -853,8 +876,6 @@ class AffordanceTemplate(threading.Thread) :
                     self.menu_handles[(obj,m,traj_name)] = self.marker_menus[obj].insert(traj_name,parent=sub_menu_handle,callback=self.trajectory_callback)
                     if traj_name == self.current_trajectory :
                         self.marker_menus[obj].setCheckState( self.menu_handles[(obj,m,traj_name)], MenuHandler.CHECKED )
-                        print "menu key for checking: ", (obj,m,traj_name)
-                        print "setting default traj check box: ", traj_name
                     else :
                         self.marker_menus[obj].setCheckState( self.menu_handles[(obj,m,traj_name)], MenuHandler.UNCHECKED )
                         
@@ -882,27 +903,18 @@ class AffordanceTemplate(threading.Thread) :
                 if c : self.marker_menus[waypoint].setCheckState( self.menu_handles[(waypoint,m)], MenuHandler.UNCHECKED )
 
     def load_from_file(self, filename) :
-        print "AffordanceTemplate::load_from_file() -- building structure"
         atf = open(filename).read()
         self.structure = json.loads(atf)
-        print "AffordanceTemplate::load_from_file() -- Got initial structure..."
         self.structure = self.append_id_to_structure(self.structure)
-        print "AffordanceTemplate::load_from_file() -- loading initial parameters"
         self.load_initial_parameters()
-        print "AffordanceTemplate::load_from_file() -- creating RViz template from parameters"
         self.create_from_parameters()
-        print "AffordanceTemplate::load_from_file() -- done"
         stuff = filename.split("/")
         self.filename = stuff[len(stuff)-1]
         return self.structure
 
     def load_from_marker(self, m) :
-        print "AffordanceTemplate::load_from_marker() -- building structure"
-        print "AffordanceTemplate::load_from_marker() -- loading initial parameters"
         self.load_initial_parameters_from_marker(m)
-        print "AffordanceTemplate::load_from_marker() -- creating RViz template from parameters"
         self.create_from_parameters()
-        print "AffordanceTemplate::load_from_marker() -- done"
         # self.print_structure()
         return self.structure
 
@@ -951,26 +963,21 @@ class AffordanceTemplate(threading.Thread) :
             if feedback.marker_name in self.display_objects :
                 ee_list = self.waypoint_index[self.current_trajectory].keys()
                 if handle == self.menu_handles[(feedback.marker_name,"Reset")] :
-                    print "[object menu] Resetting template...."
                     rospy.loginfo(str("AffordanceTemplate::process_feedback() -- Reseting Affordance Template"))
                     self.create_from_structure()
 
                 if handle == self.menu_handles[(feedback.marker_name,"Save")] :
-                    print "[object menu] Saving..."
                     rospy.loginfo(str("AffordanceTemplate::process_feedback() -- Saving Affordance Template"))
                     self.save_to_disk(self.filename)
 
                 if handle == self.menu_handles[(feedback.marker_name,"Hide Controls")] :
-                    print "[object menu] Hide Controls..."
                     state = self.marker_menus[feedback.marker_name].getCheckState( handle )
                     if state == MenuHandler.CHECKED:
                         self.marker_menus[feedback.marker_name].setCheckState( handle, MenuHandler.UNCHECKED )
                         self.object_controls_display_on = True
-                        print "hinding object controls"
                     else :
                         self.marker_menus[feedback.marker_name].setCheckState( handle, MenuHandler.CHECKED )
                         self.object_controls_display_on = False
-                        print "showing object controls"
 
                     # this is (also) wrong
                     self.remove_all_markers()
@@ -1004,7 +1011,7 @@ class AffordanceTemplate(threading.Thread) :
                 next_path_idx = self.compute_next_path_id(ee_id, 1, self.waypoint_backwards_flag[self.current_trajectory][ee_id])
  
                 if handle == self.menu_handles[(feedback.marker_name,"Add Waypoint Before")] :
-                    print "Adding Waypoint before ", waypoint_id, "for end effector: ", ee_id
+                    rospy.loginfo(str("Adding Waypoint before " + str(waypoint_id) + "for end effector: " + str(ee_id)))
 
                     new_pose = geometry_msgs.msg.Pose()
                     first_name = self.create_waypoint_id(ee_id,waypoint_id)
@@ -1039,7 +1046,7 @@ class AffordanceTemplate(threading.Thread) :
 
 
                 if handle == self.menu_handles[(feedback.marker_name,"Add Waypoint After")] :
-                    print "Adding Waypoint after ", waypoint_id, "for end effector: ", ee_id
+                    rospy.loginfo(str("Adding Waypoint after " + str(waypoint_id) + "for end effector: " + str(ee_id)))
 
                     new_pose = geometry_msgs.msg.Pose()
                     first_name = self.create_waypoint_id(ee_id,waypoint_id)
@@ -1071,7 +1078,7 @@ class AffordanceTemplate(threading.Thread) :
                     self.create_from_parameters(True)
 
                 if handle == self.menu_handles[(feedback.marker_name,"Delete Waypoint")] :
-                    print "Deleting Waypoint ", waypoint_id, "for end effector: ", ee_id
+                    rospy.info(str("Deleting Waypoint " + str(waypoint_id) + "for end effector: " + str(ee_id)))
                     self.remove_waypoint(self.current_trajectory, ee_id, waypoint_id)
                     self.create_from_parameters(True)
 
@@ -1136,19 +1143,13 @@ class AffordanceTemplate(threading.Thread) :
             traj_name = str(traj['name'])
             key = (feedback.marker_name,"Choose Trajectory", traj_name)
             if self.menu_handles[key] == feedback.menu_entry_id :
-                print "Chose trajectory: ", traj_name
-
-                print "menu key for checking: ", key
                 # self.marker_menus[feedback.marker_name].setCheckState( self.menu_handles[(feedback.marker_name,m,traj_name)], MenuHandler.CHECKED )
-
                 self.marker_menus[feedback.marker_name].setCheckState( self.menu_handles[key], MenuHandler.CHECKED )
-
                 # clear old trajectory 
-                print "Clearing trajectory markers for: ", self.current_trajectory
                 for wp in self.waypoints[self.current_trajectory] :
                     ee_id = self.waypoint_end_effectors[self.current_trajectory][wp]
                     wp_id = self.waypoint_ids[self.current_trajectory][wp]
-                    print wp, ee_id, wp_id
+                    # print wp, ee_id, wp_id
 
                     # last_wp_name = self.create_waypoint_id(ee_id, self.waypoint_max[traj_name][ee_id])
                     self.remove_interactive_marker(wp)
@@ -1159,7 +1160,7 @@ class AffordanceTemplate(threading.Thread) :
 
                 self.current_trajectory = traj_name
                 # re-draw new one
-                print "Creating new trajectory markers for: ", self.current_trajectory
+                # print "Creating new trajectory markers for: ", self.current_trajectory
                 self.create_trajectory_from_parameters(self.current_trajectory)
         
         self.marker_menus[feedback.marker_name].apply( self.server, feedback.marker_name )
@@ -1198,12 +1199,12 @@ class AffordanceTemplate(threading.Thread) :
 
     def create_waypoint_callback(self, feedback) :
 
-        print "create_waypoint_callback: ", feedback.marker_name
+        # print "create_waypoint_callback: ", feedback.marker_name
 
         for ee_id in self.robot_interface.end_effector_name_map.iterkeys() :
             ee_name = self.robot_interface.end_effector_name_map[ee_id]
             if self.menu_handles[(feedback.marker_name,"Add Waypoint After",ee_name)] == feedback.menu_entry_id :
-                print "need to add waypoint to the end of ", ee_name
+                rospy.loginfo(str("AffordanceTemplate::create_waypoint_callback()  -- Add waypoint after: " + feedback.marker_name))
                 wp_id = 0
                 ps = geometry_msgs.msg.Pose()
                 pose_id = None
@@ -1226,17 +1227,14 @@ class AffordanceTemplate(threading.Thread) :
                     pose_id = self.waypoint_pose_map[self.current_trajectory][last_wp_name]
                     self.create_waypoint(self.current_trajectory, ee_id, wp_id, ps, feedback.marker_name, self.waypoint_controls[self.current_trajectory][last_wp_name], 
                         self.waypoint_origin[self.current_trajectory][last_wp_name], pose_id)
-
                 self.create_from_parameters(True)
 
             if self.menu_handles[(feedback.marker_name,"Add Waypoint Before",ee_name)] == feedback.menu_entry_id :
-
-                print "Add waypoint before: ", feedback.marker_name
+                rospy.loginfo(str("AffordanceTemplate::create_waypoint_callback()  -- Add waypoint before: " + feedback.marker_name))
                 wp_id = 0
                 wp_name = self.create_waypoint_id(ee_id, str(0))
                 ps = geometry_msgs.msg.Pose()
                 pose_id = None
-
                 if not ee_id in self.waypoint_max[self.current_trajectory].keys() :
                     ps = feedback.pose
                     ps.position.x = 0.05
@@ -1249,14 +1247,12 @@ class AffordanceTemplate(threading.Thread) :
                     ps.position.y -=0.025
                     ps.position.z -=0.025
                     pose_id = self.waypoint_pose_map[self.current_trajectory][wp_name]
-
                     r = range(0,self.waypoint_max[self.current_trajectory][ee_id]+1)
                     r.reverse()
                     for k in r:
                         old_name = self.create_waypoint_id(ee_id, str(k))
                         new_name = self.create_waypoint_id(ee_id, str(k+1))
                         self.move_waypoint(self.current_trajectory, ee_id, k, k+1)
-
                     self.create_waypoint(self.current_trajectory, ee_id, wp_id, ps, feedback.marker_name, self.waypoint_controls[self.current_trajectory][wp_name], 
                         self.waypoint_origin[self.current_trajectory][wp_name], pose_id)
 
@@ -1336,17 +1332,13 @@ class AffordanceTemplate(threading.Thread) :
 
     def plan_path_to_waypoint(self, end_effector, steps=1, backwards=False, direct=False) :
 
-        print "AT::plan_path_to_waypoint()"
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
         ee_offset = self.robot_interface.manipulator_pose_map[end_effector]
         tool_offset = self.robot_interface.tool_offset_map[end_effector]
         max_idx = self.waypoint_max[self.current_trajectory][ee_id]
         manipulator_name = self.robot_interface.get_manipulator(end_effector)
         ee_name = self.robot_interface.get_end_effector_name(ee_id)
-
-        print "manipulator_name: ", manipulator_name
-        print "steps: ", steps
-        
+       
         if steps == 999:
             if direct:
                 path = [self.waypoint_max[self.current_trajectory][ee_id]]
@@ -1362,11 +1354,11 @@ class AffordanceTemplate(threading.Thread) :
         else:
             path, next_path_idx = self.compute_path_ids(ee_id, steps, backwards)
 
-        print "next_path_idx: ", next_path_idx
-        print "path: ", path
+        # print "path: ", path
+        # print "next_path_idx: ", next_path_idx
 
         next_path_str = self.create_waypoint_id(ee_id, next_path_idx)
-        print "next_path_str: ", next_path_str
+        # print "next_path_str: ", next_path_str
         
         rospy.loginfo(str("AffordanceTemplate::plan_path_to_waypoint() -- computing path to index[" + str(next_path_str) + "]"))
 
@@ -1451,9 +1443,9 @@ class AffordanceTemplate(threading.Thread) :
 
 
     def terminate(self) :
-        print "(EX)TERMINATE!!!!!!!!!"
+        rospy.loginfo("(EX)TERMINATE!!!!!!!!!")
+        self._stop.set()
         self.robot_interface.tear_down()
-        print "done tearing down robot config"
         rospy.sleep(2)
         self.delete_callback(None)
         self.running = False
@@ -1469,11 +1461,10 @@ class AffordanceTemplate(threading.Thread) :
                        self.tf_broadcaster.sendTransform((self.frame_store_map[obj].pose.position.x,self.frame_store_map[obj].pose.position.y,self.frame_store_map[obj].pose.position.z),
                                                   (self.frame_store_map[obj].pose.orientation.x,self.frame_store_map[obj].pose.orientation.y,self.frame_store_map[obj].pose.orientation.z,self.frame_store_map[obj].pose.orientation.w),
                                                   rospy.Time.now(), self.frame_store_map[obj].frame_id, self.frame_store_map[obj].root_frame_id)
-
                 except :
                     rospy.logdebug("AffordanceTemplate::run() -- could not update thread")
             finally :
                 self.mutex.release()
 
             rospy.sleep(.1)
-        print "Killing frame update thread for AT: ", self.name
+        rospy.logdebug(str("AffordanceTemplate::run() -- Killing frame update thread for AT: " + self.name))
