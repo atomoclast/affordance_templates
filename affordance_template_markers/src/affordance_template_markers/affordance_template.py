@@ -85,7 +85,7 @@ class AffordanceTemplate(threading.Thread) :
         self.waypoint_plan_valid = {}
         self.waypoint_loop = {}
         self.waypoint_max = {}
-        self.waypoint_controls_display_on = False
+        self.waypoint_controls_display_on = {} 
         self.object_controls_display_on = True
         # helper frames
         self.robotTroot = kdl.Frame()
@@ -583,7 +583,8 @@ class AffordanceTemplate(threading.Thread) :
                 self.marker_menus[wp].setCheckState( self.menu_handles[(wp,"Execute On Move")], MenuHandler.CHECKED )
             if self.waypoint_loop[trajectory][id] :
                 self.marker_menus[wp].setCheckState( self.menu_handles[(wp,"Loop Path")], MenuHandler.CHECKED )
-            if self.waypoint_controls_display_on :
+            
+            if self.waypoint_controls_display_on[trajectory][wp] :
                 self.marker_menus[wp].setCheckState( self.menu_handles[(wp,"Hide Controls")], MenuHandler.UNCHECKED )
             else :
                 self.marker_menus[wp].setCheckState( self.menu_handles[(wp,"Hide Controls")], MenuHandler.CHECKED )
@@ -604,15 +605,11 @@ class AffordanceTemplate(threading.Thread) :
                 ee_m.pose = getPoseFromFrame(self.wpTee[wp]*self.eeTtf[wp]*getFrameFromPose(m.pose))
                 menu_control.markers.append( ee_m )
             
-            # self.add_interactive_marker(int_marker)
-            # self.marker_menus[obj].apply( self.server, obj )
-            # self.server.applyChanges()
-
             scale = 1.0
             if wp in self.waypoint_controls[trajectory] :
                 scale = self.waypoint_controls[trajectory][wp]['scale']
             int_marker.controls.append(menu_control)
-            if(self.waypoint_controls_display_on) :
+            if(self.waypoint_controls_display_on[trajectory][wp]) :
                 int_marker.controls.extend(CreateCustomDOFControls("",
                     self.waypoint_controls[trajectory][wp]['xyz'][0], self.waypoint_controls[trajectory][wp]['xyz'][1], self.waypoint_controls[trajectory][wp]['xyz'][2],
                     self.waypoint_controls[trajectory][wp]['rpy'][0], self.waypoint_controls[trajectory][wp]['rpy'][1], self.waypoint_controls[trajectory][wp]['rpy'][2]))
@@ -623,6 +620,7 @@ class AffordanceTemplate(threading.Thread) :
 
             wp_ids += 1
 
+            rospy.logdebug("AffordanceTemplate::create_trajectory_from_parameters() -- done")
 
     def update_template_defaults(self, objects=True, waypoints=True) :
 
@@ -765,13 +763,15 @@ class AffordanceTemplate(threading.Thread) :
         if not traj_name in self.waypoint_auto_execute : self.waypoint_auto_execute[traj_name] = {}
         if not traj_name in self.waypoint_plan_valid : self.waypoint_plan_valid[traj_name] = {}
         if not traj_name in self.waypoint_loop : self.waypoint_loop[traj_name] = {}
+        if not traj_name in self.waypoint_controls_display_on : self.waypoint_controls_display_on[traj_name] = {}
+
 
     def create_waypoint(self, traj_name, ee_id, wp_id, ps, parent, controls=None, origin=None, pose_id=None) :
 
-        # wp_name = str(ee_id) + "." + str(wp_id) + ":" + str(self.id) + "/" + str(self.name)
         wp_name = self.create_waypoint_id(ee_id, wp_id)
         ee_name = self.robot_interface.end_effector_name_map[ee_id]
 
+        rospy.loginfo(str("Creating waypoint: " + wp_name))
         self.parent_map[(traj_name,wp_name)] = parent
 
         self.objTwp[traj_name][wp_name] = getFrameFromPose(ps)
@@ -792,6 +792,8 @@ class AffordanceTemplate(threading.Thread) :
         self.waypoint_ids[traj_name][wp_name] = wp_id
 
         self.waypoint_pose_map[traj_name][wp_name] = pose_id
+
+        self.waypoint_controls_display_on[traj_name][wp_name] = False
 
         if ee_id not in self.waypoint_max[traj_name]: self.waypoint_max[traj_name][ee_id] = 0
         if self.waypoint_end_effectors[traj_name][wp_name] not in self.waypoint_index[traj_name] :
@@ -824,6 +826,7 @@ class AffordanceTemplate(threading.Thread) :
         del self.waypoint_end_effectors[traj_name][last_wp_name]
         del self.waypoint_ids[traj_name][last_wp_name]
         del self.waypoint_pose_map[traj_name][last_wp_name]
+        del self.waypoint_controls_display_on[traj_name][last_wp_name]
         self.waypoint_max[traj_name][ee_id] -= 1
         while last_wp_name in self.waypoints[traj_name]: self.waypoints[traj_name].remove(last_wp_name)
         self.waypoints[traj_name].sort()
@@ -971,9 +974,7 @@ class AffordanceTemplate(threading.Thread) :
         if feedback.event_type == InteractiveMarkerFeedback.MOUSE_UP :
 
             if feedback.marker_name in self.waypoints[self.current_trajectory] :
-                print "updating pose for marker[", self.current_trajectory, "]: ", feedback.marker_name
                 self.objTwp[self.current_trajectory][feedback.marker_name] = getFrameFromPose(feedback.pose)
-                print self.objTwp[self.current_trajectory][feedback.marker_name]
                 
         elif feedback.event_type == InteractiveMarkerFeedback.MENU_SELECT:
 
@@ -988,11 +989,6 @@ class AffordanceTemplate(threading.Thread) :
 
                 if handle == self.menu_handles[(feedback.marker_name,"Save")] :
                     rospy.loginfo(str("AffordanceTemplate::process_feedback() -- Saving Affordance Template"))
-                    print "\nAbout to save:"
-                    for k in self.objTwp[self.current_trajectory].keys() :
-                        print k
-                        print self.objTwp[self.current_trajectory][k]
-                    print "====\n"
                     self.save_to_disk(self.filename)
 
                 if handle == self.menu_handles[(feedback.marker_name,"Hide Controls")] :
@@ -1134,16 +1130,16 @@ class AffordanceTemplate(threading.Thread) :
                         state = self.marker_menus[feedback.marker_name].getCheckState( handle )
                         if state == MenuHandler.CHECKED:
                             self.marker_menus[feedback.marker_name].setCheckState( handle, MenuHandler.UNCHECKED )
-                            self.waypoint_controls_display_on = True
+                            self.waypoint_controls_display_on[self.current_trajectory][feedback.marker_name] = True
                         else :
                             self.marker_menus[feedback.marker_name].setCheckState( handle, MenuHandler.CHECKED )
-                            self.waypoint_controls_display_on = False
+                            self.waypoint_controls_display_on[self.current_trajectory][feedback.marker_name] = False
 
                         # this is wrong
                         self.remove_all_markers()
                         self.create_from_parameters(True, self.current_trajectory)
 
-                        rospy.loginfo(str("AffordanceTemplate::process_feedback() -- setting Hide Controls flag to " + str(self.waypoint_controls_display_on)))
+                        rospy.loginfo(str("AffordanceTemplate::process_feedback() -- setting Hide Controls flag to " + str(self.waypoint_controls_display_on[self.current_trajectory][feedback.marker_name])))
 
             # if handle == self.menu_handles[(feedback.marker_name,"Loop Path")] :
             #     state = self.marker_menus[feedback.marker_name].getCheckState( handle )
