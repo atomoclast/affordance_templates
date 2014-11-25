@@ -151,6 +151,10 @@ namespace rviz_affordance_template_panel
          */
         void killRecognitionObject(QListWidgetItem* item);
 
+        /** \brief user selected an item in the output window.
+         */
+        void selectAffordanceTemplate(QListWidgetItem* item);
+
         /** \brief Go To Start Command.
          */
         void go_to_start() { 

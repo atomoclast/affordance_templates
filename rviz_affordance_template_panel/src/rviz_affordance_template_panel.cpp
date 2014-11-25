@@ -75,6 +75,7 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     ui_->recognitionObjectGraphicsView->setScene(recognitionObjectGraphicsScene_);
 
     QObject::connect(ui_->server_output_status, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(killAffordanceTemplate(QListWidgetItem*)));
+    QObject::connect(ui_->server_output_status, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(selectAffordanceTemplate(QListWidgetItem*)));
     QObject::connect(ui_->delete_template_button, SIGNAL(clicked()), this, SLOT(deleteButton()));
     QObject::connect(ui_->save_as_button, SIGNAL(clicked()), this, SLOT(saveButton()));
     QObject::connect(ui_->add_traj_button, SIGNAL(clicked()), this, SLOT(addTrajectoryButton()));
@@ -603,6 +604,16 @@ void RVizAffordanceTemplatePanel::saveAffordanceTemplate() {
 void RVizAffordanceTemplatePanel::addTrajectory() {
     sendAddTrajectory();
 }
+
+void RVizAffordanceTemplatePanel::selectAffordanceTemplate(QListWidgetItem* item) {
+    vector<string> template_info = util::split(item->text().toUtf8().constData(), ':');
+    int id = ui_->save_template_combo_box->findText(item->text());
+    if(id != -1) {
+        changeSaveInfo(id);
+    }
+    ui_->save_template_combo_box->setCurrentIndex(id);  
+}
+
 
 void RVizAffordanceTemplatePanel::sendSaveAffordanceTemplate() {
     
