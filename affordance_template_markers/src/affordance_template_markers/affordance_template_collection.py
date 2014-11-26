@@ -5,7 +5,7 @@ class AffordanceTemplateStructure() :
 		self.name = ""
 		self.image = ""
 		self.trajectory_map = {}
-		
+		self.display_objects = []
 
 class AffordanceTemplateCollection() :
 
@@ -15,7 +15,7 @@ class AffordanceTemplateCollection() :
 		self.file_map = {}
 		self.traj_map = {}
 		self.waypoint_map = {}
-
+		self.object_map = {}
 		
 class RecognitionObjectStructure() :
 

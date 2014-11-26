@@ -225,6 +225,7 @@ class AffordanceTemplateServer(Thread):
             at_data.image_map = {}
             at_data.file_map = {}
             at_data.waypoint_map = {}
+            at_data.object_map = {}
 
         os.chdir(path)
 
@@ -258,6 +259,12 @@ class AffordanceTemplateServer(Thread):
                         ee_id = ee_group['id']
                         wp_id = len(ee_group['end_effector_waypoint'])
                         at_data.waypoint_map[key][ee_id] = wp_id
+
+                at_data.object_map[at_name] = []
+                for obj in structure['display_objects'] :
+                    obj_name = str(obj['name'])
+                    at_data.object_map[at_name].append(obj_name)
+
             except :
                 rospy.logwarn(str("AffordanceTemplateServer::get_available_templates() -- error parsing " + atfn))
 

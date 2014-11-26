@@ -55,6 +55,8 @@ class ServiceInterface(object):
                     wp.num_waypoints = self.server.at_data.waypoint_map[(class_type,t)][p]
                     wp_traj.waypoint_info.append(wp)
                 at_config.trajectory_info.append(wp_traj)
+            for obj in self.server.at_data.object_map[class_type] :
+                at_config.display_objects.append(obj)
             response.templates.append(at_config)
         else :
             for class_type in self.server.at_data.class_map.keys():
@@ -71,6 +73,8 @@ class ServiceInterface(object):
                         wp.num_waypoints = self.server.at_data.waypoint_map[(class_type,t)][p]
                         wp_traj.waypoint_info.append(wp)
                     at_config.trajectory_info.append(wp_traj)
+                for obj in self.server.at_data.object_map[class_type] :
+                    at_config.display_objects.append(obj)
                 response.templates.append(at_config)
         return response
 

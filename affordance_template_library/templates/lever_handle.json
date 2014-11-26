@@ -15,15 +15,15 @@
         ]
       }, 
       "shape": {
-        "data": "package://affordance_template_library/models/lever_handle.dae", 
         "type": "mesh", 
+        "data": "package://affordance_template_library/models/lever_handle.dae", 
         "size": [
           1, 
           1, 
           1
         ]
       }, 
-      "name": "drill", 
+      "name": "handle", 
       "controls": {
         "rpy": [
           true, 
@@ -73,7 +73,7 @@
                 ], 
                 "scale": 0.25
               }, 
-              "display_object": "drill"
+              "display_object": "handle"
             }, 
             {
               "origin": {
@@ -102,7 +102,7 @@
                 ], 
                 "scale": 0.25
               }, 
-              "display_object": "drill"
+              "display_object": "handle"
             }, 
             {
               "origin": {
@@ -131,14 +131,14 @@
                 ], 
                 "scale": 0.25
               }, 
-              "display_object": "drill"
+              "display_object": "handle"
             }, 
             {
               "origin": {
                 "rpy": [
                   1.5989832430202764, 
-                  0.10537938491263509, 
-                  -0.09341623019135485
+                  0.10537938491263511, 
+                  -0.09341623019135487
                 ], 
                 "xyz": [
                   -0.12526670098304749, 
@@ -160,14 +160,14 @@
                 ], 
                 "scale": 0.25
               }, 
-              "display_object": "drill"
+              "display_object": "handle"
             }, 
             {
               "origin": {
                 "rpy": [
                   2.1227539820876062, 
-                  0.10537941042540935, 
-                  -0.09341623491688443
+                  0.10537941042540938, 
+                  -0.09341623491688447
                 ], 
                 "xyz": [
                   -0.14143972098827362, 
@@ -189,19 +189,19 @@
                 ], 
                 "scale": 0.25
               }, 
-              "display_object": "drill"
+              "display_object": "handle"
             }, 
             {
               "origin": {
                 "rpy": [
-                  1.822858078097532, 
-                  0.10537940707620234, 
-                  -0.09341622665537423
+                  2.0391149650136096, 
+                  0.10537940254119152, 
+                  -0.09341623919397089
                 ], 
                 "xyz": [
-                  -0.02119458094239235, 
-                  -0.1466958224773407, 
-                  -0.021348290145397186
+                  -0.02165309712290764, 
+                  -0.14260424673557281, 
+                  -0.02927275002002716
                 ]
               }, 
               "ee_pose": 2, 
@@ -218,14 +218,14 @@
                 ], 
                 "scale": 0.25
               }, 
-              "display_object": "drill"
+              "display_object": "handle"
             }, 
             {
               "origin": {
                 "rpy": [
-                  1.7727710085352812, 
-                  0.9284958430775074, 
-                  -0.056779032373031425
+                  1.7727710085352815, 
+                  0.9284958430775075, 
+                  -0.05677903237303125
                 ], 
                 "xyz": [
                   -0.0017174780368804932, 
@@ -247,7 +247,7 @@
                 ], 
                 "scale": 0.25
               }, 
-              "display_object": "drill"
+              "display_object": "handle"
             }
           ]
         }

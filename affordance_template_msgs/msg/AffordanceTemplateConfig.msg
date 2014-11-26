@@ -14,3 +14,6 @@ string image_path
 
 # The trajectory details
 WaypointTrajectory[] trajectory_info
+
+# The display objects
+string[] display_objects

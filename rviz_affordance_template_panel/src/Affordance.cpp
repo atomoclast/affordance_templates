@@ -5,10 +5,11 @@
 #define TRAJECTORY_DATA 1
 #define IMAGE 2
 #define FILENAME 3
+#define DISPLAY_OBJECTS 4
 
 using namespace rviz_affordance_template_panel;
 
-Affordance::Affordance(const string& class_type, const string& image_path, QMap<QString, QVariant> &trajectory_map, const string& filename) {
+Affordance::Affordance(const string& class_type, const string& image_path, QMap<QString, QVariant> &trajectory_map, QStringList &display_objects, const string& filename) {
     QPixmap pixmap(QSize(PIXMAP_SIZE,PIXMAP_SIZE));
 
     // set pixmap to image if it exists
@@ -33,7 +34,9 @@ Affordance::Affordance(const string& class_type, const string& image_path, QMap<
     this->setData(TRAJECTORY_DATA, QVariant(trajectory_map));
     this->setData(IMAGE, QVariant(image_path.c_str()));
     this->setData(FILENAME, QVariant(filename.c_str()));
+    this->setData(DISPLAY_OBJECTS, QVariant(display_objects));
     
     this->key_ = class_type;
     this->map_ = trajectory_map;
+    this->objs_ = display_objects;
 }

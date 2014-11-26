@@ -9,6 +9,8 @@
 #define TRAJECTORY_DATA 1
 #define IMAGE 2
 #define FILENAME 3
+#define DISPLAY_OBJECTS 4
+
 
 #define OBJECT_INDEX 0
 #define PACKAGE 1
@@ -221,6 +223,7 @@ void RVizAffordanceTemplatePanel::getAvailableTemplates() {
             string image_path = util::resolvePackagePath(t.image_path);
             string filename = t.filename;
             QMap<QString, QVariant> trajectory_map;
+            QStringList display_objects;
             ROS_INFO("Found Affordance Template: %s", t.type.c_str());
             for (auto& traj: t.trajectory_info) {
                 QMap<QString, QVariant> waypoint_map;
@@ -229,7 +232,10 @@ void RVizAffordanceTemplatePanel::getAvailableTemplates() {
                 }
                 trajectory_map[QString(traj.name.c_str())] = waypoint_map;
             }       
-            AffordanceSharedPtr pitem(new Affordance(t.type.c_str(), image_path, trajectory_map, filename));
+            for (auto& objs: t.display_objects) {
+                display_objects.append(QString(objs.c_str()));
+            }       
+            AffordanceSharedPtr pitem(new Affordance(t.type.c_str(), image_path, trajectory_map, display_objects, filename));
             pitem->setPos(XOFFSET, yoffset);
             yoffset += PIXMAP_SIZE + YOFFSET;
             if(!checkAffordance(pitem)) {
@@ -612,8 +618,23 @@ void RVizAffordanceTemplatePanel::selectAffordanceTemplate(QListWidgetItem* item
         changeSaveInfo(id);
     }
     ui_->save_template_combo_box->setCurrentIndex(id);  
+
+    setupDisplayObjectSliders(template_info[0], atoi(template_info[1].c_str()));
 }
 
+void RVizAffordanceTemplatePanel::setupDisplayObjectSliders(std::string class_type, int id) {
+    QList<QGraphicsItem*> list = affordanceTemplateGraphicsScene_->selectedItems();
+    for (int i=0; i < list.size(); ++i) {
+        string class_name = list.at(i)->data(CLASS_INDEX).toString().toStdString();
+    
+        if(class_name==class_type) {
+            for (auto& c: list.at(i)->data(DISPLAY_OBJECTS).toStringList()) {
+                cout << " found object of type: " << c.toStdString().c_str() << " need to figure out how to make a slider!!" << endl;
+                // need to add slider here
+            }
+        }
+    }
+}
 
 void RVizAffordanceTemplatePanel::sendSaveAffordanceTemplate() {
     

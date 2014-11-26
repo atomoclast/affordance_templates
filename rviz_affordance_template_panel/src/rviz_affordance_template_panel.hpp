@@ -11,6 +11,7 @@
 /* qt */
 #include <QGraphicsScene>
 #include <QTableWidgetItem>
+#include <QSlider>
 
 /* Project Include */
 #include "Affordance.hpp"
@@ -216,6 +217,7 @@ namespace rviz_affordance_template_panel
         void update_robot_config(const QString& text);
         void update_end_effector_group_map(const QString&);
 
+        void setupDisplayObjectSliders(std::string class_type, int id);
 
     private:
         Ui::RVizAffordanceTemplatePanel* ui_;
@@ -252,6 +254,7 @@ namespace rviz_affordance_template_panel
         // GUI Widgets
         QGraphicsScene* affordanceTemplateGraphicsScene_;
         QGraphicsScene* recognitionObjectGraphicsScene_;
+        std::vector<QSlider *> objectScaleSliders_;
 
         // map to track instantiated object templates
         std::map<std::string, AffordanceSharedPtr> affordanceMap_;
