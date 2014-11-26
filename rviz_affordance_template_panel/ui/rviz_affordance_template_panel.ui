@@ -247,7 +247,7 @@
                </font>
               </property>
               <property name="text">
-               <string>Save or Modify</string>
+               <string>Save &amp; Modify</string>
               </property>
              </widget>
             </item>
@@ -1351,7 +1351,7 @@
    <item row="1" column="0">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -1587,6 +1587,9 @@
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
+         <property name="tickPosition">
+          <enum>QSlider::TicksBelow</enum>
+         </property>
         </widget>
        </item>
        <item row="1" column="2" colspan="2">
@@ -1658,6 +1661,9 @@
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="tickPosition">
+          <enum>QSlider::TicksBelow</enum>
          </property>
         </widget>
        </item>
