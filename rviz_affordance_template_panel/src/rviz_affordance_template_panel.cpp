@@ -132,6 +132,7 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->end_effector_adjustment_slider, SIGNAL(sliderReleased()), this, SLOT(scaleSliderReleased()));
     QObject::connect(ui_->end_effector_adjustment_slider, SIGNAL(valueChanged(int)), this, SLOT(updateEndEffectorScaleAdjustment(int)));
     QObject::connect(ui_->reset_scale_button, SIGNAL(clicked()), this, SLOT(resetScaleButton()));
+    QObject::connect(ui_->object_scale_combo_box, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(selectScaleObject(const QString&)));
 
 
 }
@@ -478,7 +479,7 @@ void RVizAffordanceTemplatePanel::changeSaveInfo(int id) {
         if(image_tokens.size()>0) 
         {
             string stripped_image = image_tokens[image_tokens.size()-1];
-            ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", stripped_image.c_str());
+            ROS_DEBUG("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", stripped_image.c_str());
             ui_->new_image->setText(QString(stripped_image.c_str()));
         } else {
             ui_->new_image->setText(QString(image_name.c_str()));            
@@ -487,7 +488,7 @@ void RVizAffordanceTemplatePanel::changeSaveInfo(int id) {
         if(fname_tokens.size()>0) 
         {
             string stripped_fname = fname_tokens[fname_tokens.size()-1];
-            ROS_INFO("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", stripped_fname.c_str());
+            ROS_DEBUG("RVizAffordanceTemplatePanel::changeSaveInfo() -- %s", stripped_fname.c_str());
             ui_->new_filename->setText(QString(stripped_fname.c_str()));
         } else {
             ui_->new_filename->setText(QString(filename.c_str()));
@@ -577,6 +578,21 @@ void RVizAffordanceTemplatePanel::sendAffordanceTemplateKill(const string& class
             }
         }
 
+        TemplateInstanceID template_instance = make_pair(class_name, id);
+        
+        QList<QGraphicsItem*> list = affordanceTemplateGraphicsScene_->items();
+        for (int i=0; i < list.size(); ++i) {
+            string n = list.at(i)->data(CLASS_INDEX).toString().toStdString();                
+            if(class_name==n) {
+                for (auto& c: list.at(i)->data(DISPLAY_OBJECTS).toStringList()) {
+                    std::pair<TemplateInstanceID, std::string> object_key = make_pair(template_instance, c.toStdString());
+                    //cout << "deleting display object scale for: " << class_name.c_str() << ":" << id << ", object: " << c.toStdString().c_str() << endl; 
+                    display_object_scale_map.erase(object_key);
+                    end_effector_adjustment_map.erase(object_key);
+                }
+            }
+        }
+
     }
     else
     {
@@ -636,25 +652,35 @@ void RVizAffordanceTemplatePanel::selectAffordanceTemplate(QListWidgetItem* item
     int template_id = atoi(template_info[1].c_str());
     selected_template = make_pair(class_type, template_id);
 
-    setupDisplayObjectSliders(class_type, template_id);
+    setupDisplayObjectSliders(selected_template);
 }
 
-void RVizAffordanceTemplatePanel::setupDisplayObjectSliders(std::string class_type, int id) {
-    QList<QGraphicsItem*> list = affordanceTemplateGraphicsScene_->items();
+void RVizAffordanceTemplatePanel::selectScaleObject(const QString& object_name) {
     int v;
+    std::pair<TemplateInstanceID, std::string> object_info = make_pair(selected_template, object_name.toStdString());
+
+    if ( display_object_scale_map.find(object_info) == display_object_scale_map.end() ) {
+        v = ui_->object_scale_slider->minimum() + (ui_->object_scale_slider->maximum() - ui_->object_scale_slider->minimum()) / 2;
+        display_object_scale_map[object_info] = v;
+    }
+    ui_->object_scale_slider->setSliderPosition(display_object_scale_map[object_info]);
+    
+    if ( end_effector_adjustment_map.find(object_info) == end_effector_adjustment_map.end() ) {
+        v = ui_->end_effector_adjustment_slider->minimum() + (ui_->end_effector_adjustment_slider->maximum() - ui_->end_effector_adjustment_slider->minimum()) / 2;
+        end_effector_adjustment_map[object_info] = v;   
+    }
+    ui_->end_effector_adjustment_slider->setSliderPosition(end_effector_adjustment_map[object_info]);
+}
+
+void RVizAffordanceTemplatePanel::setupDisplayObjectSliders(TemplateInstanceID template_instance) {
+    QList<QGraphicsItem*> list = affordanceTemplateGraphicsScene_->items();
     ui_->object_scale_combo_box->clear();
     for (int i=0; i < list.size(); ++i) {
         string class_name = list.at(i)->data(CLASS_INDEX).toString().toStdString();
-        if(class_name==class_type) {
+        if(class_name==template_instance.first) {
             for (auto& c: list.at(i)->data(DISPLAY_OBJECTS).toStringList()) {
-                
-                ui_->object_scale_combo_box->addItem(QString(c.toStdString().c_str()));
-
-                v = ui_->object_scale_slider->minimum() + (ui_->object_scale_slider->maximum() - ui_->object_scale_slider->minimum()) / 2;
-                display_object_scale_map[c.toStdString()] = v;  
-
-                v = ui_->end_effector_adjustment_slider->minimum() + (ui_->end_effector_adjustment_slider->maximum() - ui_->end_effector_adjustment_slider->minimum()) / 2;
-                end_effector_adjustment_map[c.toStdString()] = v;   
+                ui_->object_scale_combo_box->addItem(QString(c.toStdString().c_str()));             
+                selectScaleObject(c);
             }
         }
     }
@@ -662,7 +688,8 @@ void RVizAffordanceTemplatePanel::setupDisplayObjectSliders(std::string class_ty
 
 void RVizAffordanceTemplatePanel::updateObjectScale(int value) {
     string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
-    display_object_scale_map[current_scale_object] = value;
+    std::pair<TemplateInstanceID, std::string> object_info = make_pair(selected_template, current_scale_object);
+    display_object_scale_map[object_info] = value;
     if(ui_->stream_scale_check_box->isChecked()) {
         sendScaleInfo();
     }    
@@ -670,7 +697,8 @@ void RVizAffordanceTemplatePanel::updateObjectScale(int value) {
 
 void RVizAffordanceTemplatePanel::updateEndEffectorScaleAdjustment(int value) {
     string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
-    end_effector_adjustment_map[current_scale_object] = value;
+    std::pair<TemplateInstanceID, std::string> object_info = make_pair(selected_template, current_scale_object);
+    end_effector_adjustment_map[object_info] = value;
     if(ui_->stream_scale_check_box->isChecked()) {
         sendScaleInfo();
     }    
@@ -678,8 +706,9 @@ void RVizAffordanceTemplatePanel::updateEndEffectorScaleAdjustment(int value) {
 
 void RVizAffordanceTemplatePanel::scaleSliderReleased() {
     string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
-    display_object_scale_map[current_scale_object] = ui_->object_scale_slider->value();  
-    end_effector_adjustment_map[current_scale_object] = ui_->end_effector_adjustment_slider->value();
+    std::pair<TemplateInstanceID, std::string> object_info = make_pair(selected_template, current_scale_object);
+    display_object_scale_map[object_info] = ui_->object_scale_slider->value();  
+    end_effector_adjustment_map[object_info] = ui_->end_effector_adjustment_slider->value();
     sendScaleInfo();
 }
 
@@ -694,9 +723,10 @@ void RVizAffordanceTemplatePanel::sendScaleInfo() {
     }    
 
     string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
+    std::pair<TemplateInstanceID, std::string> object_info = make_pair(selected_template, current_scale_object);
     
-    int obj_scale = display_object_scale_map[current_scale_object];
-    int ee_scale = end_effector_adjustment_map[current_scale_object];
+    int obj_scale = display_object_scale_map[object_info];
+    int ee_scale = end_effector_adjustment_map[object_info];
 
     double min_value = atof(ui_->object_scale_min->text().toStdString().c_str());
     double max_value = atof(ui_->object_scale_max->text().toStdString().c_str());
@@ -721,13 +751,14 @@ void RVizAffordanceTemplatePanel::resetScaleButton() {
     int v;
 
     string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
-
+    std::pair<TemplateInstanceID, std::string> object_info = make_pair(selected_template, current_scale_object);
+    
     v = ui_->object_scale_slider->minimum() + (ui_->object_scale_slider->maximum() - ui_->object_scale_slider->minimum()) / 2;
-    display_object_scale_map[current_scale_object] = v;  
+    display_object_scale_map[object_info] = v;  
     ui_->object_scale_slider->setSliderPosition(v);  
     
     v = ui_->end_effector_adjustment_slider->minimum() + (ui_->end_effector_adjustment_slider->maximum() - ui_->end_effector_adjustment_slider->minimum()) / 2;
-    end_effector_adjustment_map[current_scale_object] = v;   
+    end_effector_adjustment_map[object_info] = v;   
     ui_->end_effector_adjustment_slider->setSliderPosition(v);  
     
     sendScaleInfo();
@@ -867,7 +898,7 @@ void RVizAffordanceTemplatePanel::getRunningItems() {
 
 void RVizAffordanceTemplatePanel::safeLoadConfig() {
     if(ui_->robot_lock->isChecked()) {
-        cout << "Can't load while RobotConfig is locked" << endl;
+        ROS_WARN("Can't load while RobotConfig is locked");
         return;
     }
     loadConfig();
@@ -967,7 +998,6 @@ void RVizAffordanceTemplatePanel::loadConfig() {
 
 void RVizAffordanceTemplatePanel::addAffordanceDisplayItem() {
     // Add an object template to the InteractiveMarkerServer for each selected item.
-    cout << "RVizAffordanceTemplatePanel::addAffordanceDisplayItem()" << endl;
     QList<QGraphicsItem*> list = affordanceTemplateGraphicsScene_->selectedItems();
     for (int i=0; i < list.size(); ++i) {
         // Get the object template class name from the first element in the QGraphicsItem's custom data
@@ -1008,7 +1038,6 @@ void RVizAffordanceTemplatePanel::addAffordanceDisplayItem() {
 
 void RVizAffordanceTemplatePanel::addObjectDisplayItem() {
     // Add an object template to the InteractiveMarkerServer for each selected item.
-    cout << "RVizAffordanceTemplatePanel::addObjectDisplayItem()" << endl;
     QList<QGraphicsItem*> list = recognitionObjectGraphicsScene_->selectedItems();
     for (int i=0; i < list.size(); ++i) {
         // Get the object template class name from the first element in the QGraphicsItem's custom data
@@ -1108,7 +1137,7 @@ std::string RVizAffordanceTemplatePanel::getRobotFromDescription() {
     if (!model.initParam("robot_description")) {
         ROS_ERROR("Failed to parse robot_description rosparam");
     } else {
-        cout << "RVizAffordanceTemplatePanel::getRobotFromDescription() -- found robot: " << model.name_ << endl;
+        ROS_INFO("RVizAffordanceTemplatePanel::getRobotFromDescription() -- found robot: %s", model.name_.c_str());
         robot = model.name_;
     }
     return robot;

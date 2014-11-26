@@ -65,6 +65,8 @@ namespace rviz_affordance_template_panel
         typedef boost::shared_ptr<EndEffectorPoseConfig> EndEffectorPoseIDConfigSharedPtr;
         typedef boost::shared_ptr<Controls> ControlsSharedPtr;
 
+        typedef std::pair<std::string, int> TemplateInstanceID;
+
         // Constructors
         RVizAffordanceTemplatePanel(QWidget* parent = 0);
         ~RVizAffordanceTemplatePanel();
@@ -228,8 +230,9 @@ namespace rviz_affordance_template_panel
         void updateEndEffectorGroupMap(const QString&);
 
         void sendScaleInfo();
+        void setupDisplayObjectSliders(TemplateInstanceID template_instance);
+        void selectScaleObject(const QString& object_name);
 
-        void setupDisplayObjectSliders(std::string class_type, int id);
 
     private:
         Ui::RVizAffordanceTemplatePanel* ui_;
@@ -301,10 +304,11 @@ namespace rviz_affordance_template_panel
 
     protected:
         
-        std::map<std::string, int> display_object_scale_map;
-        std::map<std::string, int> end_effector_adjustment_map;
-          
-        std::pair<std::string, int> selected_template;
+        std::map<std::pair<TemplateInstanceID, std::string>, int> display_object_scale_map;
+        std::map<std::pair<TemplateInstanceID, std::string>, int> end_effector_adjustment_map;
+
+        TemplateInstanceID selected_template;
+
     };
 }
 #endif // RVIZ_AFFORDANCE_TEMPLATE_PANEL_HPP
