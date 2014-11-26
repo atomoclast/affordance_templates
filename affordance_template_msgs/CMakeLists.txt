@@ -55,6 +55,7 @@ add_message_files(
   WaypointTrajectory.msg
   AffordanceTemplateConfig.msg
   RecognitionObjectConfig.msg
+  ScaleDisplayObjectInfo.msg
 )
 
 ## Generate services in the 'srv' folder

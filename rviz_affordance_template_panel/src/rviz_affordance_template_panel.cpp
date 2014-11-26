@@ -28,6 +28,7 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     // Setup the panel.
     ui_->setupUi(this);
 
+    // setup service clients
     add_template_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplate>("/affordance_template_server/add_template");
     add_object_client_ = nh_.serviceClient<affordance_template_msgs::AddRecognitionObject>("/affordance_template_server/add_recognition_object");
     add_trajectory_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplateTrajectory>("/affordance_template_server/add_trajectory");
@@ -40,7 +41,11 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     get_templates_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateConfigInfo>("/affordance_template_server/get_templates");
     load_robot_client_ = nh_.serviceClient<affordance_template_msgs::LoadRobotConfig>("/affordance_template_server/load_robot");
     save_template_client_ = nh_.serviceClient<affordance_template_msgs::SaveAffordanceTemplate>("/affordance_template_server/save_template");
+    scale_object_client_ = nh_.serviceClient<affordance_template_msgs::ScaleDisplayObject>("/affordance_template_server/scale_object");
 
+    // setup publishers
+    scale_object_streamer_ = nh_.advertise<affordance_template_msgs::ScaleDisplayObjectInfo>("/affordance_template_server/scale_object_streamer", 10);
+    
     controls_->setService(command_client_);
 
     setupWidgets();
@@ -61,6 +66,7 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
 
     getRunningItems();
 
+    selected_template = make_pair("",-1);
 }
 
 RVizAffordanceTemplatePanel::~RVizAffordanceTemplatePanel()
@@ -76,8 +82,11 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     recognitionObjectGraphicsScene_ = new QGraphicsScene(this);
     ui_->recognitionObjectGraphicsView->setScene(recognitionObjectGraphicsScene_);
 
-    QObject::connect(ui_->server_output_status, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(killAffordanceTemplate(QListWidgetItem*)));
+    QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
+    QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));
+
     QObject::connect(ui_->server_output_status, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(selectAffordanceTemplate(QListWidgetItem*)));
+//    QObject::connect(ui_->server_output_status, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(killAffordanceTemplate(QListWidgetItem*)));
     QObject::connect(ui_->delete_template_button, SIGNAL(clicked()), this, SLOT(deleteButton()));
     QObject::connect(ui_->save_as_button, SIGNAL(clicked()), this, SLOT(saveButton()));
     QObject::connect(ui_->add_traj_button, SIGNAL(clicked()), this, SLOT(addTrajectoryButton()));
@@ -95,35 +104,39 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     //QObject::connect(ui_->play_button, SIGNAL(clicked()), this, SLOT(play_forward()));
 
     QObject::connect(ui_->refresh_button, SIGNAL(clicked()), this, SLOT(refreshCallback()));
-    QObject::connect(ui_->robot_lock, SIGNAL(stateChanged(int)), this, SLOT(enable_config_panel(int)));
+    QObject::connect(ui_->robot_lock, SIGNAL(stateChanged(int)), this, SLOT(enableConfigPanel(int)));
 
-    QObject::connect(ui_->robot_name, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
-    QObject::connect(ui_->moveit_package, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
-    QObject::connect(ui_->gripper_service, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
+    QObject::connect(ui_->robot_name, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->moveit_package, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->gripper_service, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
     
-    QObject::connect(ui_->frame_id, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
-    QObject::connect(ui_->robot_tx, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
-    QObject::connect(ui_->robot_ty, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
-    QObject::connect(ui_->robot_tz, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
-    QObject::connect(ui_->robot_rr, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
-    QObject::connect(ui_->robot_rp, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
-    QObject::connect(ui_->robot_ry, SIGNAL(textEdited(const QString&)), this, SLOT(update_robot_config(const QString&)));
-    QObject::connect(ui_->ee_name, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
-    QObject::connect(ui_->ee_id, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
-    QObject::connect(ui_->ee_tx, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
-    QObject::connect(ui_->ee_ty, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
-    QObject::connect(ui_->ee_tz, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
-    QObject::connect(ui_->ee_rr, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
-    QObject::connect(ui_->ee_rp, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
-    QObject::connect(ui_->ee_ry, SIGNAL(textEdited(const QString&)), this, SLOT(update_end_effector_group_map(const QString&)));
+    QObject::connect(ui_->frame_id, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->robot_tx, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->robot_ty, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->robot_tz, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->robot_rr, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->robot_rp, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->robot_ry, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->ee_name, SIGNAL(textEdited(const QString&)), this, SLOT(updateEndEffectorGroupMap(const QString&)));
+    QObject::connect(ui_->ee_id, SIGNAL(textEdited(const QString&)), this, SLOT(updateEndEffectorGroupMap(const QString&)));
+    QObject::connect(ui_->ee_tx, SIGNAL(textEdited(const QString&)), this, SLOT(updateEndEffectorGroupMap(const QString&)));
+    QObject::connect(ui_->ee_ty, SIGNAL(textEdited(const QString&)), this, SLOT(updateEndEffectorGroupMap(const QString&)));
+    QObject::connect(ui_->ee_tz, SIGNAL(textEdited(const QString&)), this, SLOT(updateEndEffectorGroupMap(const QString&)));
+    QObject::connect(ui_->ee_rr, SIGNAL(textEdited(const QString&)), this, SLOT(updateEndEffectorGroupMap(const QString&)));
+    QObject::connect(ui_->ee_rp, SIGNAL(textEdited(const QString&)), this, SLOT(updateEndEffectorGroupMap(const QString&)));
+    QObject::connect(ui_->ee_ry, SIGNAL(textEdited(const QString&)), this, SLOT(updateEndEffectorGroupMap(const QString&)));
 
+    // object scaling stuff
+    QObject::connect(ui_->object_scale_slider, SIGNAL(valueChanged(int)), this, SLOT(updateObjectScale(int)));
+    QObject::connect(ui_->object_scale_slider, SIGNAL(sliderReleased()), this, SLOT(scaleSliderReleased()));
+    QObject::connect(ui_->end_effector_adjustment_slider, SIGNAL(sliderReleased()), this, SLOT(scaleSliderReleased()));
+    QObject::connect(ui_->end_effector_adjustment_slider, SIGNAL(valueChanged(int)), this, SLOT(updateEndEffectorScaleAdjustment(int)));
+    QObject::connect(ui_->reset_scale_button, SIGNAL(clicked()), this, SLOT(resetScaleButton()));
 
-    QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
-    QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));
 
 }
 
-void RVizAffordanceTemplatePanel::update_robot_config(const QString& text) {
+void RVizAffordanceTemplatePanel::updateRobotConfig(const QString& text) {
 
     // get currently selected robot key
     string key = ui_->robot_select->currentText().toUtf8().constData();
@@ -145,7 +158,7 @@ void RVizAffordanceTemplatePanel::update_robot_config(const QString& text) {
     (*robotMap_[key]).root_offset(root_offset);
 }
 
-void RVizAffordanceTemplatePanel::update_end_effector_group_map(const QString& text) {
+void RVizAffordanceTemplatePanel::updateEndEffectorGroupMap(const QString& text) {
     string robot_key = ui_->robot_select->currentText().toUtf8().constData();
     string key = ui_->end_effector_select->currentText().toUtf8().constData();
     for (auto& e: (*robotMap_[robot_key]).endeffectorMap) {
@@ -190,7 +203,7 @@ void RVizAffordanceTemplatePanel::update_end_effector_group_map(const QString& t
     }
 }
 
-void RVizAffordanceTemplatePanel::enable_config_panel(int state) {
+void RVizAffordanceTemplatePanel::enableConfigPanel(int state) {
     if (state == Qt::Checked) {
         ui_->groupBox->setEnabled(false);
         ui_->load_config_button->setEnabled(false);
@@ -619,22 +632,125 @@ void RVizAffordanceTemplatePanel::selectAffordanceTemplate(QListWidgetItem* item
     }
     ui_->save_template_combo_box->setCurrentIndex(id);  
 
-    setupDisplayObjectSliders(template_info[0], atoi(template_info[1].c_str()));
+    string class_type = template_info[0];
+    int template_id = atoi(template_info[1].c_str());
+    selected_template = make_pair(class_type, template_id);
+
+    setupDisplayObjectSliders(class_type, template_id);
 }
 
 void RVizAffordanceTemplatePanel::setupDisplayObjectSliders(std::string class_type, int id) {
-    QList<QGraphicsItem*> list = affordanceTemplateGraphicsScene_->selectedItems();
+    QList<QGraphicsItem*> list = affordanceTemplateGraphicsScene_->items();
+    int v;
+    ui_->object_scale_combo_box->clear();
     for (int i=0; i < list.size(); ++i) {
         string class_name = list.at(i)->data(CLASS_INDEX).toString().toStdString();
-    
         if(class_name==class_type) {
             for (auto& c: list.at(i)->data(DISPLAY_OBJECTS).toStringList()) {
-                cout << " found object of type: " << c.toStdString().c_str() << " need to figure out how to make a slider!!" << endl;
-                // need to add slider here
+                
+                ui_->object_scale_combo_box->addItem(QString(c.toStdString().c_str()));
+
+                v = ui_->object_scale_slider->minimum() + (ui_->object_scale_slider->maximum() - ui_->object_scale_slider->minimum()) / 2;
+                display_object_scale_map[c.toStdString()] = v;  
+
+                v = ui_->end_effector_adjustment_slider->minimum() + (ui_->end_effector_adjustment_slider->maximum() - ui_->end_effector_adjustment_slider->minimum()) / 2;
+                end_effector_adjustment_map[c.toStdString()] = v;   
             }
         }
     }
 }
+
+void RVizAffordanceTemplatePanel::updateObjectScale(int value) {
+    string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
+    display_object_scale_map[current_scale_object] = value;
+    if(ui_->stream_scale_check_box->isChecked()) {
+        sendScaleInfo();
+    }    
+}
+
+void RVizAffordanceTemplatePanel::updateEndEffectorScaleAdjustment(int value) {
+    string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
+    end_effector_adjustment_map[current_scale_object] = value;
+    if(ui_->stream_scale_check_box->isChecked()) {
+        sendScaleInfo();
+    }    
+}
+
+void RVizAffordanceTemplatePanel::scaleSliderReleased() {
+    string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
+    display_object_scale_map[current_scale_object] = ui_->object_scale_slider->value();  
+    end_effector_adjustment_map[current_scale_object] = ui_->end_effector_adjustment_slider->value();
+    sendScaleInfo();
+}
+
+void RVizAffordanceTemplatePanel::sendScaleInfo() {
+
+    string current_template_class = selected_template.first;
+    int current_template_id = selected_template.second;
+
+    if( (current_template_class == "") || (current_template_id == -1)) {
+        ROS_WARN("RVizAffordanceTemplatePanel::sendScaleInfo() -- trying to scale object when nothing is selected");
+        return;
+    }    
+
+    string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
+    
+    int obj_scale = display_object_scale_map[current_scale_object];
+    int ee_scale = end_effector_adjustment_map[current_scale_object];
+
+    double min_value = atof(ui_->object_scale_min->text().toStdString().c_str());
+    double max_value = atof(ui_->object_scale_max->text().toStdString().c_str());
+    double range = max_value - min_value;
+
+    double obj_scale_value = range*double(obj_scale)/100.0 + min_value;
+    double ee_adj_value = (range/2.0)*double(ee_scale)/100.0 + (min_value+range/4.0);
+
+    affordance_template_msgs::ScaleDisplayObjectInfo msg;
+    msg.class_type = current_template_class;
+    msg.id = current_template_id;
+    msg.object_name = current_scale_object;
+    msg.scale_factor = obj_scale_value;
+    msg.end_effector_scale_factor = ee_adj_value;
+
+    ROS_DEBUG("sending scale to template[%s:%d].%s  with scales(%2.2f,%2.2f) " , current_template_class.c_str(), current_template_id, current_scale_object.c_str(), obj_scale_value, ee_adj_value);
+    streamObjectScale(msg);
+}
+
+void RVizAffordanceTemplatePanel::resetScaleButton() {
+
+    int v;
+
+    string current_scale_object = ui_->object_scale_combo_box->currentText().toStdString();
+
+    v = ui_->object_scale_slider->minimum() + (ui_->object_scale_slider->maximum() - ui_->object_scale_slider->minimum()) / 2;
+    display_object_scale_map[current_scale_object] = v;  
+    ui_->object_scale_slider->setSliderPosition(v);  
+    
+    v = ui_->end_effector_adjustment_slider->minimum() + (ui_->end_effector_adjustment_slider->maximum() - ui_->end_effector_adjustment_slider->minimum()) / 2;
+    end_effector_adjustment_map[current_scale_object] = v;   
+    ui_->end_effector_adjustment_slider->setSliderPosition(v);  
+    
+    sendScaleInfo();
+
+}
+
+void RVizAffordanceTemplatePanel::sendObjectScale(affordance_template_msgs::ScaleDisplayObjectInfo scale_info) {
+    affordance_template_msgs::ScaleDisplayObject srv;
+    srv.request.scale_info = scale_info;
+    if (scale_object_client_.call(srv))
+    {
+        ROS_INFO("Scale successful");
+    }
+    else
+    {
+        ROS_ERROR("Failed to scale objectd");
+    }  
+}
+
+void RVizAffordanceTemplatePanel::streamObjectScale(affordance_template_msgs::ScaleDisplayObjectInfo scale_info) {  
+     scale_object_streamer_.publish(scale_info);
+}
+
 
 void RVizAffordanceTemplatePanel::sendSaveAffordanceTemplate() {
     
@@ -842,9 +958,9 @@ void RVizAffordanceTemplatePanel::loadConfig() {
     controls_->setRobotName(robot_name_);
 
     if(ui_->robot_lock->isChecked()) {
-        enable_config_panel(Qt::Checked);
+        enableConfigPanel(Qt::Checked);
     } else {
-        enable_config_panel(Qt::Unchecked);        
+        enableConfigPanel(Qt::Unchecked);        
     }
 }
 

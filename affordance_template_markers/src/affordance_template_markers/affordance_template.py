@@ -55,6 +55,7 @@ class AffordanceTemplate(threading.Thread) :
         self.current_trajectory = ""
 
         self.object_scale_factor = {}
+        self.end_effector_scale_factor = {}
 
         self.tf_listener = tf.TransformListener()
         self.tf_broadcaster = tf.TransformBroadcaster()
@@ -279,6 +280,7 @@ class AffordanceTemplate(threading.Thread) :
 
         self.display_objects = []
         self.object_scale_factor = {}
+        self.end_effector_scale_factor = {}
         self.waypoints = {}
 
         self.frame_id = self.robot_interface.robot_config.frame_id
@@ -297,6 +299,7 @@ class AffordanceTemplate(threading.Thread) :
 
             self.display_objects.append(obj_name)
             self.object_scale_factor[obj_name] = 1.0
+            self.end_effector_scale_factor[obj_name] = 1.0
 
             # first object should have no parent, make it "robot" by default
             if ids == 0:
@@ -349,7 +352,6 @@ class AffordanceTemplate(threading.Thread) :
                     else :
                         pose_id = wp['ee_pose']
                     wp_pose = self.pose_from_origin(wp['origin'])
-                    # IS THIS WHERE WE SHOULD SCALE BY self.object_scale_factor[parent]????
 
                     # create waypoint we can play with
                     self.create_waypoint(traj['name'], ee_group['id'], wp_id, wp_pose, parent, wp['controls'], wp['origin'], pose_id)
@@ -490,7 +492,7 @@ class AffordanceTemplate(threading.Thread) :
                 marker.scale.x = self.object_geometry[obj]['size'][0]*self.object_scale_factor[obj]
                 marker.scale.y = self.object_geometry[obj]['size'][1]*self.object_scale_factor[obj]
                 marker.scale.z = self.object_geometry[obj]['size'][2]*self.object_scale_factor[obj]
-                print " --- drawing mesh: ", obj, " with scale: ", self.object_scale_factor[obj]
+                # print " --- drawing mesh: ", obj, " with scale: ", self.object_scale_factor[obj]
             elif self.object_geometry[obj]['type'] == "box" :
                 marker.type = Marker.CUBE
                 marker.scale.x = self.object_geometry[obj]['size'][0]*self.object_scale_factor[obj]
@@ -567,7 +569,7 @@ class AffordanceTemplate(threading.Thread) :
 
             # adjust for scale factor of parent object
             parent_obj = self.parent_map[(trajectory,wp)]
-            parent_scale = self.object_scale_factor[parent_obj]
+            parent_scale = self.object_scale_factor[parent_obj]*self.end_effector_scale_factor[parent_obj]
             mag = math.sqrt(display_pose.position.x**2 + display_pose.position.y**2 + display_pose.position.z**2)
             scaled_mag = parent_scale*mag 
             display_pose.position.x = display_pose.position.x*scaled_mag/mag
@@ -918,10 +920,11 @@ class AffordanceTemplate(threading.Thread) :
         self.create_trajectory_structures(traj_name)
         self.add_trajectory_to_object_menus(traj_name)
 
-    def scale_object(self, object_name, scale_factor) :
+    def scale_object(self, object_name, scale_factor, end_effector_adjustment=1.0) :
         obj_name = self.name + "/" + object_name + ":" + str(self.id)
         self.object_scale_factor[obj_name] = scale_factor
-        print " setting scale factor for object ", obj_name, " to ", scale_factor
+        self.end_effector_scale_factor[obj_name] = end_effector_adjustment
+        # print " setting scale factor for object ", obj_name, " to ", scale_factor
         self.remove_all_markers()
         self.create_from_parameters(True, self.current_trajectory)
 

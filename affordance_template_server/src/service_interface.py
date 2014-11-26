@@ -26,6 +26,8 @@ class ServiceInterface(object):
         self.add_trajectory =          rospy.Service('/affordance_template_server/add_trajectory', AddAffordanceTemplateTrajectory, self.handle_add_trajectory)
         self.scale_object =            rospy.Service('/affordance_template_server/scale_object', ScaleDisplayObject, self.handle_object_scale)
 
+        # subscribers
+        self.scale_object_stream =     rospy.Subscriber('/affordance_template_server/scale_object_streamer', ScaleDisplayObjectInfo, self.handle_object_scale_stream)
 
     def handle_robot_request(self, request) :
         rospy.loginfo(str("ServiceInterface::handle_robot_request() -- requested robot info " + request.name))
@@ -253,13 +255,24 @@ class ServiceInterface(object):
         return response
 
     def handle_object_scale(self, request):
-        rospy.loginfo(str("ServiceInterface::handle_object_scale() -- scale " + request.class_type + ":" + str(request.id) + " -> object[" + request.object_name + "] by " + str(request.scale_factor)))
+        rospy.loginfo(str("ServiceInterface::handle_object_scale() -- scale " + request.scale_info.class_type + ":" + str(request.scale_info.id) 
+            + " -> object[" + request.scale_info.object_name + "] by " + str(request.scale_info.scale_factor) + "," + str(request.scale_info.end_effector_scale_factor) + ")"))
         response = ScaleDisplayObjectResponse()
         response.status = False    
         try:
-            key = str(request.class_type) + ":" + str(request.id)
-            self.server.at_data.class_map[request.class_type][request.id].scale_object(request.object_name, request.scale_factor)
+            key = str(request.scale_info.class_type) + ":" + str(request.scale_info.id)
+            self.server.at_data.class_map[request.scale_info.class_type][request.scale_info.id].scale_object(request.scale_info.object_name, request.scale_info.scale_factor, request.scale_info.end_effector_scale_factor)
             response.status = True
         except:
             rospy.logerr("ServiceInterface::handle_object_scale()  -- Error trying to scale object")
         return response
+
+    def handle_object_scale_stream(self, data):
+        rospy.loginfo(str("ServiceInterface::handle_object_scale_stream() -- scale " + data.class_type + ":" + str(data.id) 
+            + " -> object[" + data.object_name + "] by (" + str(data.scale_factor) + "," + str(data.end_effector_scale_factor) + ")"))
+        try:
+            key = str(data.class_type) + ":" + str(data.id)
+            self.server.at_data.class_map[data.class_type][data.id].scale_object(data.object_name, data.scale_factor, data.end_effector_scale_factor)
+        except:
+            rospy.logerr("ServiceInterface::handle_object_scale_stream()  -- Error trying to scale object")
+        return

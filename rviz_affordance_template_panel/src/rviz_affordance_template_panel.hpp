@@ -45,6 +45,8 @@
 #include <affordance_template_msgs/GetRobotConfigInfo.h>
 #include <affordance_template_msgs/GetRunningAffordanceTemplates.h>
 #include <affordance_template_msgs/LoadRobotConfig.h>
+#include <affordance_template_msgs/ScaleDisplayObjectInfo.h>
+#include <affordance_template_msgs/ScaleDisplayObject.h>
 
 namespace Ui {
 class RVizAffordanceTemplatePanel;
@@ -140,6 +142,10 @@ namespace rviz_affordance_template_panel
          */
         void saveButton();
 
+        /** \brief Reset Scale button.
+         */
+        void resetScaleButton();
+
         /** \brief Add Trajectory button.
          */
         void addTrajectoryButton();
@@ -213,9 +219,15 @@ namespace rviz_affordance_template_panel
         };
 */
 
-        void enable_config_panel(int state);
-        void update_robot_config(const QString& text);
-        void update_end_effector_group_map(const QString&);
+        void updateObjectScale(int value);
+        void updateEndEffectorScaleAdjustment(int value);
+        void scaleSliderReleased();
+
+        void enableConfigPanel(int state);
+        void updateRobotConfig(const QString& text);
+        void updateEndEffectorGroupMap(const QString&);
+
+        void sendScaleInfo();
 
         void setupDisplayObjectSliders(std::string class_type, int id);
 
@@ -231,6 +243,9 @@ namespace rviz_affordance_template_panel
         void sendAffordanceTemplateKill(const string& class_name, int id);
         void sendSaveAffordanceTemplate();
         void sendAddTrajectory();
+
+        void sendObjectScale(affordance_template_msgs::ScaleDisplayObjectInfo scale_info);
+        void streamObjectScale(affordance_template_msgs::ScaleDisplayObjectInfo scale_info);
 
         void removeRecognitionObjects();
         void sendRecognitionObjectAdd(const string& object_name);
@@ -254,7 +269,6 @@ namespace rviz_affordance_template_panel
         // GUI Widgets
         QGraphicsScene* affordanceTemplateGraphicsScene_;
         QGraphicsScene* recognitionObjectGraphicsScene_;
-        std::vector<QSlider *> objectScaleSliders_;
 
         // map to track instantiated object templates
         std::map<std::string, AffordanceSharedPtr> affordanceMap_;
@@ -278,8 +292,19 @@ namespace rviz_affordance_template_panel
         ros::ServiceClient get_objects_client_;
         ros::ServiceClient load_robot_client_;
         ros::ServiceClient save_template_client_;
+        ros::ServiceClient scale_object_client_;
+
+        // affordance template publishers
+        ros::Publisher scale_object_streamer_;
 
         ControlsSharedPtr controls_;
+
+    protected:
+        
+        std::map<std::string, int> display_object_scale_map;
+        std::map<std::string, int> end_effector_adjustment_map;
+          
+        std::pair<std::string, int> selected_template;
     };
 }
 #endif // RVIZ_AFFORDANCE_TEMPLATE_PANEL_HPP
