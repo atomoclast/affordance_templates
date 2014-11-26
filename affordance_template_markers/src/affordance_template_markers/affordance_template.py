@@ -54,6 +54,8 @@ class AffordanceTemplate(threading.Thread) :
         self.frame_store_map = {}
         self.current_trajectory = ""
 
+        self.object_scale_factor = {}
+
         self.tf_listener = tf.TransformListener()
         self.tf_broadcaster = tf.TransformBroadcaster()
         self.tf_frame = "template:0"
@@ -167,7 +169,7 @@ class AffordanceTemplate(threading.Thread) :
 
     def add_interactive_marker(self, marker, callback=None):
         name = marker.name
-        rospy.loginfo(str("Adding affordance template marker: " + name))
+        rospy.logdebug(str("Adding affordance template marker: " + name))
         self.marker_map[name] = marker
         if callback:
             self.callback_map[name] = callback
@@ -276,6 +278,7 @@ class AffordanceTemplate(threading.Thread) :
             return False
 
         self.display_objects = []
+        self.object_scale_factor = {}
         self.waypoints = {}
 
         self.frame_id = self.robot_interface.robot_config.frame_id
@@ -293,6 +296,7 @@ class AffordanceTemplate(threading.Thread) :
             rospy.loginfo(str("AffordanceTemplate::load_initial_parameters() -- adding object: " + obj_name))
 
             self.display_objects.append(obj_name)
+            self.object_scale_factor[obj_name] = 1.0
 
             # first object should have no parent, make it "robot" by default
             if ids == 0:
@@ -345,6 +349,7 @@ class AffordanceTemplate(threading.Thread) :
                     else :
                         pose_id = wp['ee_pose']
                     wp_pose = self.pose_from_origin(wp['origin'])
+                    # IS THIS WHERE WE SHOULD SCALE BY self.object_scale_factor[parent]????
 
                     # create waypoint we can play with
                     self.create_waypoint(traj['name'], ee_group['id'], wp_id, wp_pose, parent, wp['controls'], wp['origin'], pose_id)
@@ -463,7 +468,7 @@ class AffordanceTemplate(threading.Thread) :
             int_marker.header.frame_id = str("/" + root_frame)
             int_marker.name = obj
             int_marker.description = obj
-            int_marker.scale = self.object_controls[obj]['scale']
+            int_marker.scale = self.object_controls[obj]['scale']*self.object_scale_factor[obj]
 
             control = InteractiveMarkerControl()
             control.interaction_mode = InteractiveMarkerControl.BUTTON
@@ -482,22 +487,23 @@ class AffordanceTemplate(threading.Thread) :
                 marker.type = Marker.MESH_RESOURCE
                 marker.mesh_resource = self.object_geometry[obj]['data']
                 marker.mesh_use_embedded_materials = True
-                marker.scale.x = self.object_geometry[obj]['size'][0]
-                marker.scale.y = self.object_geometry[obj]['size'][1]
-                marker.scale.z = self.object_geometry[obj]['size'][2]
+                marker.scale.x = self.object_geometry[obj]['size'][0]*self.object_scale_factor[obj]
+                marker.scale.y = self.object_geometry[obj]['size'][1]*self.object_scale_factor[obj]
+                marker.scale.z = self.object_geometry[obj]['size'][2]*self.object_scale_factor[obj]
+                print " --- drawing mesh: ", obj, " with scale: ", self.object_scale_factor[obj]
             elif self.object_geometry[obj]['type'] == "box" :
                 marker.type = Marker.CUBE
-                marker.scale.x = self.object_geometry[obj]['size'][0]
-                marker.scale.y = self.object_geometry[obj]['size'][1]
-                marker.scale.z = self.object_geometry[obj]['size'][2]
+                marker.scale.x = self.object_geometry[obj]['size'][0]*self.object_scale_factor[obj]
+                marker.scale.y = self.object_geometry[obj]['size'][1]*self.object_scale_factor[obj]
+                marker.scale.z = self.object_geometry[obj]['size'][2]*self.object_scale_factor[obj]
             elif self.object_geometry[obj]['type'] == "sphere" :
                 marker.type = Marker.SPHERE
-                marker.scale.x = self.object_geometry[obj]['size'][0]
-                marker.scale.y = self.object_geometry[obj]['size'][1]
-                marker.scale.z = self.object_geometry[obj]['size'][2]
+                marker.scale.x = self.object_geometry[obj]['size'][0]*self.object_scale_factor[obj]
+                marker.scale.y = self.object_geometry[obj]['size'][1]*self.object_scale_factor[obj]
+                marker.scale.z = self.object_geometry[obj]['size'][2]*self.object_scale_factor[obj]
             elif self.object_geometry[obj]['type'] == "cylinder" :
                 marker.type = Marker.CYLINDER
-                marker.scale.x = self.object_geometry[obj]['radius']
+                marker.scale.x = self.object_geometry[obj]['radius']*self.object_scale_factor[obj]
                 marker.scale.y = self.object_geometry[obj]['length']
  
             control.markers.append(marker)
@@ -513,7 +519,7 @@ class AffordanceTemplate(threading.Thread) :
 
             scale = 1.0
             if obj in self.object_controls :
-                scale = self.object_controls[obj]['scale']
+                scale = self.object_controls[obj]['scale']*self.object_scale_factor[obj]
 
              # int_marker = CreateInteractiveMarker(self.frame_id, obj.name, scale)
             int_marker.controls.append(control)
@@ -558,6 +564,15 @@ class AffordanceTemplate(threading.Thread) :
                     rospy.logerr(str("AffordanceTemplate::create_from_parameters() -- end-effector display object " + str(self.parent_map[(trajectory,wp)]) + "not found!"))
 
             display_pose = getPoseFromFrame(self.objTwp[trajectory][wp])
+
+            # adjust for scale factor of parent object
+            parent_obj = self.parent_map[(trajectory,wp)]
+            parent_scale = self.object_scale_factor[parent_obj]
+            mag = math.sqrt(display_pose.position.x**2 + display_pose.position.y**2 + display_pose.position.z**2)
+            scaled_mag = parent_scale*mag 
+            display_pose.position.x = display_pose.position.x*scaled_mag/mag
+            display_pose.position.y = display_pose.position.y*scaled_mag/mag
+            display_pose.position.z = display_pose.position.z*scaled_mag/mag
 
             int_marker = InteractiveMarker()
             control = InteractiveMarkerControl()
@@ -902,6 +917,13 @@ class AffordanceTemplate(threading.Thread) :
     def add_trajectory(self, traj_name) :
         self.create_trajectory_structures(traj_name)
         self.add_trajectory_to_object_menus(traj_name)
+
+    def scale_object(self, object_name, scale_factor) :
+        obj_name = self.name + "/" + object_name + ":" + str(self.id)
+        self.object_scale_factor[obj_name] = scale_factor
+        print " setting scale factor for object ", obj_name, " to ", scale_factor
+        self.remove_all_markers()
+        self.create_from_parameters(True, self.current_trajectory)
 
 
     def setup_waypoint_menu(self, waypoint, group) :

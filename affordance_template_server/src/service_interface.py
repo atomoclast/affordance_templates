@@ -24,6 +24,7 @@ class ServiceInterface(object):
         self.command_service =         rospy.Service('/affordance_template_server/command', AffordanceTemplateCommand, self.handle_command)
         self.save_service =            rospy.Service('/affordance_template_server/save_template', SaveAffordanceTemplate, self.handle_save_template)
         self.add_trajectory =          rospy.Service('/affordance_template_server/add_trajectory', AddAffordanceTemplateTrajectory, self.handle_add_trajectory)
+        self.scale_object =            rospy.Service('/affordance_template_server/scale_object', ScaleDisplayObject, self.handle_object_scale)
 
 
     def handle_robot_request(self, request) :
@@ -245,4 +246,16 @@ class ServiceInterface(object):
             response.status = True
         except:
             rospy.logerr("ServiceInterface::handle_add_trajectory()  -- Error trying to add trajectory")
+        return response
+
+    def handle_object_scale(self, request):
+        rospy.loginfo(str("ServiceInterface::handle_object_scale() -- scale " + request.class_type + ":" + str(request.id) + " -> object[" + request.object_name + "] by " + str(request.scale_factor)))
+        response = ScaleDisplayObjectResponse()
+        response.status = False    
+        try:
+            key = str(request.class_type) + ":" + str(request.id)
+            self.server.at_data.class_map[request.class_type][request.id].scale_object(request.object_name, request.scale_factor)
+            response.status = True
+        except:
+            rospy.logerr("ServiceInterface::handle_object_scale()  -- Error trying to scale object")
         return response
