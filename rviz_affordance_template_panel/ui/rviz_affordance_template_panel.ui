@@ -1551,6 +1551,13 @@
        <string>Object Scaling</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_9">
+       <item row="12" column="3">
+        <widget class="QPushButton" name="reset_scale_button">
+         <property name="text">
+          <string>Reset</string>
+         </property>
+        </widget>
+       </item>
        <item row="6" column="0">
         <widget class="QLineEdit" name="object_scale_min">
          <property name="maximumSize">
@@ -1752,12 +1759,18 @@
          </property>
         </spacer>
        </item>
-       <item row="12" column="3">
-        <widget class="QPushButton" name="reset_scale_button">
-         <property name="text">
-          <string>Reset</string>
+       <item row="13" column="3">
+        <spacer name="verticalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
          </property>
-        </widget>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </widget>
