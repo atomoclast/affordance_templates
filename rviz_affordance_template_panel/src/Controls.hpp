@@ -33,6 +33,7 @@ namespace rviz_affordance_template_panel
         void setRobotMap(std::map<std::string, RobotConfigSharedPtr> map) { robotMap_ = map; };
         void setRobotName(std::string name) { robotName_ = name; };
         void sendCommand(int command_type);
+        void executePlan();
 
     private:
 

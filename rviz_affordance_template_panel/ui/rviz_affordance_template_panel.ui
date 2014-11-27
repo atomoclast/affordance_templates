@@ -1396,6 +1396,8 @@
           <bool>false</bool>
          </property>
          <zorder>end_effector_table</zorder>
+         <zorder>end_effector_table</zorder>
+         <zorder>end_effector_table</zorder>
         </widget>
        </item>
        <item row="1" column="0" colspan="4">

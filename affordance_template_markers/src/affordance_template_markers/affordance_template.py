@@ -1448,15 +1448,10 @@ class AffordanceTemplate(threading.Thread) :
 
         return next_path_idx
 
-    def plan_path_to_waypoint(self, end_effector, steps=1, backwards=False, direct=False) :
-
+    def get_next_index(self, end_effector, steps=1, backwards=False, direct=False) :
+        
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
-        ee_offset = self.robot_interface.manipulator_pose_map[end_effector]
-        tool_offset = self.robot_interface.tool_offset_map[end_effector]
-        max_idx = self.waypoint_max[self.current_trajectory][ee_id]
-        manipulator_name = self.robot_interface.get_manipulator(end_effector)
-        ee_name = self.robot_interface.get_end_effector_name(ee_id)
-       
+        
         if steps == 999:
             if direct:
                 path = [self.waypoint_max[self.current_trajectory][ee_id]]
@@ -1471,6 +1466,19 @@ class AffordanceTemplate(threading.Thread) :
                 path, next_path_idx = self.compute_path_ids(ee_id, max(0,self.waypoint_index[self.current_trajectory][ee_id]), backwards)
         else:
             path, next_path_idx = self.compute_path_ids(ee_id, steps, backwards)
+
+        return path, next_path_idx
+
+    def plan_path_to_waypoint(self, end_effector, steps=1, backwards=False, direct=False) :
+
+        ee_id = self.robot_interface.manipulator_id_map[end_effector]
+        ee_offset = self.robot_interface.manipulator_pose_map[end_effector]
+        tool_offset = self.robot_interface.tool_offset_map[end_effector]
+        max_idx = self.waypoint_max[self.current_trajectory][ee_id]
+        manipulator_name = self.robot_interface.get_manipulator(end_effector)
+        ee_name = self.robot_interface.get_end_effector_name(ee_id)
+       
+        path, next_path_idx = self.get_next_index(end_effector, steps, backwards, direct)
 
         # print "path: ", path
         # print "next_path_idx: ", next_path_idx

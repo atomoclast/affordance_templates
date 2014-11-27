@@ -199,6 +199,12 @@ namespace rviz_affordance_template_panel
             controls_->sendCommand(srv.request.STEP_FORWARD);
         };
 
+        // /** \brief Step Forward Command.
+        //  */
+        void execute_plan() { 
+            controls_->executePlan();
+        };
+
         // /** \brief Pause Command.
         //  */
 /*      void pause() { 

@@ -40,6 +40,45 @@ void Controls::sendCommand(int command_type) {
     srv.request.command = command_type;
     srv.request.steps = ui_->num_steps->text().toInt();
     srv.request.execute_on_plan = ui_->execute_on_plan->isChecked();
+    srv.request.execute_precomputed_plan = false;
+
+    vector<string> ee_list = getSelectedEndEffectors();
+    for(auto &ee : ee_list) {
+        srv.request.end_effectors.push_back(ee);
+    }
+
+    if (controlsService_.call(srv))
+    {
+        ROS_INFO("Command successful");
+        for(auto &wp : srv.response.waypoint_info) {
+            pair<int,int> waypointPair;
+            waypointPair = make_pair(int(wp.waypoint_index), int(wp.num_waypoints));
+            waypointData[int(wp.id)] = waypointPair;
+        }
+        updateTable(waypointData);
+    }
+    else
+    {
+        ROS_ERROR("Failed to call service command");
+    }
+}
+
+
+void Controls::executePlan() {
+
+    string key = ui_->control_template_box->currentText().toUtf8().constData();
+    vector<string> stuff = util::split(key, ':');
+    map< int, pair<int,int> > waypointData;
+
+    ROS_INFO("Sending Execute Command request for a %s", key.c_str());      
+
+    affordance_template_msgs::AffordanceTemplateCommand srv;
+    srv.request.type = stuff[0];
+    srv.request.id = int(atoi(stuff[1].c_str()));
+/*    srv.request.command = command_type;
+    srv.request.steps = ui_->num_steps->text().toInt();
+    srv.request.execute_on_plan = ui_->execute_on_plan->isChecked();
+*/    
     srv.request.execute_precomputed_plan = true;
 
     vector<string> ee_list = getSelectedEndEffectors();
