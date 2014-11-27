@@ -15,6 +15,9 @@ string filename
 # the image/icon to be displayed for template
 string image
 
+# save scaling updates
+bool save_scale_updates
+
 ---
 # return status
 bool status

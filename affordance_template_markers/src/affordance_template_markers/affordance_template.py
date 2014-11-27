@@ -478,12 +478,29 @@ class AffordanceTemplate(threading.Thread) :
             marker = Marker()
             marker.ns = obj
             marker.id = ids
-
+                
             if not keep_poses or not obj in self.frame_store_map.keys() :
                 self.frame_store_map[obj] = FrameStore(obj_frame, root_frame, copy.deepcopy(self.marker_pose_offset[obj]))
                 int_marker.pose = copy.deepcopy(self.marker_pose_offset[obj])
             else :
                 int_marker.pose = copy.deepcopy(self.frame_store_map[obj].pose)
+                # THIS IS A HACK, NOT SURE WHY ITS NECESSARY
+                parent_obj = self.parent_map[obj]
+                if parent_obj in self.object_scale_factor :
+                    int_marker.pose.position.x /= self.object_scale_factor[parent_obj]
+                    int_marker.pose.position.y /= self.object_scale_factor[parent_obj]
+                    int_marker.pose.position.z /= self.object_scale_factor[parent_obj]
+
+
+            # adjust for scale factor of parent object
+            parent_obj = self.parent_map[obj]
+            if parent_obj in self.object_scale_factor :
+                int_marker.pose.position.x *= self.object_scale_factor[parent_obj]
+                int_marker.pose.position.y *= self.object_scale_factor[parent_obj]
+                int_marker.pose.position.z *= self.object_scale_factor[parent_obj]
+
+                self.frame_store_map[obj].pose = int_marker.pose
+
 
             if self.object_geometry[obj]['type'] == "mesh" :
                 marker.type = Marker.MESH_RESOURCE
@@ -506,7 +523,7 @@ class AffordanceTemplate(threading.Thread) :
             elif self.object_geometry[obj]['type'] == "cylinder" :
                 marker.type = Marker.CYLINDER
                 marker.scale.x = self.object_geometry[obj]['radius']*self.object_scale_factor[obj]
-                marker.scale.y = self.object_geometry[obj]['length']
+                marker.scale.y = self.object_geometry[obj]['length']*self.object_scale_factor[obj]
  
             control.markers.append(marker)
 
@@ -570,11 +587,11 @@ class AffordanceTemplate(threading.Thread) :
             # adjust for scale factor of parent object
             parent_obj = self.parent_map[(trajectory,wp)]
             parent_scale = self.object_scale_factor[parent_obj]*self.end_effector_scale_factor[parent_obj]
-            mag = math.sqrt(display_pose.position.x**2 + display_pose.position.y**2 + display_pose.position.z**2)
-            scaled_mag = parent_scale*mag 
-            display_pose.position.x = display_pose.position.x*scaled_mag/mag
-            display_pose.position.y = display_pose.position.y*scaled_mag/mag
-            display_pose.position.z = display_pose.position.z*scaled_mag/mag
+            # mag = math.sqrt(display_pose.position.x**2 + display_pose.position.y**2 + display_pose.position.z**2)
+            # scaled_mag = parent_scale*mag 
+            display_pose.position.x *= parent_scale
+            display_pose.position.y *= parent_scale
+            display_pose.position.z *= parent_scale
 
             int_marker = InteractiveMarker()
             control = InteractiveMarkerControl()
@@ -661,7 +678,7 @@ class AffordanceTemplate(threading.Thread) :
                         self.waypoint_origin[traj][wp]['rpy'][i] = rpy[i]
 
 
-    def save_to_disk(self, filename=None, package=None, image="", new_class_type="") :
+    def save_to_disk(self, filename=None, package=None, image="", new_class_type="",save_scaling=False) :
 
         class_type = self.structure['name'].split(":")[0]
 
@@ -711,12 +728,47 @@ class AffordanceTemplate(threading.Thread) :
         for obj in self.display_objects :
             key = obj.split("/")[1].split(":")[0]
 
+            try :
+                parent_obj = self.parent_map[obj]  
+            except :
+                parent_obj = "robot"
+
             new_structure['display_objects'].append({})
             new_structure['display_objects'][obj_id]['name'] = key
-            new_structure['display_objects'][obj_id]['origin'] = self.object_origin[obj]
+                       
+            if save_scaling :
+                self.object_controls[obj]['scale'] *= self.object_scale_factor[obj]
+                if self.object_geometry[obj]['type'] == "mesh" or self.object_geometry[obj]['type'] == "box" or self.object_geometry[obj]['type'] == "sphere" :
+                    self.object_geometry[obj]['size'][0] *= self.object_scale_factor[obj]
+                    self.object_geometry[obj]['size'][1] *= self.object_scale_factor[obj]
+                    self.object_geometry[obj]['size'][2] *= self.object_scale_factor[obj]
+                elif self.object_geometry[obj]['type'] == "cylinder" :
+                    self.object_geometry[obj]['radius'] *= self.object_scale_factor[obj]
+                    self.object_geometry[obj]['length'] *= self.object_scale_factor[obj]
+
+                # adjust for scale factor of parent object
+                print "scaling object based on parent scale.  PARENT: ", parent_obj
+                if parent_obj in self.object_scale_factor :
+                    parent_scale = self.object_scale_factor[parent_obj]
+                    # mag = math.sqrt( self.object_origin[obj]['xyz'][0]**2 + self.object_origin[obj]['xyz'][1]**2 + self.object_origin[obj]['xyz'][2]**2)
+                    # scaled_mag = parent_scale*mag 
+                    self.object_origin[obj]['xyz'][0] *= parent_scale
+                    self.object_origin[obj]['xyz'][1] *= parent_scale
+                    self.object_origin[obj]['xyz'][2] *= parent_scale
+                    print "  new obj origin: ", self.object_origin[obj]['xyz']
+            else :
+                print "not saving scaling for objects"
+
             new_structure['display_objects'][obj_id]['controls'] = self.object_controls[obj]
             new_structure['display_objects'][obj_id]['shape'] = self.object_geometry[obj]
-            
+            new_structure['display_objects'][obj_id]['origin'] = self.object_origin[obj]
+
+            if parent_obj != "robot" :
+                try :
+                    new_structure['display_objects'][obj_id]['parent'] = parent_obj.split("/")[1].split(":")[0]
+                except :
+                    rospy.logwarn(str("AffordanceTemplate::save_to_disk() malformed parent: " + parent_obj))
+           
             obj_id += 1
 
         traj_id = 0
@@ -750,8 +802,28 @@ class AffordanceTemplate(threading.Thread) :
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'].append({})
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['ee_pose'] = self.waypoint_pose_map[traj['name']][wp]
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['display_object'] = parent_key
-                        new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['origin'] = self.waypoint_origin[traj['name']][wp]
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['controls'] = self.waypoint_controls[traj['name']][wp]
+
+                        if save_scaling :
+                            display_pose = Pose()
+                            display_pose.position.x = self.waypoint_origin[traj['name']][wp]['xyz'][0]
+                            display_pose.position.y = self.waypoint_origin[traj['name']][wp]['xyz'][1]
+                            display_pose.position.z = self.waypoint_origin[traj['name']][wp]['xyz'][2]
+
+                            parent_obj = self.parent_map[(traj['name'],wp)]
+                            parent_scale = self.object_scale_factor[parent_obj]*self.end_effector_scale_factor[parent_obj]
+                            
+                            # mag = math.sqrt(display_pose.position.x**2 + display_pose.position.y**2 + display_pose.position.z**2)
+                            # scaled_mag = parent_scale*mag 
+                           
+                            self.waypoint_origin[traj['name']][wp]['xyz'][0] = display_pose.position.x*parent_scale
+                            self.waypoint_origin[traj['name']][wp]['xyz'][1] = display_pose.position.y*parent_scale
+                            self.waypoint_origin[traj['name']][wp]['xyz'][2] = display_pose.position.z*parent_scale
+                        else :
+                            print "not saving scaling for end-effectors"
+
+                        new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['origin'] = self.waypoint_origin[traj['name']][wp]
+
                         wp_id += 1
                 idx += 1
             traj_id += 1

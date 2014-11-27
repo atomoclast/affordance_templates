@@ -233,7 +233,7 @@ class ServiceInterface(object):
         response.status = False    
         try:
             new_key = str(request.new_class_type) + ":" + str(request.id)
-            save_status = self.server.at_data.class_map[request.original_class_type][request.id].save_to_disk(filename=request.filename, image=request.image, new_class_type=new_key)
+            save_status = self.server.at_data.class_map[request.original_class_type][request.id].save_to_disk(filename=request.filename, image=request.image, new_class_type=new_key, save_scaling=request.save_scale_updates)
             remove_status = self.server.remove_template(request.original_class_type, request.id)
             self.server.at_data = self.server.get_available_templates(self.server.template_path, self.server.at_data)
             add_status = self.server.add_template(request.new_class_type, request.id)

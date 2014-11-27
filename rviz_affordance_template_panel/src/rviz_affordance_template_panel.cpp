@@ -799,6 +799,7 @@ void RVizAffordanceTemplatePanel::sendSaveAffordanceTemplate() {
     srv.request.new_class_type = ui_->new_save_type->text().toStdString();
     srv.request.image = ui_->new_image->text().toStdString();
     srv.request.filename = ui_->new_filename->text().toStdString();
+    srv.request.save_scale_updates = (bool)(ui_->save_scaling_check_box->isChecked());
 
     bool abort_flag = false;
 
@@ -818,7 +819,7 @@ void RVizAffordanceTemplatePanel::sendSaveAffordanceTemplate() {
         return;
     }
 
-    ROS_INFO("Sending save to %s:%d, with image %s to file: %s", srv.request.new_class_type.c_str(), id, srv.request.image.c_str(), srv.request.filename.c_str());      
+    ROS_INFO("Sending save to %s:%d, with image %s to file: %s, scale:%d", srv.request.new_class_type.c_str(), id, srv.request.image.c_str(), srv.request.filename.c_str(), (int)(ui_->save_scaling_check_box->isChecked()));      
 
     if (save_template_client_.call(srv))
     {

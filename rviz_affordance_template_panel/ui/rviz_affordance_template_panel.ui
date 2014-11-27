@@ -67,6 +67,13 @@
            </property>
           </widget>
          </item>
+         <item row="2" column="0">
+          <widget class="QPushButton" name="delete_template_button">
+           <property name="text">
+            <string>Delete</string>
+           </property>
+          </widget>
+         </item>
          <item row="3" column="0">
           <widget class="QFrame" name="frame_2">
            <property name="frameShape">
@@ -76,106 +83,28 @@
             <enum>QFrame::Raised</enum>
            </property>
            <layout class="QGridLayout" name="gridLayout_10">
-            <item row="3" column="0" colspan="2">
-             <layout class="QHBoxLayout" name="horizontalLayout_14">
-              <item>
-               <widget class="QLabel" name="image_label">
-                <property name="font">
-                 <font>
-                  <family>Verdana</family>
-                  <pointsize>10</pointsize>
-                  <weight>50</weight>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Image:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_6">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Maximum</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>29</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="new_image"/>
-              </item>
-             </layout>
-            </item>
-            <item row="5" column="0">
-             <spacer name="horizontalSpacer_8">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>247</width>
-                <height>18</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="5" column="1">
-             <widget class="QPushButton" name="save_as_button">
+            <item row="9" column="2">
+             <widget class="QPushButton" name="add_traj_button">
               <property name="text">
-               <string>Save As</string>
+               <string>Add Trajectory</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="0" colspan="2">
-             <widget class="QComboBox" name="save_template_combo_box"/>
+            <item row="0" column="1">
+             <widget class="QLabel" name="label_6">
+              <property name="font">
+               <font>
+                <pointsize>13</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>Save &amp; Modify</string>
+              </property>
+             </widget>
             </item>
-            <item row="4" column="0" colspan="2">
-             <layout class="QHBoxLayout" name="horizontalLayout_15">
-              <item>
-               <widget class="QLabel" name="filename_label">
-                <property name="font">
-                 <font>
-                  <family>Verdana</family>
-                  <pointsize>10</pointsize>
-                  <weight>50</weight>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Filename: </string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_7">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Maximum</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>8</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="new_filename"/>
-              </item>
-             </layout>
-            </item>
-            <item row="2" column="0" colspan="2">
+            <item row="2" column="1" colspan="2">
              <layout class="QHBoxLayout" name="horizontalLayout_13">
               <item>
                <widget class="QLabel" name="type_label">
@@ -213,52 +142,117 @@
               </item>
              </layout>
             </item>
-            <item row="7" column="0">
-             <widget class="QLineEdit" name="new_traj_name"/>
+            <item row="1" column="1" colspan="2">
+             <widget class="QComboBox" name="save_template_combo_box"/>
             </item>
-            <item row="7" column="1">
-             <widget class="QPushButton" name="add_traj_button">
+            <item row="7" column="2">
+             <widget class="QPushButton" name="save_as_button">
               <property name="text">
-               <string>Add Trajectory</string>
+               <string>Save As</string>
               </property>
              </widget>
             </item>
-            <item row="6" column="0">
+            <item row="3" column="1" colspan="2">
+             <layout class="QHBoxLayout" name="horizontalLayout_14">
+              <item>
+               <widget class="QLabel" name="image_label">
+                <property name="font">
+                 <font>
+                  <family>Verdana</family>
+                  <pointsize>10</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Image:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_6">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Maximum</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>29</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="new_image"/>
+              </item>
+             </layout>
+            </item>
+            <item row="8" column="1">
              <widget class="Line" name="line">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
              </widget>
             </item>
-            <item row="6" column="1">
+            <item row="8" column="2">
              <widget class="Line" name="line_2">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
              </widget>
             </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_6">
-              <property name="font">
-               <font>
-                <pointsize>13</pointsize>
-                <weight>75</weight>
-                <bold>true</bold>
-               </font>
-              </property>
+            <item row="9" column="1">
+             <widget class="QLineEdit" name="new_traj_name"/>
+            </item>
+            <item row="4" column="1" colspan="2">
+             <layout class="QHBoxLayout" name="horizontalLayout_15">
+              <item>
+               <widget class="QLabel" name="filename_label">
+                <property name="font">
+                 <font>
+                  <family>Verdana</family>
+                  <pointsize>10</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Filename: </string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_7">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Maximum</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>8</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="new_filename"/>
+              </item>
+             </layout>
+            </item>
+            <item row="7" column="1">
+             <widget class="QCheckBox" name="save_scaling_check_box">
               <property name="text">
-               <string>Save &amp; Modify</string>
+               <string>Save Scaling</string>
               </property>
              </widget>
             </item>
            </layout>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QPushButton" name="delete_template_button">
-           <property name="text">
-            <string>Delete</string>
-           </property>
           </widget>
          </item>
         </layout>
@@ -1351,7 +1345,7 @@
    <item row="1" column="0">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -1372,6 +1366,17 @@
        <string>Controls</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_7">
+       <item row="4" column="3">
+        <widget class="QPushButton" name="go_to_end_button">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/images.qrc">
+           <normaloff>:/end.png</normaloff>:/end.png</iconset>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0" colspan="4">
         <widget class="QGroupBox" name="control_box">
          <property name="font">
@@ -1390,70 +1395,11 @@
          <property name="checkable">
           <bool>false</bool>
          </property>
+         <zorder>end_effector_table</zorder>
         </widget>
        </item>
        <item row="1" column="0" colspan="4">
         <widget class="QComboBox" name="control_template_box"/>
-       </item>
-       <item row="2" column="0" colspan="4">
-        <widget class="QTableWidget" name="end_effector_table">
-         <property name="gridStyle">
-          <enum>Qt::DotLine</enum>
-         </property>
-         <property name="sortingEnabled">
-          <bool>true</bool>
-         </property>
-         <property name="cornerButtonEnabled">
-          <bool>true</bool>
-         </property>
-         <property name="columnCount">
-          <number>4</number>
-         </property>
-         <attribute name="horizontalHeaderCascadingSectionResizes">
-          <bool>true</bool>
-         </attribute>
-         <attribute name="horizontalHeaderDefaultSectionSize">
-          <number>0</number>
-         </attribute>
-         <attribute name="horizontalHeaderHighlightSections">
-          <bool>true</bool>
-         </attribute>
-         <attribute name="horizontalHeaderMinimumSectionSize">
-          <number>10</number>
-         </attribute>
-         <attribute name="verticalHeaderCascadingSectionResizes">
-          <bool>false</bool>
-         </attribute>
-         <attribute name="verticalHeaderDefaultSectionSize">
-          <number>10</number>
-         </attribute>
-         <attribute name="verticalHeaderMinimumSectionSize">
-          <number>25</number>
-         </attribute>
-         <attribute name="verticalHeaderStretchLastSection">
-          <bool>false</bool>
-         </attribute>
-         <column>
-          <property name="text">
-           <string>name</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>@ wp</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string># wps</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>cmd</string>
-          </property>
-         </column>
-        </widget>
        </item>
        <item row="3" column="0" colspan="2">
         <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -1525,15 +1471,77 @@
          </property>
         </widget>
        </item>
-       <item row="4" column="3">
-        <widget class="QPushButton" name="go_to_end_button">
+       <item row="5" column="1" colspan="2">
+        <widget class="QPushButton" name="execute_button">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
          <property name="text">
-          <string/>
+          <string>Execute Plan</string>
          </property>
-         <property name="icon">
-          <iconset resource="../resources/images.qrc">
-           <normaloff>:/end.png</normaloff>:/end.png</iconset>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="4">
+        <widget class="QTableWidget" name="end_effector_table">
+         <property name="gridStyle">
+          <enum>Qt::DotLine</enum>
          </property>
+         <property name="sortingEnabled">
+          <bool>true</bool>
+         </property>
+         <property name="cornerButtonEnabled">
+          <bool>true</bool>
+         </property>
+         <property name="columnCount">
+          <number>4</number>
+         </property>
+         <attribute name="horizontalHeaderCascadingSectionResizes">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="horizontalHeaderDefaultSectionSize">
+          <number>0</number>
+         </attribute>
+         <attribute name="horizontalHeaderHighlightSections">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="horizontalHeaderMinimumSectionSize">
+          <number>10</number>
+         </attribute>
+         <attribute name="verticalHeaderCascadingSectionResizes">
+          <bool>false</bool>
+         </attribute>
+         <attribute name="verticalHeaderDefaultSectionSize">
+          <number>10</number>
+         </attribute>
+         <attribute name="verticalHeaderMinimumSectionSize">
+          <number>25</number>
+         </attribute>
+         <attribute name="verticalHeaderStretchLastSection">
+          <bool>false</bool>
+         </attribute>
+         <column>
+          <property name="text">
+           <string>name</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>@ wp</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string># wps</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>cmd</string>
+          </property>
+         </column>
         </widget>
        </item>
       </layout>
@@ -1545,6 +1553,7 @@
       <zorder>step_forward_button</zorder>
       <zorder>execute_on_plan</zorder>
       <zorder>control_template_box</zorder>
+      <zorder>execute_button</zorder>
      </widget>
      <widget class="QWidget" name="tab_4">
       <attribute name="title">
