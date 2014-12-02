@@ -27,7 +27,6 @@
 #include <affordance_template_msgs/AffordanceTemplateConfig.h>
 #include <affordance_template_msgs/RecognitionObjectConfig.h>
 #include <affordance_template_msgs/EndEffectorConfig.h>
-#include <affordance_template_msgs/EndEffector.h>
 #include <affordance_template_msgs/EndEffectorPoseData.h>
 #include <affordance_template_msgs/RobotConfig.h>
 #include <affordance_template_msgs/WaypointInfo.h>
