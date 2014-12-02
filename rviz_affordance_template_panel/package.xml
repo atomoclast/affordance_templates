@@ -46,6 +46,7 @@
   <build_depend>roslib</build_depend>
   <build_depend>rviz</build_depend>
   <build_depend>affordance_template_server</build_depend>
+  <build_depend>affordance_template_msgs</build_depend>
   <build_depend>visualization_msgs</build_depend>
   <build_depend>orocos_kdl</build_depend>
   
@@ -55,6 +56,7 @@
   <run_depend>roslib</run_depend>
   <run_depend>rviz</run_depend>
   <run_depend>affordance_template_server</run_depend>
+  <run_depend>affordance_template_msgs</run_depend>
   <run_depend>visualization_msgs</run_depend>
   <run_depend>orocos_kdl</run_depend>
   
