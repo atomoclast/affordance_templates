@@ -42,6 +42,7 @@ find_package(catkin REQUIRED COMPONENTS
   rviz
   affordance_template_server
   visualization_msgs
+  affordance_template_msgs
 )
 
 find_package(orocos_kdl REQUIRED)
@@ -60,7 +61,7 @@ find_library(KDL_LIBRARY REQUIRED NAMES orocos-kdl HINTS ${orocos_kdl_LIBRARY_DI
 catkin_package(
   # INCLUDE_DIRS include
   LIBRARIES rviz_affordance_template_panel ${KDL_LIBRARY}
-  CATKIN_DEPENDS geometry_msgs interactive_markers roscpp roslib rviz affordance_template_server visualization_msgs
+  CATKIN_DEPENDS geometry_msgs interactive_markers roscpp roslib rviz affordance_template_server visualization_msgs affordance_template_msgs
   DEPENDS system_lib orocos_kdl
 )
 
@@ -87,4 +88,4 @@ add_library(${PROJECT_NAME} ${SRC_FILES} ${QT_FORMS_HPP} ${QT_RESOURCES})
 
 # Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
-
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
