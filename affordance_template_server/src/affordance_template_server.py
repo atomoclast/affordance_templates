@@ -200,7 +200,7 @@ class AffordanceTemplateServer(Thread):
             rp = rospkg.RosPack()
             return rp.get_path(pkg)
         except:
-            rospy.logwarn(str('AffordanceTemplateServer::get_package_path() -- No package found: ' + pkg))
+            rospy.logdebug(str('AffordanceTemplateServer::get_package_path() -- No package found: ' + pkg))
             return ""
 
     def get_template_path(self):
@@ -264,9 +264,11 @@ class AffordanceTemplateServer(Thread):
                 for obj in structure['display_objects'] :
                     obj_name = str(obj['name'])
                     at_data.object_map[at_name].append(obj_name)
+                
+                rospy.loginfo(str("AffordanceTemplateServer::get_available_templates() -- parsed: " + atfn))
 
             except :
-                rospy.logwarn(str("AffordanceTemplateServer::get_available_templates() -- error parsing " + atfn))
+                rospy.logdebug(str("AffordanceTemplateServer::get_available_templates() -- error parsing " + atfn))
 
         return at_data
 
@@ -286,8 +288,9 @@ class AffordanceTemplateServer(Thread):
             # check to see if package actually is "installed" and only add it if it is.
             if self.get_package_path(ri.robot_config.moveit_config_package) :
                 robot_map[r] = ri
+                rospy.loginfo("AffordanceTemplateServer::get_available_robots(" + r + ") - MoveIt! config package found")
             else :
-                rospy.logwarn("AffordanceTemplateServer::get_available_robots(" + r + ") - MoveIt! config package not found, not adding")
+                rospy.logdebug("AffordanceTemplateServer::get_available_robots(" + r + ") - MoveIt! config package not found, not adding")
 
         return robot_map
 

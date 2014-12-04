@@ -28,10 +28,10 @@ class RobotInterface(object) :
         if yaml_file and robot_config :
             rospy.logerr("RobotInterface() -- can't load from both yaml and robot_config!")
         elif yaml_file :
-            rospy.loginfo(("RobotInterface() -- loading with input yaml: " + yaml_file))
+            # rospy.loginfo(("RobotInterface() -- loading with input yaml: " + yaml_file))
             self.load_from_file(yaml_file)
         elif robot_config :
-            rospy.loginfo(("RobotInterface() -- loading from input robot config: " + robot_config.name))
+            # rospy.loginfo(("RobotInterface() -- loading from input robot config: " + robot_config.name))
             self.load_from_msg(robot_config)
         else:
             rospy.logwarn("RobotInterface() -- no robot configuration given...")
@@ -100,12 +100,11 @@ class RobotInterface(object) :
 
             for ee in self.yaml_config['end_effector_group_map']:
 
-                ee_config = EndEffector()
-                
+                ee_config = EndEffectorConfig()
                 ee_config.name = ee['name']
                 ee_config.id = ee['id']
-
                 ee_config.pose_offset = Pose()
+
                 try :
                     q = (kdl.Rotation.RPY(ee['pose_offset'][3],ee['pose_offset'][4],ee['pose_offset'][5])).GetQuaternion()
                     ee_config.pose_offset.position.x = float(ee['pose_offset'][0])
@@ -169,6 +168,7 @@ class RobotInterface(object) :
                     self.end_effector_id_map[ee['group']] = {}
                 self.end_effector_pose_map[ee['group']][ee['name']] = int(ee['id'])
                 self.end_effector_id_map[ee['group']][int(ee['id'])] = ee['name']
+                
                 # print "ee[", ee['group'], "] adding group [", ee['name'], "] with id [", ee['id'], "]"
             
 
@@ -179,9 +179,10 @@ class RobotInterface(object) :
             except :
                 self.robot_config.gripper_service = ""
                 
+            rospy.loginfo(str("RobotInterface::load_from_file() -- loaded: " + filename))
 
         except :
-            rospy.logerr("RobotInterface::load_from_file() -- error opening config file")
+            rospy.logdebug("RobotInterface::load_from_file() -- error opening config file")
             return False
 
         # print self.robot_config
