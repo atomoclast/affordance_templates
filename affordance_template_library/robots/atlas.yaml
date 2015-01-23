@@ -6,37 +6,33 @@ end_effector_group_map:
   - name: left_hand
     id: 0
     pose_offset: [-0.14, -0.035, -.02, -1.57, 1.57, 3.14]
-    tool_offset: [0.0, -0.0, -0.0,  0,0,0]
-    # pose_offset: [0,0,0,0,1.57,3.14]
-    # tool_offset: [0.0, -0.18, -0.10,  0,0,0]
+    # pose_offset: [-0.14, -0.035, -.02, -1.57, 1.57, 3.14]
   - name: right_hand
     id: 1
     pose_offset: [-0.14, 0.035, -.02,  1.57, 1.57,3.14]
-    tool_offset: [0.0,  0.0, -0.0,   0,0,0]
-    # pose_offset: [0,0,0,0,1.57,3.14]
-    # tool_offset: [0.0,  0.18, -0.10,   0,0,0]
+    # pose_offset: [-0.14, 0.035, -.02,  1.57, 1.57,3.14]
 end_effector_pose_map:
-  - name: Right Hand Open
+  - name: right_hand_open
     group: right_hand
     id: 0
-  - name: Right Hand Thumb Open
+  - name: right_hand_thumb_open
     group: right_hand
     id: 1
-  - name: Right Hand Close
+  - name: right_hand_close
     group: right_hand
     id: 2
-  - name: Right Hand Point
+  - name: right_hand_point
     group: right_hand
     id: 3
-  - name: Left Hand Open
+  - name: left_hand_open
     group: left_hand
     id: 0
-  - name: Left Hand Thumb Open
+  - name: left_hand_thumb_open
     group: left_hand
     id: 1
-  - name: Left Hand Close
+  - name: left_hand_close
     group: left_hand
     id: 2
-  - name: Left Hand Point
+  - name: left_hand_point
     group: left_hand
     id: 3

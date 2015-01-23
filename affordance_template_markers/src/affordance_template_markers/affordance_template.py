@@ -23,6 +23,7 @@ from interactive_markers.interactive_marker_server import *
 from interactive_markers.menu_handler import *
 
 from nasa_robot_teleop.moveit_interface import *
+from nasa_robot_teleop.urdf_helper import *
 
 from affordance_template_markers.robot_interface import *
 from affordance_template_markers.frame_store import *
@@ -440,6 +441,7 @@ class AffordanceTemplate(threading.Thread) :
 
     def create_from_parameters(self, keep_poses=False, current_trajectory="") :
 
+        rospy.loginfo("AffordanceTemplate::create_from_parameters()")
         self.key = self.name
         self.frame_store_map[self.name] = FrameStore(self.key, self.robot_interface.robot_config.frame_id, getPoseFromFrame(self.robotTroot))
         if not current_trajectory :
@@ -564,9 +566,13 @@ class AffordanceTemplate(threading.Thread) :
 
             self.create_trajectory_from_parameters(self.current_trajectory)
 
+        rospy.loginfo("AffordanceTemplate::create_from_parameters() -- done")
+
 
     # parse end effector trajectory information
     def create_trajectory_from_parameters(self, trajectory) :
+
+        rospy.loginfo("AffordanceTemplate::create_trajectory_from_parameters()")
 
         self.current_trajectory = trajectory
 
@@ -633,12 +639,17 @@ class AffordanceTemplate(threading.Thread) :
             markers = self.robot_interface.end_effector_link_data[ee_name].get_markers_for_pose(pn)
 
             for m in markers.markers :
-                ee_m = copy.deepcopy(m)
-                ee_m.header.frame_id = ""
-                ee_m.ns = self.name
-                ee_m.pose = getPoseFromFrame(self.wpTee[wp]*self.eeTtf[wp]*getFrameFromPose(m.pose))
-                menu_control.markers.append( ee_m )
-            
+
+                try :
+                    print m.mesh_resource
+                    ee_m = copy.deepcopy(m)                   
+                    ee_m.header.frame_id = ""
+                    ee_m.ns = self.name
+                    ee_m.pose = getPoseFromFrame(self.wpTee[wp]*self.eeTtf[wp]*getFrameFromPose(m.pose))
+                    menu_control.markers.append( ee_m )
+                except :
+                    print "passing on marker"
+
             scale = 1.0
             if wp in self.waypoint_controls[trajectory] :
                 scale = self.waypoint_controls[trajectory][wp]['scale']
@@ -652,9 +663,11 @@ class AffordanceTemplate(threading.Thread) :
             self.marker_menus[wp].apply( self.server, wp )
             self.server.applyChanges()
 
+            print "test 13"
+
             wp_ids += 1
 
-            rospy.logdebug("AffordanceTemplate::create_trajectory_from_parameters() -- done")
+            rospy.loginfo("AffordanceTemplate::create_trajectory_from_parameters() -- done")
 
     def update_template_defaults(self, objects=True, waypoints=True) :
 
@@ -1510,7 +1523,17 @@ class AffordanceTemplate(threading.Thread) :
                 T_goal = getFrameFromPose(pt.pose)
                 T_offset = getFrameFromPose(ee_offset)
                 T_tool = getFrameFromPose(tool_offset).Inverse()
+
+                T_fixed_joint_offset = self.get_fixed_joint_offset(end_effector)
+
+                print "-----------------"
                 T = T_goal*T_offset*T_tool
+                print "original goal: "
+                print T
+                T = T_goal*T_offset*T_fixed_joint_offset*T_tool
+                print "new goal"
+                print T
+                print "-----------------"
                 pt.pose = getPoseFromFrame(T)
                 waypoints.append(pt.pose)
 
@@ -1523,6 +1546,48 @@ class AffordanceTemplate(threading.Thread) :
         self.waypoint_plan_valid[self.current_trajectory][ee_id] = True
 
         return next_path_idx
+
+    def get_fixed_joint_offset(self, end_effector) :
+        T = Frame()
+
+        print "looking up parent group for ", end_effector
+        print self.robot_interface.moveit_interface.srdf_model.group_end_effectors.keys()
+        manipulator_group = self.robot_interface.moveit_interface.srdf_model.group_end_effectors[end_effector].parent_group
+        print "found ", manipulator_group
+        control_frame = self.robot_interface.moveit_interface.control_frames[manipulator_group]
+        print "control frame: ", control_frame
+
+        urdf = self.robot_interface.moveit_interface.get_urdf_model()
+
+        print "got urdf"
+        link = control_frame
+        while True :
+            # parent_link = get_parent_link(link, urdf)
+            # print "parent_link ", parent_link
+            # joint = get_link_joint(parent_link, urdf)
+            joint = get_link_joint(link, urdf)
+            print "joint ", joint
+            
+            if urdf.joint_map[joint].type == "fixed" :
+                print "its a fixed joint!"
+                p = joint_origin_to_pose(urdf.joint_map[joint])
+                print p
+                T_new = getFrameFromPose(p)
+                print "adding link offset: "
+                print T_new
+                T = T*T_new
+                link = get_parent_link(link,urdf)
+                print "total now ="
+                print T
+                print "----"
+
+            else :
+                break
+
+        print "cumulative offset:"
+        print T
+        return T
+
 
     def move_to_waypoint(self, end_effector, next_path_idx) :
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
