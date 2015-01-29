@@ -74,7 +74,8 @@ class AffordanceTemplate(threading.Thread) :
         self.waypoint_origin = {}
         self.waypoint_controls = {}
         self.waypoint_end_effectors = {}
-        self.waypoint_ids = {}
+        self.waypoint_ids = {}              # holds ids for actual end effector movement
+        self.path_plan_ids = {}             # holds ids for planned end effector movement
         self.waypoint_pose_map = {}
 
         # menu stuff
@@ -82,7 +83,7 @@ class AffordanceTemplate(threading.Thread) :
         self.menu_handles = {}
 
         # control helper stuff
-        self.waypoint_index = {}
+        self.waypoint_index = {}            
         self.waypoint_backwards_flag = {}
         self.waypoint_auto_execute = {}
         self.waypoint_plan_valid = {}
@@ -845,6 +846,7 @@ class AffordanceTemplate(threading.Thread) :
         if not traj_name in self.waypoint_origin : self.waypoint_origin[traj_name] = {}
         if not traj_name in self.waypoint_end_effectors : self.waypoint_end_effectors[traj_name] = {}
         if not traj_name in self.waypoint_ids : self.waypoint_ids[traj_name] = {}
+        if not traj_name in self.path_plan_ids : self.path_plan_ids[traj_name] = {}
         if not traj_name in self.waypoint_pose_map : self.waypoint_pose_map[traj_name] = {}
         if not traj_name in self.waypoint_max : self.waypoint_max[traj_name] = {}
         if not traj_name in self.waypoint_index : self.waypoint_index[traj_name] = {}
@@ -879,6 +881,8 @@ class AffordanceTemplate(threading.Thread) :
 
         self.waypoint_end_effectors[traj_name][wp_name] = ee_id
         self.waypoint_ids[traj_name][wp_name] = wp_id
+        rospy.loginfo(str("Waypoint id at " + traj_name + " with name " + wp_name + "is " + str(wp_id)))
+        self.path_plan_ids[traj_name][wp_name] = wp_id          # for using to plan multiple waypoints before executing
 
         self.waypoint_pose_map[traj_name][wp_name] = pose_id
 
@@ -894,6 +898,8 @@ class AffordanceTemplate(threading.Thread) :
         else :
             if int(self.waypoint_ids[traj_name][wp_name]) > self.waypoint_max[traj_name][ee_id] :
                 self.waypoint_max[traj_name][ee_id] = int(self.waypoint_ids[traj_name][wp_name])
+
+        rospy.loginfo(str("Waypoint index at " + traj_name + " with ee " + str(ee_id) + " is " + str(self.waypoint_index[traj_name][ee_id])))
 
         if not wp_name in self.waypoints[traj_name] :
             self.waypoints[traj_name].append(wp_name)
@@ -914,6 +920,7 @@ class AffordanceTemplate(threading.Thread) :
         del self.waypoint_origin[traj_name][last_wp_name]
         del self.waypoint_end_effectors[traj_name][last_wp_name]
         del self.waypoint_ids[traj_name][last_wp_name]
+        del self.path_plan_ids[traj_name][last_wp_name]
         del self.waypoint_pose_map[traj_name][last_wp_name]
         del self.waypoint_controls_display_on[traj_name][last_wp_name]
         self.waypoint_max[traj_name][ee_id] -= 1
