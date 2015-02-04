@@ -327,9 +327,14 @@ class AffordanceTemplate(threading.Thread) :
 
         for traj in self.structure['end_effector_trajectory'] :
 
-            self.create_trajectory_structures(traj['name'])
+            # check if all the end effectors in the trajectory actually exist                       
+            if not self.is_valid_trajectory(traj) :
+                rospy.logwarn(str("AffordanceTemplate::load_initial_parameters() -- not adding trajectory: " + traj['name']))
+                continue
+
+            # all ee's were found, can actually create things
             rospy.loginfo(str("AffordanceTemplate::load_initial_parameters() -- adding trajectory: " + traj['name']))
-            
+            self.create_trajectory_structures(traj['name'])             
             for ee_group in traj['end_effector_group'] :
                 wp_id = 0
                 for wp in ee_group['end_effector_waypoint'] :
@@ -360,84 +365,19 @@ class AffordanceTemplate(threading.Thread) :
 
                     wp_id += 1
 
-#### THIS IS DEPRECTATED, NEEDS TO REVISISTED FOR RECOGNITION OBJECTS
-    # def load_initial_parameters_from_marker(self, m) :
+    def is_valid_trajectory(self, traj) : 
+        valid_trajectory = True             
+        try :
+            for ee_group in traj['end_effector_group'] :
+                for wp in ee_group['end_effector_waypoint'] :
+                    if not ee_group['id'] in self.robot_interface.end_effector_name_map :
+                        rospy.logdebug(str("AffordanceTemplate::is_valid_trajectory() -- can't find ee: " + ee_group['id']))
+                        valid_trajectory = False     
+        except :
+            rospy.logerr("AffordanceTemplate::is_valid_trajectory() -- malformed trajectory structure")
+            valid_trajectory = False        
 
-    #     if self.robot_interface == None :
-    #         rospy.error("AffordanceTemplate::load_initial_parameters_from_marker() -- no robot config")
-    #         return False
-
-    #     self.display_objects = []
-    #     self.waypoints = []
-
-    #     self.frame_id = self.robot_interface.robot_config.frame_id
-    #     self.robotTroot = getFrameFromPose(self.robot_interface.robot_config.root_offset)
-
-    #     self.key = self.name + ":" + str(m.id)
-    #     self.id = m.id
-    #     # parse objects
-    #     ids = 0
-    #     self.display_objects.append(self.key)
-
-    #     if ids == 0:
-    #         self.set_root_object(self.key)
-    #         self.parent_map[self.key] = "robot"
-
-    #     ps = geometry_msgs.msg.PoseStamped()
-    #     ps.header.frame_id = m.header.frame_id
-    #     ps.pose = m.pose
-    #     # ps.header.stamp = rospy.get_rostime()
-
-    #     self.tf_listener.waitForTransform(ps.header.frame_id, self.frame_id, rospy.Time(0), rospy.Duration(5.0))
-    #     ps = self.tf_listener.transformPose(self.frame_id, ps)
-
-    #     robotTobj = getFrameFromPose(ps.pose)
-
-    #     T = self.robotTroot.Inverse()*robotTobj
-
-    #     self.rootTobj[self.key] = T
-    #     ps.pose = getPoseFromFrame(T)
-    #     self.marker_pose_offset[self.key] = ps.pose
-
-    #     origin = self.create_origin_from_pose(ps.pose)
-    #     controls = self.create_6dof_controls(0.25)
-
-    #     geometry = None
-    #     affordance_template_markers.atdf_parser.GeometricType()  #YAML FIXME
-
-    #     if m.type == Marker.MESH_RESOURCE : # affordance_template_markers.atdf_parser.Mesh
-    #         geometry = affordance_template_markers.atdf_parser.Mesh()
-    #         marker.mesh_resource = self.object_geometry[obj].filename
-    #         geometry.scale[0] = m.scale.x
-    #         geometry.scale[1] = m.scale.y
-    #         geometry.scale[2] = m.scale.z
-    #     elif m.type == Marker.CUBE : # affordance_template_markers.atdf_parser.Box) :
-    #         geometry = affordance_template_markers.atdf_parser.Box()
-    #         geometry.size = m.scale.x
-    #     elif m.type == Marker.SPHERE: # affordance_template_markers.atdf_parser.Box) :
-    #         geometry = affordance_template_markers.atdf_parser.Sphere()
-    #         geometry.x = m.scale.x
-    #         geometry.y = m.scale.y
-    #         geometry.z = m.scale.z
-    #     # elif m.type == Marker.SPHERE : # affordance_template_markers.atdf_parser.Sphere) :
-    #     #     geometry.radius = m.scale.x
-    #     elif m.type == Marker.CYLINDER : # affordance_template_markers.atdf_parser.Cylinder) :
-    #         geometry = affordance_template_markers.atdf_parser.Cylinder()
-    #         geometry.radius = m.scale.x
-    #         geometry.length = m.scale.z
-
-    #     material = affordance_template_markers.atdf_parser.Material()
-    #     material.color = affordance_template_markers.atdf_parser.Color()
-    #     material.color.rgba = [0]*4
-    #     material.color.rgba[0] = m.color.r
-    #     material.color.rgba[1] = m.color.g
-    #     material.color.rgba[2] = m.color.b
-    #     material.color.rgba[3] = m.color.a
-
-    #     self.object_origin[self.key] = origin
-    #     self.object_controls[self.key] = controls
-    #     self.object_geometry[self.key] = geometry
-    #     self.object_material[self.key] = material
+        return valid_trajectory
 
 
     def create_from_parameters(self, keep_poses=False, current_trajectory="") :
@@ -446,16 +386,18 @@ class AffordanceTemplate(threading.Thread) :
         self.key = self.name
         self.frame_store_map[self.name] = FrameStore(self.key, self.robot_interface.robot_config.frame_id, getPoseFromFrame(self.robotTroot))
         if not current_trajectory :
-            self.current_trajectory = str(self.structure['end_effector_trajectory'][0]['name'])
-
-
+            for traj in self.structure['end_effector_trajectory'] :
+                if self.is_valid_trajectory(traj) :
+                    self.current_trajectory = str(traj['name'])
+                    rospy.loginfo("AffordanceTemplate::create_from_parameters() -- setting current trajectory to: " + str(traj['name']))
+                    break
+        
         # parse objects
         ids = 0
         debug_id = 0
 
         for obj in self.display_objects :
 
-            # obj = self.name + "/" + obj
             int_marker = InteractiveMarker()
             control = InteractiveMarkerControl()
 
@@ -565,7 +507,10 @@ class AffordanceTemplate(threading.Thread) :
 
             ids += 1
 
-            self.create_trajectory_from_parameters(self.current_trajectory)
+            if self.current_trajectory :
+                self.create_trajectory_from_parameters(self.current_trajectory)
+            else :
+                rospy.logwarn("AffordanceTemplate::create_from_parameters() -- couldn't find a valid trajectory to set as the current")
 
         rospy.loginfo("AffordanceTemplate::create_from_parameters() -- done")
 
@@ -1530,17 +1475,10 @@ class AffordanceTemplate(threading.Thread) :
                 T_goal = getFrameFromPose(pt.pose)
                 T_offset = getFrameFromPose(ee_offset)
                 T_tool = getFrameFromPose(tool_offset).Inverse()
-
                 T_fixed_joint_offset = self.get_fixed_joint_offset(end_effector)
 
-                print "-----------------"
                 T = T_goal*T_offset*T_tool
-                print "original goal: "
-                print T
                 T = T_goal*T_offset*T_fixed_joint_offset*T_tool
-                print "new goal"
-                print T
-                print "-----------------"
                 pt.pose = getPoseFromFrame(T)
                 waypoints.append(pt.pose)
 
