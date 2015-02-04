@@ -1549,43 +1549,20 @@ class AffordanceTemplate(threading.Thread) :
 
     def get_fixed_joint_offset(self, end_effector) :
         T = Frame()
-
-        print "looking up parent group for ", end_effector
-        print self.robot_interface.moveit_interface.srdf_model.group_end_effectors.keys()
         manipulator_group = self.robot_interface.moveit_interface.srdf_model.group_end_effectors[end_effector].parent_group
-        print "found ", manipulator_group
         control_frame = self.robot_interface.moveit_interface.control_frames[manipulator_group]
-        print "control frame: ", control_frame
-
         urdf = self.robot_interface.moveit_interface.get_urdf_model()
-
-        print "got urdf"
         link = control_frame
         while True :
-            # parent_link = get_parent_link(link, urdf)
-            # print "parent_link ", parent_link
-            # joint = get_link_joint(parent_link, urdf)
-            joint = get_link_joint(link, urdf)
-            print "joint ", joint
-            
+            joint = get_link_joint(link, urdf)    
             if urdf.joint_map[joint].type == "fixed" :
-                print "its a fixed joint!"
                 p = joint_origin_to_pose(urdf.joint_map[joint])
-                print p
                 T_new = getFrameFromPose(p)
-                print "adding link offset: "
-                print T_new
                 T = T*T_new
                 link = get_parent_link(link,urdf)
-                print "total now ="
                 print T
-                print "----"
-
             else :
                 break
-
-        print "cumulative offset:"
-        print T
         return T
 
 
