@@ -237,7 +237,7 @@ class ServiceInterface(object):
                     wp.num_waypoints = at.waypoint_max[at.current_trajectory][wp.id]+1
                     response.waypoint_info.append(wp)                  
 
-                rospy.loginfo(str("ServiceInterface::handle_command() -- done execution path for " + ee))
+                rospy.loginfo(str("ServiceInterface::handle_command() -- done executing path for " + ee))
             response.status = True
         except:
             rospy.logerr(str("ServiceInterface::handle_command() -- error performing command!!"))
