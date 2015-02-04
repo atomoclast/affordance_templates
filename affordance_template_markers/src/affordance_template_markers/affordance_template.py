@@ -1554,17 +1554,15 @@ class AffordanceTemplate(threading.Thread) :
         urdf = self.robot_interface.moveit_interface.get_urdf_model()
         link = control_frame
         while True :
-            joint = get_link_joint(link, urdf)    
+            joint = get_link_joint(link, urdf)
             if urdf.joint_map[joint].type == "fixed" :
                 p = joint_origin_to_pose(urdf.joint_map[joint])
                 T_new = getFrameFromPose(p)
                 T = T*T_new
                 link = get_parent_link(link,urdf)
-                print T
             else :
                 break
         return T
-
 
     def move_to_waypoint(self, end_effector, next_path_idx) :
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
