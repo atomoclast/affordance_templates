@@ -25,6 +25,16 @@ namespace rviz_affordance_template_panel
     {
     public:
 
+        enum CommandType 
+        {
+            START,
+            END,
+            STEP_FORWARD,
+            STEP_BACKWARD,
+            CURRENT,
+            PAUSE
+        }
+
     	typedef boost::shared_ptr<RobotConfig> RobotConfigSharedPtr;
         Controls(Ui::RVizAffordanceTemplatePanel* ui);
         ~Controls() {};
@@ -32,7 +42,7 @@ namespace rviz_affordance_template_panel
         void setService(ros::ServiceClient srv) { controlsService_ = srv; };
         void setRobotMap(std::map<std::string, RobotConfigSharedPtr> map) { robotMap_ = map; };
         void setRobotName(std::string name) { robotName_ = name; };
-        void sendCommand(int command_type);
+        void requestPlan(Controls::CommandType command_type);
         void executePlan();
 
     private:

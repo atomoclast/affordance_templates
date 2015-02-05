@@ -165,44 +165,36 @@ namespace rviz_affordance_template_panel
 
         /** \brief Go To Start Command.
          */
-        void go_to_start() { 
-            affordance_template_msgs::AffordanceTemplateCommand srv;
-            controls_->sendCommand(srv.request.GO_TO_START); 
-        };
+        void go_to_start();
 
         // /** \brief Go To End Command.
         //  */
-        void go_to_end() { 
-            affordance_template_msgs::AffordanceTemplateCommand srv;
-            controls_->sendCommand(srv.request.GO_TO_END); 
-        };
+        void go_to_end();
 
         // /** \brief Stop Command.
         //  */
-        void stop() { 
-            affordance_template_msgs::AffordanceTemplateCommand srv;
-            controls_->sendCommand(srv.request.STOP); 
-        };
+        //void stop();
 
         // /** \brief Step Backward Command.
         //  */
-        void step_backward() { 
-            affordance_template_msgs::AffordanceTemplateCommand srv;
-            controls_->sendCommand(srv.request.STEP_BACKWARD);
-        };
+        void step_backward();
 
         // /** \brief Step Forward Command.
         //  */
-        void step_forward() { 
-            affordance_template_msgs::AffordanceTemplateCommand srv;
-            controls_->sendCommand(srv.request.STEP_FORWARD);
-        };
+        void step_forward();
 
-        // /** \brief Step Forward Command.
+        // /** \brief Go to Current.
         //  */
-        void execute_plan() { 
-            controls_->executePlan();
-        };
+        void go_to_current_waypoint();
+
+        // /** \brief Execute Command.
+        //  */
+        void execute_plan();
+
+        // /** \brief Get Status Update.
+        //  */
+        void control_status_update();
+
 
         // /** \brief Pause Command.
         //  */

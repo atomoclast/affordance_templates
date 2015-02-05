@@ -7,5 +7,6 @@
         <file>right.png</file>
         <file>rwnd.png</file>
         <file>start.png</file>
+        <file>sync.png</file>
     </qresource>
 </RCC>

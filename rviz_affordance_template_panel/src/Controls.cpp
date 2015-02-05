@@ -26,7 +26,34 @@ void Controls::updateTable(std::map<int, std::pair<int,int> > waypointData) {
     }
 }
 
-void Controls::sendCommand(int command_type) {
+void Controls::requestPlan(Controls::CommandType command_type) {
+
+    // need to determine where each waypoint currently is (get this from stored information)
+    // the request needs:
+    
+    /*
+    # command types
+    uint8 PLAN = 0
+    uint8 EXECUTE = 1
+
+    # the template type
+    string type
+
+    # the template id
+    uint8 id
+
+    # which command type (as above)
+    uint8 command
+
+    # which end effectors to plan/execute
+    string[] end_effectors
+
+    # the goal IDs for each end-effector
+    uint8 waypoint_goal_ids[]
+
+    # go directly to the waypoint (if not adjacent)
+    bool direct
+    */
 
     string key = ui_->control_template_box->currentText().toUtf8().constData();
     vector<string> stuff = util::split(key, ':');
@@ -34,17 +61,24 @@ void Controls::sendCommand(int command_type) {
 
     ROS_INFO("Sending Command request for a %s", key.c_str());      
 
-    affordance_template_msgs::AffordanceTemplateCommand srv;
+    affordance_template_msgs::AffordanceTemplateCommand ;
     srv.request.type = stuff[0];
     srv.request.id = int(atoi(stuff[1].c_str()));
-    srv.request.command = command_type;
-    srv.request.steps = ui_->num_steps->text().toInt();
-    srv.request.execute_on_plan = ui_->execute_on_plan->isChecked();
-    srv.request.execute_precomputed_plan = false;
+    srv.request.command = srv.request.PLAN;    
+    
+    //srv.request.command = command_type; 
+    //srv.request.steps = ui_->num_steps->text().toInt();
+    //srv.request.execute_on_plan = ui_->execute_on_plan->isChecked();
+    //srv.request.execute_precomputed_plan = false;
+
+    if(command_type==CommandType::START || command_type==CommandType::END) {
+        srv.request.direct = true;
+    }
 
     vector<string> ee_list = getSelectedEndEffectors();
     for(auto &ee : ee_list) {
         srv.request.end_effectors.push_back(ee);
+        srv.request.waypoint_goal_ids.push_back(goal_id); ##### FIXME
     }
 
     if (controlsService_.call(srv))
@@ -56,15 +90,21 @@ void Controls::sendCommand(int command_type) {
             waypointData[int(wp.id)] = waypointPair;
         }
         updateTable(waypointData);
+        return srv.response.status;
     }
     else
     {
         ROS_ERROR("Failed to call service command");
+        return false;
     }
+
+    return false;
 }
 
 
 void Controls::executePlan() {
+
+    // This all needs to be fixed
 
     string key = ui_->control_template_box->currentText().toUtf8().constData();
     vector<string> stuff = util::split(key, ':');
@@ -75,12 +115,14 @@ void Controls::executePlan() {
     affordance_template_msgs::AffordanceTemplateCommand srv;
     srv.request.type = stuff[0];
     srv.request.id = int(atoi(stuff[1].c_str()));
-/*    srv.request.command = command_type;
+/*  
+    srv.request.command = command_type;
     srv.request.steps = ui_->num_steps->text().toInt();
     srv.request.execute_on_plan = ui_->execute_on_plan->isChecked();
-*/    
     srv.request.execute_precomputed_plan = true;
-
+*/
+    srv.request.command = srv.request.EXECUTE;    
+    
     vector<string> ee_list = getSelectedEndEffectors();
     for(auto &ee : ee_list) {
         srv.request.end_effectors.push_back(ee);
@@ -95,11 +137,15 @@ void Controls::executePlan() {
             waypointData[int(wp.id)] = waypointPair;
         }
         updateTable(waypointData);
+        return srv.response.status;
     }
     else
     {
         ROS_ERROR("Failed to call service command");
+        return false;
     }
+
+    return false;
 }
 
 

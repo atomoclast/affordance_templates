@@ -10,5 +10,5 @@ uint8 id
 string trajectory_name
 
 # The trajectory details
-EndEffectorWaypointID[] end_effector_ids
+WaypontInfo[] waypoint_info
 

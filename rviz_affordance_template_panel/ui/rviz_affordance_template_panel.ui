@@ -197,15 +197,22 @@
               </property>
              </widget>
             </item>
+            <item row="7" column="1">
+             <widget class="QCheckBox" name="save_scaling_check_box">
+              <property name="text">
+               <string>Save Scaling</string>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="QLineEdit" name="new_traj_name"/>
+            </item>
             <item row="8" column="2">
              <widget class="Line" name="line_2">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
              </widget>
-            </item>
-            <item row="9" column="1">
-             <widget class="QLineEdit" name="new_traj_name"/>
             </item>
             <item row="4" column="1" colspan="2">
              <layout class="QHBoxLayout" name="horizontalLayout_15">
@@ -244,13 +251,6 @@
                <widget class="QLineEdit" name="new_filename"/>
               </item>
              </layout>
-            </item>
-            <item row="7" column="1">
-             <widget class="QCheckBox" name="save_scaling_check_box">
-              <property name="text">
-               <string>Save Scaling</string>
-              </property>
-             </widget>
             </item>
            </layout>
           </widget>
@@ -1345,7 +1345,7 @@
    <item row="1" column="0">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -1366,7 +1366,31 @@
        <string>Controls</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_7">
-       <item row="4" column="3">
+       <item row="6" column="2">
+        <widget class="QPushButton" name="go_to_current_waypoint_button">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/images.qrc">
+           <normaloff>:/sync.png</normaloff>:/sync.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="4">
+        <widget class="QPushButton" name="execute_button">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Execute Plan</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="4">
         <widget class="QPushButton" name="go_to_end_button">
          <property name="text">
           <string/>
@@ -1377,7 +1401,7 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="0" colspan="4">
+       <item row="0" column="0" colspan="5">
         <widget class="QGroupBox" name="control_box">
          <property name="font">
           <font>
@@ -1397,10 +1421,10 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0" colspan="4">
+       <item row="1" column="0" colspan="5">
         <widget class="QComboBox" name="control_template_box"/>
        </item>
-       <item row="3" column="0" colspan="2">
+       <item row="4" column="0" colspan="2">
         <layout class="QHBoxLayout" name="horizontalLayout_8">
          <item>
           <widget class="QLabel" name="label_2">
@@ -1427,7 +1451,7 @@
          </item>
         </layout>
        </item>
-       <item row="3" column="2" colspan="2">
+       <item row="4" column="3" colspan="2">
         <widget class="QCheckBox" name="execute_on_plan">
          <property name="layoutDirection">
           <enum>Qt::RightToLeft</enum>
@@ -1437,7 +1461,7 @@
          </property>
         </widget>
        </item>
-       <item row="4" column="0">
+       <item row="6" column="0">
         <widget class="QPushButton" name="go_to_start_button">
          <property name="text">
           <string/>
@@ -1448,7 +1472,7 @@
          </property>
         </widget>
        </item>
-       <item row="4" column="1">
+       <item row="6" column="1">
         <widget class="QPushButton" name="step_backwards_button">
          <property name="text">
           <string/>
@@ -1459,7 +1483,7 @@
          </property>
         </widget>
        </item>
-       <item row="4" column="2">
+       <item row="6" column="3">
         <widget class="QPushButton" name="step_forward_button">
          <property name="text">
           <string/>
@@ -1470,20 +1494,7 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="1" colspan="2">
-        <widget class="QPushButton" name="execute_button">
-         <property name="font">
-          <font>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Execute Plan</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="4">
+       <item row="2" column="0" colspan="5">
         <widget class="QTableWidget" name="end_effector_table">
          <property name="gridStyle">
           <enum>Qt::DotLine</enum>
@@ -1543,6 +1554,19 @@
          </column>
         </widget>
        </item>
+       <item row="7" column="0">
+        <widget class="QPushButton" name="status_update_button">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Status Update</string>
+         </property>
+        </widget>
+       </item>
       </layout>
       <zorder>control_box</zorder>
       <zorder>end_effector_table</zorder>
@@ -1552,6 +1576,8 @@
       <zorder>step_forward_button</zorder>
       <zorder>execute_on_plan</zorder>
       <zorder>control_template_box</zorder>
+      <zorder>status_update_button</zorder>
+      <zorder>go_to_current_waypoint_button</zorder>
       <zorder>execute_button</zorder>
      </widget>
      <widget class="QWidget" name="tab_4">

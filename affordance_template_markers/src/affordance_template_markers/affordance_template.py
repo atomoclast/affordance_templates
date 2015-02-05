@@ -1341,6 +1341,7 @@ class AffordanceTemplate(threading.Thread) :
 
                 self.create_from_parameters(True, self.current_trajectory)
 
+    # returns an array of waypoint IDs from the current waypoint index to the waypoint "steps" away, and the idea of the final waypoint 
     def compute_path_ids(self, id, steps, backwards=False) :
         idx  = self.waypoint_index[self.current_trajectory][id]
         max_idx = self.waypoint_max[self.current_trajectory][id]
@@ -1413,6 +1414,39 @@ class AffordanceTemplate(threading.Thread) :
 
         return next_path_idx
 
+    def get_waypoint_index_path(self, end_effector, goal, direct, backwards=False) :
+
+        path = []
+
+        ee_id = self.robot_interface.manipulator_id_map[end_effector]
+        idx = self.waypoint_index[self.current_trajectory][ee_id]
+        max_idx = self.waypoint_max[self.current_trajectory][ee_id]
+
+        # check to make sure goal waypoint id is in the valid range of [0,max_id] for the current trajectory
+        if goal < 0 or goal > max_idx :
+            rospy.logerr(str("AffordanceTemplate::get_waypoint_index_path() -- index " + str(goal) + " out of range[0," + str(self.waypoint_max[self.current_trajectory][ee_id])))
+            return path, -1
+
+        # the path is just the goal, if we are going directly
+        if direct: 
+            path = [goal]
+            goal_idx = goal
+        else :
+            steps = 0
+            if not backwards :
+                if idx < goal :
+                    steps = goal-idx
+                else :
+                    steps = max_idx - idx + goal
+            else :
+                if goal < idx :
+                    steps = idx-goal
+                else :
+                    steps = idx + max_idx - goal
+            path, goal_idx = self.compute_path_ids(ee_id, steps, backwards)
+        
+        return path, goal_idx
+
     def get_next_index(self, end_effector, steps=1, backwards=False, direct=False) :
         
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
@@ -1434,7 +1468,8 @@ class AffordanceTemplate(threading.Thread) :
 
         return path, next_path_idx
 
-    def plan_path_to_waypoint(self, end_effector, steps=1, backwards=False, direct=False) :
+    def plan_path_to_waypoint(end_effector, goal=0, direct=False, backwards=False) :
+    # def plan_path_to_waypoint(self, end_effector, steps=1, backwards=False, direct=False) :
 
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
         ee_offset = self.robot_interface.manipulator_pose_map[end_effector]
@@ -1442,8 +1477,14 @@ class AffordanceTemplate(threading.Thread) :
         max_idx = self.waypoint_max[self.current_trajectory][ee_id]
         manipulator_name = self.robot_interface.get_manipulator(end_effector)
         ee_name = self.robot_interface.get_end_effector_name(ee_id)
+        self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
        
-        path, next_path_idx = self.get_next_index(end_effector, steps, backwards, direct)
+        path, next_path_idx = self.get_waypoint_index_path(end_effector, goal, direct, backwards)
+
+        if next_path_idx == -1 :
+            return next_path_idx
+
+        # path, next_path_idx = self.get_next_index(end_effector, steps, backwards, direct)
 
         # print "path: ", path
         # print "next_path_idx: ", next_path_idx
@@ -1460,35 +1501,44 @@ class AffordanceTemplate(threading.Thread) :
         # print "max_idx: ", max_idx
 
         # if we are gonna handle pausing, it probably should allow us to interrupt things.
-        for idx in path :
-            next_path_str = self.create_waypoint_id(ee_id, idx)
-            if not next_path_str in self.objTwp[self.current_trajectory] :
-                rospy.logerr(str("AffordanceTemplate::process_feedback() -- path index[" + str(next_path_str) + "] not found!!"))
-            else :
-                rospy.loginfo(str("AffordanceTemplate::process_feedback() -- computing path to index[" + str(next_path_str) + "]"))
-                k = str(next_path_str)
-                pt = geometry_msgs.msg.PoseStamped()
-                pt.header = self.server.get(k).header
-                pt.pose = self.server.get(k).pose
-                frame_id =  pt.header.frame_id
+        try :
+            for idx in path :
+                next_path_str = self.create_waypoint_id(ee_id, idx)
+                if not next_path_str in self.objTwp[self.current_trajectory] :
+                    rospy.logerr(str("AffordanceTemplate::plan_path_to_waypoint() -- path index[" + str(next_path_str) + "] not found!!"))
+                    return next_path_idx
+                else :
+                    rospy.loginfo(str("AffordanceTemplate::plan_path_to_waypoint() -- computing path to index[" + str(next_path_str) + "]"))
+                    k = str(next_path_str)
+                    pt = geometry_msgs.msg.PoseStamped()
+                    pt.header = self.server.get(k).header
+                    pt.pose = self.server.get(k).pose
+                    frame_id =  pt.header.frame_id
 
-                T_goal = getFrameFromPose(pt.pose)
-                T_offset = getFrameFromPose(ee_offset)
-                T_tool = getFrameFromPose(tool_offset).Inverse()
-                T_fixed_joint_offset = self.get_fixed_joint_offset(end_effector)
+                    T_goal = getFrameFromPose(pt.pose)
+                    T_offset = getFrameFromPose(ee_offset)
+                    T_tool = getFrameFromPose(tool_offset).Inverse()
+                    T_fixed_joint_offset = self.get_fixed_joint_offset(end_effector)
 
-                T = T_goal*T_offset*T_tool
-                T = T_goal*T_offset*T_fixed_joint_offset*T_tool
-                pt.pose = getPoseFromFrame(T)
-                waypoints.append(pt.pose)
+                    T = T_goal*T_offset*T_tool
+                    T = T_goal*T_offset*T_fixed_joint_offset*T_tool
+                    pt.pose = getPoseFromFrame(T)
+                    waypoints.append(pt.pose)
 
-            if not self.waypoint_pose_map[self.current_trajectory][next_path_str] == None :
-                id = self.waypoint_pose_map[self.current_trajectory][next_path_str]
-                pn = self.robot_interface.end_effector_id_map[ee_name][id]
-                self.robot_interface.moveit_interface.create_joint_plan_to_target(ee_name, self.robot_interface.stored_poses[ee_name][pn])
+                if not self.waypoint_pose_map[self.current_trajectory][next_path_str] == None :
+                    id = self.waypoint_pose_map[self.current_trajectory][next_path_str]
+                    pn = self.robot_interface.end_effector_id_map[ee_name][id]
+                    self.robot_interface.moveit_interface.create_joint_plan_to_target(ee_name, self.robot_interface.stored_poses[ee_name][pn])
 
-        self.robot_interface.moveit_interface.create_path_plan(manipulator_name, frame_id, waypoints)
-        self.waypoint_plan_valid[self.current_trajectory][ee_id] = True
+            # create plan through the waypoints 
+            r = self.robot_interface.moveit_interface.create_path_plan(manipulator_name, frame_id, waypoints) :
+            self.waypoint_plan_valid[self.current_trajectory][ee_id] = r
+
+            # check for validity
+            if !r : rospy.logwarn("AffordanceTemplate::plan_path_to_waypoint() -- couldnt find valid plan for " + manipulator_name + " to id: " + next_path_str)
+            
+        except :
+            rospy.logerr(str("AffordanceTemplate::plan_path_to_waypoint() -- Error in calculation waypoint pose goals from id path"))
 
         return next_path_idx
 
@@ -1510,21 +1560,34 @@ class AffordanceTemplate(threading.Thread) :
         return T
 
     def move_to_waypoint(self, end_effector, next_path_idx) :
+
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
         ee_name = self.robot_interface.get_end_effector_name(ee_id)
         manipulator_name = self.robot_interface.get_manipulator(end_effector)
+        
         if self.waypoint_plan_valid[self.current_trajectory][ee_id] :
+            
+            # first execute for the manipulator (arm)
             r = self.robot_interface.moveit_interface.execute_plan(manipulator_name,from_stored=True)
             if not r :
-                rospy.logerr(str("RobotTeleop::move_to_waypoint(mouse) -- failed moveit execution for group: " + manipulator_name + ". re-synching..."))
+                rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- failed moveit execution for group: " + manipulator_name + ". re-synching..."))
+                return False
 
+            # next execute for the end-effector (hand)
             r = self.robot_interface.moveit_interface.execute_plan(ee_name,from_stored=True)
             if not r :
-                rospy.logerr(str("RobotTeleop::process_feedback(mouse) -- failed moveit execution for group: " + ee_name + ". re-synching..."))
+                rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- failed moveit execution for group: " + ee_name + ". re-synching..."))
+                return False
 
+            # if succeeded, update the current index, and set the valid plan to False so we dont jump back later
             self.waypoint_index[self.current_trajectory][ee_id] = next_path_idx
-            rospy.loginfo(str("setting current waypoint idx: " + str(self.waypoint_index[self.current_trajectory][ee_id])))
+            rospy.loginfo(str("AffordanceTemplate::move_to_waypoint() -- setting current waypoint idx: " + str(self.waypoint_index[self.current_trajectory][ee_id])))
             self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
+            return True
+            
+        else :
+            rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- waypoint plan not valid..."))
+            return False
 
     def create_origin_from_pose(self, ps) :
         origin = {}

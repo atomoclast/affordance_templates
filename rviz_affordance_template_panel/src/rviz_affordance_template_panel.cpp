@@ -100,6 +100,8 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->step_backwards_button, SIGNAL(clicked()), this, SLOT(step_backward()));
     QObject::connect(ui_->step_forward_button, SIGNAL(clicked()), this, SLOT(step_forward()));
     QObject::connect(ui_->execute_button, SIGNAL(clicked()), this, SLOT(execute_plan()));
+    QObject::connect(ui_->status_update_button, SIGNAL(clicked()), this, SLOT(control_status_update()));
+    QObject::connect(ui_->go_to_current_waypoint_button, SIGNAL(clicked()), this, SLOT(go_to_current_waypoint()));
 
     //QObject::connect(ui_->pause_button, SIGNAL(clicked()), this, SLOT(pause()));
     //QObject::connect(ui_->play_backwards_button, SIGNAL(clicked()), this, SLOT(play_backward()));
@@ -1146,6 +1148,94 @@ std::string RVizAffordanceTemplatePanel::getRobotFromDescription() {
     return robot;
 }
 
+// control panel functions
+void RVizAffordanceTemplatePanel::go_to_start() { 
+    bool ret = controls_->requestPlan(Controls::START); 
+    if (ret) {
+        if (ui_->execute_on_plan->isChecked()) {
+            ret = controls_->executePlan();
+            if(!ret) {
+                ROS_ERROR("RVizAffordanceTemplatePanel::go_to_start() -- executing plan failed");
+            }
+        } 
+    } else {
+        ROS_ERROR("RVizAffordanceTemplatePanel::go_to_start() -- computing plan failed");
+    }
+};
+
+void RVizAffordanceTemplatePanel::go_to_end() { 
+    bool ret = controls_->requestPlan(Controls::END); 
+    if (ret) {
+        if (ui_->execute_on_plan->isChecked()) {
+            ret = controls_->executePlan();
+            if(!ret) {
+                ROS_ERROR("RVizAffordanceTemplatePanel::go_to_end() -- executing plan failed");
+            }
+        } 
+    } else {
+        ROS_ERROR("RVizAffordanceTemplatePanel::go_to_end() -- computing plan failed");
+    }
+};
+
+/*void RVizAffordanceTemplatePanel::stop() { 
+    affordance_template_msgs::AffordanceTemplateCommand srv;
+    controls_->requestPlan(Controls::STOP); 
+};
+*/
+
+void RVizAffordanceTemplatePanel::step_backward() { 
+    bool ret = controls_->requestPlan(Controls::STEP_BACKWARD); 
+    if (ret) {
+        if (ui_->execute_on_plan->isChecked()) {
+            ret = controls_->executePlan();
+            if(!ret) {
+                ROS_ERROR("RVizAffordanceTemplatePanel::step_backward() -- executing plan failed");
+            }
+        } 
+    } else {
+        ROS_ERROR("RVizAffordanceTemplatePanel::step_backward() -- computing plan failed");
+    }
+};
+
+void RVizAffordanceTemplatePanel::step_forward() { 
+    bool ret = controls_->requestPlan(Controls::STEP_FORWARD); 
+    if (ret) {
+        if (ui_->execute_on_plan->isChecked()) {
+            ret = controls_->executePlan();
+            if(!ret) {
+                ROS_ERROR("RVizAffordanceTemplatePanel::step_forward() -- executing plan failed");
+            }
+        } 
+    } else {
+        ROS_ERROR("RVizAffordanceTemplatePanel::step_forward() -- computing plan failed");
+    }
+};
+
+void RVizAffordanceTemplatePanel::go_to_current_waypoint() { 
+    bool ret = controls_->requestPlan(Controls::CURRENT); 
+    if (ret) {
+        if (ui_->execute_on_plan->isChecked()) {
+            ret = controls_->executePlan();
+            if(!ret) {
+                ROS_ERROR("RVizAffordanceTemplatePanel::go_to_current_waypoint() -- executing plan to start failed");
+            }
+        } 
+    } else {
+        ROS_ERROR("RVizAffordanceTemplatePanel::go_to_current_waypoint() -- computing plan to start failed");
+    }
+};
+
+void RVizAffordanceTemplatePanel::execute_plan() { 
+    controls_->executePlan();
+}
+ 
+void RVizAffordanceTemplatePanel::control_status_update() { 
+    controls_->status_update();
+}
+
+void RVizAffordanceTemplatePanel::go_to_current_waypoint() { 
+    controls_->requestPlan(srv.request.CURRENT); 
+}
 
 #include <pluginlib/class_list_macros.h>
 #if ROS_VERSION_MINIMUM(1,9,41)
