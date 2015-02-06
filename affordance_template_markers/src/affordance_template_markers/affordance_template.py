@@ -609,8 +609,6 @@ class AffordanceTemplate(threading.Thread) :
             self.marker_menus[wp].apply( self.server, wp )
             self.server.applyChanges()
 
-            print "test 13"
-
             wp_ids += 1
 
             rospy.loginfo("AffordanceTemplate::create_trajectory_from_parameters() -- done")
@@ -1531,11 +1529,12 @@ class AffordanceTemplate(threading.Thread) :
                     self.robot_interface.moveit_interface.create_joint_plan_to_target(ee_name, self.robot_interface.stored_poses[ee_name][pn])
 
             # create plan through the waypoints 
-            r = self.robot_interface.moveit_interface.create_path_plan(manipulator_name, frame_id, waypoints) :
+            r = self.robot_interface.moveit_interface.create_path_plan(manipulator_name, frame_id, waypoints)
             self.waypoint_plan_valid[self.current_trajectory][ee_id] = r
 
             # check for validity
-            if !r : rospy.logwarn("AffordanceTemplate::plan_path_to_waypoint() -- couldnt find valid plan for " + manipulator_name + " to id: " + next_path_str)
+            if not r : 
+                rospy.logwarn(str("AffordanceTemplate::plan_path_to_waypoint() -- couldnt find valid plan for " + manipulator_name + " to id: " + next_path_str))
             
         except :
             rospy.logerr(str("AffordanceTemplate::plan_path_to_waypoint() -- Error in calculation waypoint pose goals from id path"))

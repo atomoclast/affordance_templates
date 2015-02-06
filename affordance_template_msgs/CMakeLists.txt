@@ -54,6 +54,7 @@ add_message_files(
   WaypointInfo.msg
   WaypointTrajectory.msg
   AffordanceTemplateConfig.msg
+  AffordanceTemplateStatus.msg
   RecognitionObjectConfig.msg
   ScaleDisplayObjectInfo.msg
 )
@@ -65,12 +66,14 @@ add_service_files(
   GetAffordanceTemplateConfigInfo.srv
   GetRecognitionObjectConfigInfo.srv
   GetRunningAffordanceTemplates.srv
+  GetAffordanceTemplateStatus.srv
   LoadRobotConfig.srv
   AddAffordanceTemplate.srv
   DeleteAffordanceTemplate.srv
   AddRecognitionObject.srv
   DeleteRecognitionObject.srv
-  AffordanceTemplateCommand.srv
+  AffordanceTemplatePlanCommand.srv
+  AffordanceTemplateExecuteCommand.srv
   SaveAffordanceTemplate.srv
   AddAffordanceTemplateTrajectory.srv
   ScaleDisplayObject.srv

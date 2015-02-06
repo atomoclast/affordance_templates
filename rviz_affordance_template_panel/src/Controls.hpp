@@ -12,8 +12,9 @@
 #include "util.hpp"
 #include "ui_rviz_affordance_template_panel.h"
 
-#include <affordance_template_msgs/AffordanceTemplateCommand.h>
-
+#include <affordance_template_msgs/AffordanceTemplatePlanCommand.h>
+#include <affordance_template_msgs/AffordanceTemplateExecuteCommand.h>
+#include "AffordanceTemplateStatusInfo.hpp"
 
 namespace Ui {
 class RVizAffordanceTemplatePanel;
@@ -33,25 +34,28 @@ namespace rviz_affordance_template_panel
             STEP_BACKWARD,
             CURRENT,
             PAUSE
-        }
+        };
 
     	typedef boost::shared_ptr<RobotConfig> RobotConfigSharedPtr;
         Controls(Ui::RVizAffordanceTemplatePanel* ui);
         ~Controls() {};
 
-        void setService(ros::ServiceClient srv) { controlsService_ = srv; };
+        void setServices(ros::ServiceClient plan_srv, ros::ServiceClient execute_srv) { planService_ = plan_srv; executeService_ = execute_srv; };
         void setRobotMap(std::map<std::string, RobotConfigSharedPtr> map) { robotMap_ = map; };
         void setRobotName(std::string name) { robotName_ = name; };
-        void requestPlan(Controls::CommandType command_type);
-        void executePlan();
-
+        bool requestPlan(Controls::CommandType command_type);
+        bool executePlan();
+        void updateTable(std::map<int, std::pair<int,int> > waypointData);
+        
     private:
 
-        void updateTable(std::map<int, std::pair<int,int> > waypointData);
         std::vector<std::string> getSelectedEndEffectors();
+        std::vector<int> getSelectedEndEffectorWaypointIDs();
+        std::vector<std::pair<std::string,int> > getSelectedEndEffectorInfo();
 
         Ui::RVizAffordanceTemplatePanel* ui_;
-        ros::ServiceClient controlsService_;
+        ros::ServiceClient planService_;
+        ros::ServiceClient executeService_;
         std::map<std::string, RobotConfigSharedPtr> robotMap_;
         std::string robotName_;
 

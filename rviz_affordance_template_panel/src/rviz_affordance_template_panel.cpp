@@ -32,13 +32,15 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     add_template_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplate>("/affordance_template_server/add_template");
     add_object_client_ = nh_.serviceClient<affordance_template_msgs::AddRecognitionObject>("/affordance_template_server/add_recognition_object");
     add_trajectory_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplateTrajectory>("/affordance_template_server/add_trajectory");
-    command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplateCommand>("/affordance_template_server/command");
+    plan_command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplatePlanCommand>("/affordance_template_server/plan_command");
+    execute_command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplateExecuteCommand>("/affordance_template_server/execute_command");
     delete_template_client_ = nh_.serviceClient<affordance_template_msgs::DeleteAffordanceTemplate>("/affordance_template_server/delete_template");
     delete_object_client_ = nh_.serviceClient<affordance_template_msgs::DeleteRecognitionObject>("/affordance_template_server/delete_recognition_object");
     get_robots_client_ = nh_.serviceClient<affordance_template_msgs::GetRobotConfigInfo>("/affordance_template_server/get_robots");
     get_objects_client_ = nh_.serviceClient<affordance_template_msgs::GetRecognitionObjectConfigInfo>("/affordance_template_server/get_recognition_objects");
     get_running_client_ = nh_.serviceClient<affordance_template_msgs::GetRunningAffordanceTemplates>("/affordance_template_server/get_running");
     get_templates_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateConfigInfo>("/affordance_template_server/get_templates");
+    get_template_status_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateStatus>("/affordance_template_server/get_template_status");
     load_robot_client_ = nh_.serviceClient<affordance_template_msgs::LoadRobotConfig>("/affordance_template_server/load_robot");
     save_template_client_ = nh_.serviceClient<affordance_template_msgs::SaveAffordanceTemplate>("/affordance_template_server/save_template");
     scale_object_client_ = nh_.serviceClient<affordance_template_msgs::ScaleDisplayObject>("/affordance_template_server/scale_object");
@@ -46,7 +48,7 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     // setup publishers
     scale_object_streamer_ = nh_.advertise<affordance_template_msgs::ScaleDisplayObjectInfo>("/affordance_template_server/scale_object_streamer", 10);
     
-    controls_->setService(command_client_);
+    controls_->setServices(plan_command_client_, execute_command_client_);
 
     setupWidgets();
     getAvailableInfo();
@@ -72,6 +74,9 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
 RVizAffordanceTemplatePanel::~RVizAffordanceTemplatePanel()
 {
     delete ui_;
+    for (auto &ats : template_status_info) {
+        delete ats.second;
+    }
 }
 
 void RVizAffordanceTemplatePanel::setupWidgets() {
@@ -1177,11 +1182,6 @@ void RVizAffordanceTemplatePanel::go_to_end() {
     }
 };
 
-/*void RVizAffordanceTemplatePanel::stop() { 
-    affordance_template_msgs::AffordanceTemplateCommand srv;
-    controls_->requestPlan(Controls::STOP); 
-};
-*/
 
 void RVizAffordanceTemplatePanel::step_backward() { 
     bool ret = controls_->requestPlan(Controls::STEP_BACKWARD); 
@@ -1230,12 +1230,76 @@ void RVizAffordanceTemplatePanel::execute_plan() {
 }
  
 void RVizAffordanceTemplatePanel::control_status_update() { 
-    controls_->status_update();
+    
+    affordance_template_msgs::GetAffordanceTemplateStatus srv;
+
+    srv.request.name = ui_->control_template_box->currentText().toStdString();  
+    srv.request.trajectory_name = "";
+    
+    ROS_INFO("CALLING STATUS SERVICE");
+    if (get_template_status_client_.call(srv))
+    {
+        ROS_INFO("GetAffordanceTemplateStatus successful");
+    
+        ROS_INFO(" -- Got Info for %d Templates", (int)(srv.response.affordance_template_status.size()));
+       
+        for (int i=0; i<srv.response.affordance_template_status.size(); i++) {
+        
+            string full_name = srv.response.affordance_template_status[i].type + ":" + to_string(srv.response.affordance_template_status[i].id);
+            if(srv.request.name != full_name) {
+                ROS_ERROR("RVizAffordanceTemplatePanel::control_status_update() -- wait, something's wrong. requested %s, got %s", srv.request.name.c_str(), full_name.c_str());
+                return;
+            }
+
+            if(template_status_info.find(full_name)==template_status_info.end()) {             
+                template_status_info[full_name] = new AffordanceTemplateStatusInfo(srv.response.affordance_template_status[i].type, srv.response.affordance_template_status[i].id);
+            }
+            affordance_template_msgs::AffordanceTemplateStatusConstPtr ptr(new affordance_template_msgs::AffordanceTemplateStatus(srv.response.affordance_template_status[i]));
+            template_status_info[full_name]->updateTrajectoryStatus(ptr);
+
+        }
+
+        ROS_INFO(" -- Current Trajectory: %s", srv.response.current_trajectory.c_str());
+
+        // set the control GUI with the current trajectories information
+        std::map<int, std::pair<int,int> > waypointData;    
+        AffordanceTemplateStatusInfo::EndEffectorInfo wp_info = template_status_info[srv.request.name]->getTrajectoryStatus(srv.response.current_trajectory);
+
+        for(auto &wp : wp_info) {
+            pair<int,int> waypointPair;
+            waypointPair = make_pair(int(wp.second->waypoint_index), int(wp.second->num_waypoints));
+            waypointData[int(wp.second->id)] = waypointPair;
+            controls_->updateTable(waypointData);
+        }
+
+    }   
+    else
+    {
+        ROS_ERROR("Failed to scale object");
+    }  
+
+    print_template_status();
 }
 
-void RVizAffordanceTemplatePanel::go_to_current_waypoint() { 
-    controls_->requestPlan(srv.request.CURRENT); 
+
+void RVizAffordanceTemplatePanel::print_template_status() {
+
+    //std::map<std::string, AffordanceTemplateStatusInfo> template_status_info; 
+    for (auto& ts : template_status_info) {
+
+        std::cout << "Stored template name: " << ts.first << std::endl;
+        std::cout << " -- template name: " << ts.second->getName() << std::endl;
+        std::cout << " -- template id:   " << ts.second->getID() << std::endl;
+        std::cout << " -- trajectories:   " << std::endl;
+            
+        for (auto& traj_info : ts.second->getTrajectoryInfo()) {
+            //affordance_template_msgs::AffordanceTemplateStatus status = traj_info->getTrajectoryStatus[traj_info.first];
+            std::cout << "    - " << traj_info.first << std::endl;
+        }
+    }
+
 }
+
 
 #include <pluginlib/class_list_macros.h>
 #if ROS_VERSION_MINIMUM(1,9,41)

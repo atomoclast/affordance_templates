@@ -249,6 +249,9 @@ class RobotInterface(object) :
     def get_end_effector_name(self, id) :
         return self.end_effector_name_map[id]
 
+    def get_end_effector_id(self, name) :
+        return self.manipulator_id_map[name]
+
     def get_manipulator(self, ee) :
         return self.moveit_interface.srdf_model.get_end_effector_parent_group(ee)
 

@@ -21,6 +21,8 @@
 #include "util.hpp"
 #include "ui_rviz_affordance_template_panel.h"
 
+#include "AffordanceTemplateStatusInfo.hpp"
+
 #include <geometry_msgs/Pose.h>
 
 // affordance template messages and services
@@ -36,13 +38,15 @@
 #include <affordance_template_msgs/AddAffordanceTemplateTrajectory.h>
 #include <affordance_template_msgs/SaveAffordanceTemplate.h>
 #include <affordance_template_msgs/AddRecognitionObject.h>
-#include <affordance_template_msgs/AffordanceTemplateCommand.h>
+#include <affordance_template_msgs/AffordanceTemplatePlanCommand.h>
+#include <affordance_template_msgs/AffordanceTemplateExecuteCommand.h>
 #include <affordance_template_msgs/DeleteAffordanceTemplate.h>
 #include <affordance_template_msgs/DeleteRecognitionObject.h>
 #include <affordance_template_msgs/GetAffordanceTemplateConfigInfo.h>
 #include <affordance_template_msgs/GetRecognitionObjectConfigInfo.h>
 #include <affordance_template_msgs/GetRobotConfigInfo.h>
 #include <affordance_template_msgs/GetRunningAffordanceTemplates.h>
+#include <affordance_template_msgs/GetAffordanceTemplateStatus.h>
 #include <affordance_template_msgs/LoadRobotConfig.h>
 #include <affordance_template_msgs/ScaleDisplayObjectInfo.h>
 #include <affordance_template_msgs/ScaleDisplayObject.h>
@@ -72,6 +76,9 @@ namespace rviz_affordance_template_panel
 
         // Emit configuration change event.
         void configChanged();
+
+        // print stored template status info
+        void print_template_status();
 
     public Q_SLOTS:
 
@@ -196,28 +203,6 @@ namespace rviz_affordance_template_panel
         void control_status_update();
 
 
-        // /** \brief Pause Command.
-        //  */
-/*      void pause() { 
-            affordance_template_msgs::AffordanceTemplateCommand srv;
-            controls_->sendCommand(srv.request.PAUSE); 
-        };
-*/
-        // /** \brief Play Backward Command.
-        // */
-/*      void play_backward() { 
-            affordance_template_msgs::AffordanceTemplateCommand srv;
-            controls_->sendCommand(srv.request.PLAY_BACKWARD);
-        };
-*/
-        // /** \brief Play Forward Command.
-        //  */
-/*        void play_forward() { 
-            affordance_template_msgs::AffordanceTemplateCommand srv;
-            controls_->sendCommand(srv.request.PLAY_FORWARD);
-        };
-*/
-
         void updateObjectScale(int value);
         void updateEndEffectorScaleAdjustment(int value);
         void scaleSliderReleased();
@@ -285,7 +270,8 @@ namespace rviz_affordance_template_panel
         ros::ServiceClient add_trajectory_client_;
         ros::ServiceClient add_object_client_;
         ros::ServiceClient delete_object_client_;
-        ros::ServiceClient command_client_;
+        ros::ServiceClient plan_command_client_;
+        ros::ServiceClient execute_command_client_;
         ros::ServiceClient get_robots_client_;
         ros::ServiceClient get_running_client_;
         ros::ServiceClient get_templates_client_;
@@ -293,6 +279,7 @@ namespace rviz_affordance_template_panel
         ros::ServiceClient load_robot_client_;
         ros::ServiceClient save_template_client_;
         ros::ServiceClient scale_object_client_;
+        ros::ServiceClient get_template_status_client_;
 
         // affordance template publishers
         ros::Publisher scale_object_streamer_;
@@ -305,6 +292,8 @@ namespace rviz_affordance_template_panel
         std::map<std::pair<TemplateInstanceID, std::string>, int> end_effector_adjustment_map;
 
         TemplateInstanceID selected_template;
+
+        std::map<std::string, AffordanceTemplateStatusInfo*> template_status_info; 
 
     };
 }
