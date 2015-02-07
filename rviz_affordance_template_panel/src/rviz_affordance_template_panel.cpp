@@ -100,13 +100,13 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->robot_select, SIGNAL(currentIndexChanged(int)), this, SLOT(changeRobot(int)));
     QObject::connect(ui_->save_template_combo_box, SIGNAL(activated(int)), this, SLOT(changeSaveInfo(int)));
 
-    QObject::connect(ui_->go_to_start_button, SIGNAL(clicked()), this, SLOT(go_to_start()));
-    QObject::connect(ui_->go_to_end_button, SIGNAL(clicked()), this, SLOT(go_to_end()));
-    QObject::connect(ui_->step_backwards_button, SIGNAL(clicked()), this, SLOT(step_backward()));
-    QObject::connect(ui_->step_forward_button, SIGNAL(clicked()), this, SLOT(step_forward()));
-    QObject::connect(ui_->execute_button, SIGNAL(clicked()), this, SLOT(execute_plan()));
-    QObject::connect(ui_->status_update_button, SIGNAL(clicked()), this, SLOT(control_status_update()));
-    QObject::connect(ui_->go_to_current_waypoint_button, SIGNAL(clicked()), this, SLOT(go_to_current_waypoint()));
+    QObject::connect(ui_->go_to_start_button, SIGNAL(clicked()), this, SLOT(goToStart()));
+    QObject::connect(ui_->go_to_end_button, SIGNAL(clicked()), this, SLOT(goToEnd()));
+    QObject::connect(ui_->step_backwards_button, SIGNAL(clicked()), this, SLOT(stepBackward()));
+    QObject::connect(ui_->step_forward_button, SIGNAL(clicked()), this, SLOT(stepForward()));
+    QObject::connect(ui_->execute_button, SIGNAL(clicked()), this, SLOT(executePlan()));
+    QObject::connect(ui_->status_update_button, SIGNAL(clicked()), this, SLOT(controlStatusUpdate()));
+    QObject::connect(ui_->go_to_current_waypoint_button, SIGNAL(clicked()), this, SLOT(goToCurrentWaypoint()));
 
     //QObject::connect(ui_->pause_button, SIGNAL(clicked()), this, SLOT(pause()));
     //QObject::connect(ui_->play_backwards_button, SIGNAL(clicked()), this, SLOT(play_backward()));
@@ -941,6 +941,7 @@ void RVizAffordanceTemplatePanel::loadConfig() {
         ui_->end_effector_table->removeCellWidget(0,1);
         ui_->end_effector_table->removeCellWidget(0,2);
         ui_->end_effector_table->removeCellWidget(0,3);
+        ui_->end_effector_table->removeCellWidget(0,4);
         ui_->end_effector_table->removeRow(0);
     }
 
@@ -961,14 +962,23 @@ void RVizAffordanceTemplatePanel::loadConfig() {
         QTableWidgetItem *i= new QTableWidgetItem(QString(e.second->name().c_str()));
         ui_->end_effector_table->insertRow(r);
 
-        ui_->end_effector_table->setItem(r,0,new QTableWidgetItem(QString(e.second->name().c_str())));
-        ui_->end_effector_table->setItem(r,1,new QTableWidgetItem(QString("-")));
-        ui_->end_effector_table->setItem(r,2,new QTableWidgetItem(QString("-")));
-
+        ui_->end_effector_table->setItem(r,0,new QTableWidgetItem(QString(e.second->name().c_str())));  // ee_name
+        ui_->end_effector_table->setItem(r,2,new QTableWidgetItem(QString("-1")));  // current_waypoint
+        ui_->end_effector_table->setItem(r,3,new QTableWidgetItem(QString("-1")));  // num waypoints
+        
+        ui_->end_effector_table->setItem(r,4,new QTableWidgetItem(QString("NO PLAN")));  // plan status
+        QTableWidgetItem* item_status = ui_->end_effector_table->item(r, 4);
+        item_status->setTextColor(QColor::fromRgb(255,0,0));
+                        
         QTableWidgetItem *pItem = new QTableWidgetItem();
         pItem->setCheckState(Qt::Checked);
-        ui_->end_effector_table->setItem(r,3,pItem);
+        ui_->end_effector_table->setItem(r,1,pItem);
 
+        ui_->end_effector_table->setColumnWidth(0,13);
+        ui_->end_effector_table->setColumnWidth(1,5);
+        ui_->end_effector_table->setColumnWidth(2,5);
+        ui_->end_effector_table->setColumnWidth(3,5);
+        
         r++;
 
         srv.request.robot_config.end_effectors.push_back(ee_config);
@@ -1037,7 +1047,7 @@ void RVizAffordanceTemplatePanel::addAffordanceDisplayItem() {
             for (auto& e: (*robotMap_[robot_name_]).endeffectorMap) {
                 for (int r=0; r<ui_->end_effector_table->rowCount(); r++ ) {
                     if (e.second->name() == ui_->end_effector_table->item(r,0)->text().toStdString() ) {
-                        ui_->end_effector_table->setItem(r,2,new QTableWidgetItem(QString::number(c.second.toInt())));
+                        ui_->end_effector_table->setItem(r,3,new QTableWidgetItem(QString::number(c.second.toInt())));
                     }
                 }
             }
@@ -1153,95 +1163,70 @@ std::string RVizAffordanceTemplatePanel::getRobotFromDescription() {
     return robot;
 }
 
-// control panel functions
-void RVizAffordanceTemplatePanel::go_to_start() { 
-    bool ret = controls_->requestPlan(Controls::START); 
+void RVizAffordanceTemplatePanel::doCommand(Controls::CommandType command_type) {
+
+    string key = ui_->control_template_box->currentText().toUtf8().constData();
+    if(key=="") return;
+    
+    controlStatusUpdate(); // this is probably inefficient. we could store whether things have been updated, but this is safer.
+
+    bool ret = controls_->requestPlan(command_type); 
     if (ret) {
         if (ui_->execute_on_plan->isChecked()) {
             ret = controls_->executePlan();
             if(!ret) {
-                ROS_ERROR("RVizAffordanceTemplatePanel::go_to_start() -- executing plan failed");
+                ROS_ERROR("RVizAffordanceTemplatePanel::doCommand(%d) -- executing plan failed", (int)command_type);
             }
         } 
     } else {
-        ROS_ERROR("RVizAffordanceTemplatePanel::go_to_start() -- computing plan failed");
+        ROS_ERROR("RVizAffordanceTemplatePanel::doCommand(%d) -- computing plan failed", (int)command_type);
     }
+    updateStatusFromControls();
+}
+
+void RVizAffordanceTemplatePanel::updateStatusFromControls() {
+    AffordanceTemplateStatusInfo * status = controls_->getTemplateStatusInfo();
+    string full_name = status->getName() + to_string(status->getID());
+    template_status_info[full_name] = status;
+    updateTable(full_name, status->getCurrentTrajectory());
+        
+}    
+
+void RVizAffordanceTemplatePanel::goToStart() { 
+    doCommand(Controls::START);
 };
 
-void RVizAffordanceTemplatePanel::go_to_end() { 
-    bool ret = controls_->requestPlan(Controls::END); 
-    if (ret) {
-        if (ui_->execute_on_plan->isChecked()) {
-            ret = controls_->executePlan();
-            if(!ret) {
-                ROS_ERROR("RVizAffordanceTemplatePanel::go_to_end() -- executing plan failed");
-            }
-        } 
-    } else {
-        ROS_ERROR("RVizAffordanceTemplatePanel::go_to_end() -- computing plan failed");
-    }
+void RVizAffordanceTemplatePanel::goToEnd() { 
+    doCommand(Controls::END);
 };
 
-
-void RVizAffordanceTemplatePanel::step_backward() { 
-    bool ret = controls_->requestPlan(Controls::STEP_BACKWARD); 
-    if (ret) {
-        if (ui_->execute_on_plan->isChecked()) {
-            ret = controls_->executePlan();
-            if(!ret) {
-                ROS_ERROR("RVizAffordanceTemplatePanel::step_backward() -- executing plan failed");
-            }
-        } 
-    } else {
-        ROS_ERROR("RVizAffordanceTemplatePanel::step_backward() -- computing plan failed");
-    }
+void RVizAffordanceTemplatePanel::stepBackward() { 
+    doCommand(Controls::STEP_BACKWARD); 
 };
 
-void RVizAffordanceTemplatePanel::step_forward() { 
-    bool ret = controls_->requestPlan(Controls::STEP_FORWARD); 
-    if (ret) {
-        if (ui_->execute_on_plan->isChecked()) {
-            ret = controls_->executePlan();
-            if(!ret) {
-                ROS_ERROR("RVizAffordanceTemplatePanel::step_forward() -- executing plan failed");
-            }
-        } 
-    } else {
-        ROS_ERROR("RVizAffordanceTemplatePanel::step_forward() -- computing plan failed");
-    }
+void RVizAffordanceTemplatePanel::stepForward() { 
+    doCommand(Controls::STEP_FORWARD); 
 };
 
-void RVizAffordanceTemplatePanel::go_to_current_waypoint() { 
-    bool ret = controls_->requestPlan(Controls::CURRENT); 
-    if (ret) {
-        if (ui_->execute_on_plan->isChecked()) {
-            ret = controls_->executePlan();
-            if(!ret) {
-                ROS_ERROR("RVizAffordanceTemplatePanel::go_to_current_waypoint() -- executing plan to start failed");
-            }
-        } 
-    } else {
-        ROS_ERROR("RVizAffordanceTemplatePanel::go_to_current_waypoint() -- computing plan to start failed");
-    }
+void RVizAffordanceTemplatePanel::goToCurrentWaypoint() { 
+    doCommand(Controls::CURRENT); 
 };
 
-void RVizAffordanceTemplatePanel::execute_plan() { 
+void RVizAffordanceTemplatePanel::executePlan() { 
     controls_->executePlan();
+    updateStatusFromControls();
 }
  
-void RVizAffordanceTemplatePanel::control_status_update() { 
+void RVizAffordanceTemplatePanel::controlStatusUpdate() { 
     
     affordance_template_msgs::GetAffordanceTemplateStatus srv;
 
     srv.request.name = ui_->control_template_box->currentText().toStdString();  
     srv.request.trajectory_name = "";
     
-    ROS_INFO("CALLING STATUS SERVICE");
     if (get_template_status_client_.call(srv))
     {
-        ROS_INFO("GetAffordanceTemplateStatus successful");
-    
-        ROS_INFO(" -- Got Info for %d Templates", (int)(srv.response.affordance_template_status.size()));
+        ROS_INFO("Got Info for %d Templates", (int)(srv.response.affordance_template_status.size()));
        
         for (int i=0; i<srv.response.affordance_template_status.size(); i++) {
         
@@ -1259,30 +1244,71 @@ void RVizAffordanceTemplatePanel::control_status_update() {
 
         }
 
-        ROS_INFO(" -- Current Trajectory: %s", srv.response.current_trajectory.c_str());
+        ROS_INFO("Current Trajectory: %s", srv.response.current_trajectory.c_str());
+        template_status_info[srv.request.name]->setCurrentTrajectory(srv.response.current_trajectory);
 
-        // set the control GUI with the current trajectories information
-        std::map<int, std::pair<int,int> > waypointData;    
-        AffordanceTemplateStatusInfo::EndEffectorInfo wp_info = template_status_info[srv.request.name]->getTrajectoryStatus(srv.response.current_trajectory);
-
-        for(auto &wp : wp_info) {
-            pair<int,int> waypointPair;
-            waypointPair = make_pair(int(wp.second->waypoint_index), int(wp.second->num_waypoints));
-            waypointData[int(wp.second->id)] = waypointPair;
-            controls_->updateTable(waypointData);
-        }
+        updateTable(srv.request.name, srv.response.current_trajectory);
+        
+        controls_->setTemplateStatusInfo(template_status_info[srv.request.name]);
 
     }   
     else
     {
-        ROS_ERROR("Failed to scale object");
+        ROS_ERROR("RVizAffordanceTemplatePanel::control_status_update() -- Failed");
     }  
 
-    print_template_status();
+    printTemplateStatus();
 }
 
+void RVizAffordanceTemplatePanel::updateTable(std::string name, std::string trajectory) {
 
-void RVizAffordanceTemplatePanel::print_template_status() {
+    // set the control GUI with the current trajectories information
+    //std::map<int, std::pair<int,int> > waypointData;    
+    AffordanceTemplateStatusInfo::EndEffectorInfo wp_info = template_status_info[name]->getTrajectoryStatus(trajectory);
+    for(auto &wp : wp_info) {
+        /*pair<int,int> waypointPair;
+        waypointPair = make_pair(int(wp.second->waypoint_index), int(wp.second->num_waypoints));
+        waypointData[int(wp.second->id)] = waypointPair;*/
+        //controls_->updateTable(waypointData);
+
+        for (auto& e: (*robotMap_[robot_name_]).endeffectorMap) {
+            if (e.second->name() != wp.first) {
+                continue;
+            }
+            for (int r=0; r<ui_->end_effector_table->rowCount(); r++ ) {
+                if (e.second->name() != ui_->end_effector_table->item(r,0)->text().toStdString()) {
+                    continue;
+                }
+                QTableWidgetItem* item_idx = ui_->end_effector_table->item(r, 2);
+                item_idx->setText(QString::number(wp.second->waypoint_index));
+
+                QTableWidgetItem* item_n = ui_->end_effector_table->item(r, 3);
+                item_n->setText(QString::number(wp.second->num_waypoints));
+
+                QTableWidgetItem* item_status = ui_->end_effector_table->item(r, 4);
+                if (wp.second->execution_valid) {
+                    item_status->setTextColor(QColor::fromRgb(0,0,255));
+                    item_status->setText(QString("SUCCESS"));                    
+                } else {
+                    if (wp.second->plan_valid) {
+                        item_status->setTextColor(QColor::fromRgb(0,255,0));
+                        std::string status_string = "PLAN -> id[" + to_string(wp.second->waypoint_plan_index) + "]";
+                        item_status->setText(QString(status_string.c_str()));
+                    } else {
+                        item_status->setTextColor(QColor::fromRgb(255,0,0));
+                        std::string status_string = "NO PLAN -> id[" + to_string(wp.second->waypoint_plan_index) + "]";
+                        item_status->setText(QString(status_string.c_str()));
+                    }
+                }
+            }
+        }
+    }
+
+    // need to auto uncheck end-effector boxes in table for EEs that are not in the trajectory FIXME
+
+}
+
+void RVizAffordanceTemplatePanel::printTemplateStatus() {
 
     //std::map<std::string, AffordanceTemplateStatusInfo> template_status_info; 
     for (auto& ts : template_status_info) {
@@ -1294,7 +1320,11 @@ void RVizAffordanceTemplatePanel::print_template_status() {
             
         for (auto& traj_info : ts.second->getTrajectoryInfo()) {
             //affordance_template_msgs::AffordanceTemplateStatus status = traj_info->getTrajectoryStatus[traj_info.first];
-            std::cout << "    - " << traj_info.first << std::endl;
+            std::cout << "    - " << traj_info.first;
+            if(traj_info.first == template_status_info[ts.first]->getCurrentTrajectory()) {
+                std::cout << " * ";
+            }
+            std::cout << std::endl;
         }
     }
 

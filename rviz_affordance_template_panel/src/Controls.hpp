@@ -43,14 +43,14 @@ namespace rviz_affordance_template_panel
         void setServices(ros::ServiceClient plan_srv, ros::ServiceClient execute_srv) { planService_ = plan_srv; executeService_ = execute_srv; };
         void setRobotMap(std::map<std::string, RobotConfigSharedPtr> map) { robotMap_ = map; };
         void setRobotName(std::string name) { robotName_ = name; };
+        void setTemplateStatusInfo(AffordanceTemplateStatusInfo *template_status) { template_status_ = template_status; }
+        AffordanceTemplateStatusInfo * getTemplateStatusInfo() { return template_status_; }
         bool requestPlan(Controls::CommandType command_type);
         bool executePlan();
-        void updateTable(std::map<int, std::pair<int,int> > waypointData);
+        //void updateTable(std::map<int, std::pair<int,int> > waypointData);
         
     private:
 
-        std::vector<std::string> getSelectedEndEffectors();
-        std::vector<int> getSelectedEndEffectorWaypointIDs();
         std::vector<std::pair<std::string,int> > getSelectedEndEffectorInfo();
 
         Ui::RVizAffordanceTemplatePanel* ui_;
@@ -58,6 +58,7 @@ namespace rviz_affordance_template_panel
         ros::ServiceClient executeService_;
         std::map<std::string, RobotConfigSharedPtr> robotMap_;
         std::string robotName_;
+        AffordanceTemplateStatusInfo *template_status_;
 
     };
 }

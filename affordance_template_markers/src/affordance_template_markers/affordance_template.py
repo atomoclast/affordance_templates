@@ -84,10 +84,12 @@ class AffordanceTemplate(threading.Thread) :
         self.menu_handles = {}
 
         # control helper stuff
-        self.waypoint_index = {}            
+        self.waypoint_index = {}
+        self.waypoint_plan_index = {}            
         self.waypoint_backwards_flag = {}
         self.waypoint_auto_execute = {}
         self.waypoint_plan_valid = {}
+        self.waypoint_execution_valid = {}
         self.waypoint_loop = {}
         self.waypoint_max = {}
         self.waypoint_controls_display_on = {} 
@@ -213,10 +215,8 @@ class AffordanceTemplate(threading.Thread) :
         # self.tear_down()
 
     def tear_down(self, keep_alive=False):
-        # forcefully shut down service before killing node
         if self.dserver:
             self.dserver.set_service.shutdown("User deleted template.")
-        # for rostest (and potentially other cases), we want to clean up but keep the node alive
         if not keep_alive:
             rospy.signal_shutdown("User deleted template.")
 
@@ -335,6 +335,7 @@ class AffordanceTemplate(threading.Thread) :
             # all ee's were found, can actually create things
             rospy.loginfo(str("AffordanceTemplate::load_initial_parameters() -- adding trajectory: " + traj['name']))
             self.create_trajectory_structures(traj['name'])             
+
             for ee_group in traj['end_effector_group'] :
                 wp_id = 0
                 for wp in ee_group['end_effector_waypoint'] :
@@ -365,6 +366,7 @@ class AffordanceTemplate(threading.Thread) :
 
                     wp_id += 1
 
+ 
     def is_valid_trajectory(self, traj) : 
         valid_trajectory = True             
         try :
@@ -587,14 +589,13 @@ class AffordanceTemplate(threading.Thread) :
             for m in markers.markers :
 
                 try :
-                    print m.mesh_resource
                     ee_m = copy.deepcopy(m)                   
                     ee_m.header.frame_id = ""
                     ee_m.ns = self.name
                     ee_m.pose = getPoseFromFrame(self.wpTee[wp]*self.eeTtf[wp]*getFrameFromPose(m.pose))
                     menu_control.markers.append( ee_m )
                 except :
-                    print "passing on marker"
+                    rospy.logdebug("passing on marker")
 
             scale = 1.0
             if wp in self.waypoint_controls[trajectory] :
@@ -704,7 +705,6 @@ class AffordanceTemplate(threading.Thread) :
                     self.object_geometry[obj]['length'] *= self.object_scale_factor[obj]
 
                 # adjust for scale factor of parent object
-                print "scaling object based on parent scale.  PARENT: ", parent_obj
                 if parent_obj in self.object_scale_factor :
                     parent_scale = self.object_scale_factor[parent_obj]
                     # mag = math.sqrt( self.object_origin[obj]['xyz'][0]**2 + self.object_origin[obj]['xyz'][1]**2 + self.object_origin[obj]['xyz'][2]**2)
@@ -712,9 +712,8 @@ class AffordanceTemplate(threading.Thread) :
                     self.object_origin[obj]['xyz'][0] *= parent_scale
                     self.object_origin[obj]['xyz'][1] *= parent_scale
                     self.object_origin[obj]['xyz'][2] *= parent_scale
-                    print "  new obj origin: ", self.object_origin[obj]['xyz']
             else :
-                print "not saving scaling for objects"
+                rospy.logdebug("not saving scaling for objects")
 
             new_structure['display_objects'][obj_id]['controls'] = self.object_controls[obj]
             new_structure['display_objects'][obj_id]['shape'] = self.object_geometry[obj]
@@ -732,7 +731,6 @@ class AffordanceTemplate(threading.Thread) :
         new_structure['end_effector_trajectory'] = []
             
         for traj in self.structure['end_effector_trajectory'] :
-            # print "Traj: ", traj['name']
             traj_name = traj['name']
             new_structure['end_effector_trajectory'].append({})
             new_structure['end_effector_trajectory'][traj_id]['name'] = traj['name']
@@ -742,9 +740,6 @@ class AffordanceTemplate(threading.Thread) :
 
             # for ee in self.structure['end_effector_trajectory'][traj_id]['end_effector_group'] :
             for ee_id in self.waypoint_index[traj_name].keys() :               
-                # print " ee: ", self.robot_interface.end_effector_name_map[ee_id], ", id: ", ee_id
-                # self.end_effector_name_map[ee_id] 
-                # ee_id = ee['id']
                 new_structure['end_effector_trajectory'][traj_id]['end_effector_group'].append({})
                 new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['id'] = int(ee_id)
                 new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'] = []
@@ -752,8 +747,6 @@ class AffordanceTemplate(threading.Thread) :
                 wp_id = 0
                 for wp in self.waypoints[traj['name']] :
                     if int(wp.split(".")[0]) == int(ee_id) :
-                        # print "  wp: ", wp
-                        # print "  writing pose to disk: " 
                         parent_key = self.parent_map[(traj['name'],wp)].split("/")[1].split(":")[0]
               
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'].append({})
@@ -777,7 +770,7 @@ class AffordanceTemplate(threading.Thread) :
                             self.waypoint_origin[traj['name']][wp]['xyz'][1] = display_pose.position.y*parent_scale
                             self.waypoint_origin[traj['name']][wp]['xyz'][2] = display_pose.position.z*parent_scale
                         else :
-                            print "not saving scaling for end-effectors"
+                            rospy.logdebug("not saving scaling for end-effectors")
 
                         new_structure['end_effector_trajectory'][traj_id]['end_effector_group'][idx]['end_effector_waypoint'][wp_id]['origin'] = self.waypoint_origin[traj['name']][wp]
 
@@ -809,8 +802,10 @@ class AffordanceTemplate(threading.Thread) :
         if not traj_name in self.waypoint_backwards_flag : self.waypoint_backwards_flag[traj_name] = {}
         if not traj_name in self.waypoint_auto_execute : self.waypoint_auto_execute[traj_name] = {}
         if not traj_name in self.waypoint_plan_valid : self.waypoint_plan_valid[traj_name] = {}
+        if not traj_name in self.waypoint_execution_valid : self.waypoint_execution_valid[traj_name] = {}        
         if not traj_name in self.waypoint_loop : self.waypoint_loop[traj_name] = {}
         if not traj_name in self.waypoint_controls_display_on : self.waypoint_controls_display_on[traj_name] = {}
+        if not traj_name in self.waypoint_plan_index : self.waypoint_plan_index[traj_name] = {}
 
 
     def create_waypoint(self, traj_name, ee_id, wp_id, ps, parent, controls=None, origin=None, pose_id=None) :
@@ -847,9 +842,11 @@ class AffordanceTemplate(threading.Thread) :
         if ee_id not in self.waypoint_max[traj_name]: self.waypoint_max[traj_name][ee_id] = 0
         if self.waypoint_end_effectors[traj_name][wp_name] not in self.waypoint_index[traj_name] :
             self.waypoint_index[traj_name][ee_id] = -1
+            self.waypoint_plan_index[traj_name][ee_id] = -1
             self.waypoint_backwards_flag[traj_name][ee_id] = False
             self.waypoint_auto_execute[traj_name][ee_id] = False
             self.waypoint_plan_valid[traj_name][ee_id] = False
+            self.waypoint_execution_valid[traj_name][ee_id] = False
             self.waypoint_loop[traj_name][ee_id] = False
         else :
             if int(self.waypoint_ids[traj_name][wp_name]) > self.waypoint_max[traj_name][ee_id] :
@@ -918,8 +915,6 @@ class AffordanceTemplate(threading.Thread) :
         rospy.loginfo("AffordanceTemplate::create_from_structure() -- creating from parameters")
         self.create_from_parameters()
         rospy.loginfo("AffordanceTemplate::create_from_structure() -- done")
-        # self.print_structure()
-
 
     def setup_object_menu(self, obj) :
         self.marker_menus[obj] = MenuHandler()
@@ -959,10 +954,8 @@ class AffordanceTemplate(threading.Thread) :
         obj_name = self.name + "/" + object_name + ":" + str(self.id)
         self.object_scale_factor[obj_name] = scale_factor
         self.end_effector_scale_factor[obj_name] = end_effector_adjustment
-        # print " setting scale factor for object ", obj_name, " to ", scale_factor
         self.remove_all_markers()
         self.create_from_parameters(True, self.current_trajectory)
-
 
     def setup_waypoint_menu(self, waypoint, group) :
         for m,c in self.waypoint_menu_options :
@@ -996,26 +989,19 @@ class AffordanceTemplate(threading.Thread) :
     def load_from_marker(self, m) :
         self.load_initial_parameters_from_marker(m)
         self.create_from_parameters()
-        # self.print_structure()
         return self.structure
 
     def append_id_to_structure(self, structure) :
-        # print "structure name: ", structure['name']
         structure['name'] = self.append_id(str(structure['name']))
         for obj in structure['display_objects'] :
             obj['name'] = self.append_id(obj['name'])
-            # print " -- ", obj['name']
             try :
                 obj['parent'] = self.append_id(obj['parent'])
             except :
                 rospy.logwarn(str("AffordanceTemplate::append_id_to_structure() -- no parent for " + obj['name']))
-                # print "appending id to parent ", self.parent_map[obj.name], " of ", obj.name
         for traj in structure['end_effector_trajectory'] :
-            # print " -- ", traj['name']
             for ee_group in traj['end_effector_group'] :
-                # print " --- ", ee_group['id']
                 for wp in ee_group['end_effector_waypoint'] :
-                    # print " ---- ", wp['origin']['xyz']
                     wp['display_object'] = self.append_id(wp['display_object'])
                     
         return structure
@@ -1024,9 +1010,6 @@ class AffordanceTemplate(threading.Thread) :
         print self.structure
         
     def process_feedback(self, feedback):
-        # print "\n--------------------------------"
-        # print "Process Feedback on marker: ", feedback.marker_name
-        # # print feedback.pose
 
         if feedback.marker_name in self.display_objects :
             self.frame_store_map[feedback.marker_name].pose = feedback.pose
@@ -1039,7 +1022,6 @@ class AffordanceTemplate(threading.Thread) :
         elif feedback.event_type == InteractiveMarkerFeedback.MENU_SELECT:
 
             handle = feedback.menu_entry_id
-            # print "--------------"
 
             if feedback.marker_name in self.display_objects :
                 ee_list = self.waypoint_index[self.current_trajectory].keys()
@@ -1072,22 +1054,11 @@ class AffordanceTemplate(threading.Thread) :
 
             for ee_id in ee_list :
 
-                # print "Waypoint Menu\n--------------------"
-                # print "handle: ", handle
-                # print self.menu_handles
-
                 ee_name = self.robot_interface.get_end_effector_name(ee_id)
                 manipulator_name = self.robot_interface.get_manipulator(ee_name)
                 ee_offset = self.robot_interface.manipulator_pose_map[ee_name]
                 tool_offset = self.robot_interface.tool_offset_map[ee_name]
                 max_idx = self.waypoint_max[self.current_trajectory][ee_id]
-
-                # print "ee_name: ", ee_name
-                # print "ee_id: ", ee_id
-                # print "max wp ", max_idx
-                # print "selected waypoint id: ", waypoint_id
-                # print "stored waypoint idx: ", self.waypoint_index[ee_id]
-                # print "manipulator_name: ", manipulator_name
 
                 next_path_idx = self.compute_next_path_id(ee_id, 1, self.waypoint_backwards_flag[self.current_trajectory][ee_id])
  
@@ -1163,16 +1134,6 @@ class AffordanceTemplate(threading.Thread) :
                     self.remove_waypoint(self.current_trajectory, ee_id, waypoint_id)
                     self.create_from_parameters(True, self.current_trajectory)
 
-                # if handle == self.menu_handles[(feedback.marker_name,"Execute On Move")] :
-                #     state = self.marker_menus[feedback.marker_name].getCheckState( handle )
-                #     if state == MenuHandler.CHECKED:
-                #         self.marker_menus[feedback.marker_name].setCheckState( handle, MenuHandler.UNCHECKED )
-                #         self.waypoint_auto_execute[ee_id] = False
-                #     else :
-                #         self.marker_menus[feedback.marker_name].setCheckState( handle, MenuHandler.CHECKED )
-                #         self.waypoint_auto_execute[ee_id] = True
-                #     rospy.loginfo(str("AffordanceTemplate::process_feedback() -- setting AutoExecute flag for ee[" + str(ee_id) + "] to " + str(self.waypoint_auto_execute[ee_id])))
-
                 if handle == self.menu_handles[(feedback.marker_name,"Move Forward")] :
                     if waypoint_id < max_idx :
                         self.swap_waypoints(self.current_trajectory, ee_id, waypoint_id, waypoint_id+1)
@@ -1201,16 +1162,6 @@ class AffordanceTemplate(threading.Thread) :
 
                         rospy.loginfo(str("AffordanceTemplate::process_feedback() -- setting Hide Controls flag to " + str(self.waypoint_controls_display_on[self.current_trajectory][feedback.marker_name])))
 
-            # if handle == self.menu_handles[(feedback.marker_name,"Loop Path")] :
-            #     state = self.marker_menus[feedback.marker_name].getCheckState( handle )
-            #     if state == MenuHandler.CHECKED:
-            #         self.marker_menus[feedback.marker_name].setCheckState( handle, MenuHandler.UNCHECKED )
-            #         self.waypoint_loop[ee_id] = False
-            #     else :
-            #         self.marker_menus[feedback.marker_name].setCheckState( handle, MenuHandler.CHECKED )
-            #         self.waypoint_loop[ee_id] = True
-                # rospy.loginfo(str("AffordanceTemplate::process_feedback() -- setting Loop flag for ee[" + str(ee_id) + "] to " + str(self.waypoint_loop[ee_id])))
-
             self.marker_menus[feedback.marker_name].reApply( self.server )
 
         self.server.applyChanges()
@@ -1223,25 +1174,21 @@ class AffordanceTemplate(threading.Thread) :
         for traj in self.structure['end_effector_trajectory'] :
             traj_name = str(traj['name'])
             key = (feedback.marker_name,"Choose Trajectory", traj_name)
+
             if self.menu_handles[key] == feedback.menu_entry_id :
-                # self.marker_menus[feedback.marker_name].setCheckState( self.menu_handles[(feedback.marker_name,m,traj_name)], MenuHandler.CHECKED )
                 self.marker_menus[feedback.marker_name].setCheckState( self.menu_handles[key], MenuHandler.CHECKED )
+
                 # clear old trajectory 
                 for wp in self.waypoints[self.current_trajectory] :
                     ee_id = self.waypoint_end_effectors[self.current_trajectory][wp]
                     wp_id = self.waypoint_ids[self.current_trajectory][wp]
-                    # print wp, ee_id, wp_id
-
-                    # last_wp_name = self.create_waypoint_id(ee_id, self.waypoint_max[traj_name][ee_id])
                     self.remove_interactive_marker(wp)
-
-                    # self.remove_waypoint(self.current_trajectory, ee_id, wp_id)
 
                 self.server.applyChanges()
 
                 self.current_trajectory = traj_name
+
                 # re-draw new one
-                # print "Creating new trajectory markers for: ", self.current_trajectory
                 self.create_trajectory_from_parameters(self.current_trajectory)
         
         self.marker_menus[feedback.marker_name].apply( self.server, feedback.marker_name )
@@ -1279,8 +1226,6 @@ class AffordanceTemplate(threading.Thread) :
 
 
     def create_waypoint_callback(self, feedback) :
-
-        # print "create_waypoint_callback: ", feedback.marker_name
 
         for ee_id in self.robot_interface.end_effector_name_map.iterkeys() :
             ee_name = self.robot_interface.end_effector_name_map[ee_id]
@@ -1342,18 +1287,21 @@ class AffordanceTemplate(threading.Thread) :
     # returns an array of waypoint IDs from the current waypoint index to the waypoint "steps" away, and the idea of the final waypoint 
     def compute_path_ids(self, id, steps, backwards=False) :
         idx  = self.waypoint_index[self.current_trajectory][id]
+        if steps == 0: 
+            return [idx], idx
+
         max_idx = self.waypoint_max[self.current_trajectory][id]
         path = []
-        if steps == 0: return path, id
+        if steps == 0: return path, idx
         cap = max_idx+1
         inc = 1
         if backwards :
             inc = -1
-            if id < 0: path.append(max_idx)
-        for s in range(steps) :
+            if idx < 0: path.append(max_idx)
+        for s in range(steps):
             idx += inc
             path.append(idx % cap)
-        if backwards and id < 0: path.pop()
+
         return path, path[len(path)-1]
 
     def stop(self, end_effector) :
@@ -1362,22 +1310,15 @@ class AffordanceTemplate(threading.Thread) :
 
     def trajectory_has_ee(self, traj_name, ee_name) :
 
-        # ee_name = unicode(ee_name)
-        # print "AffordanceTemplate::trajectory_has_ee(): ", traj_name, ", ", unicode(ee_name)
-        # print self.robot_interface.manipulator_id_map.keys()
-
         if not ee_name in self.robot_interface.manipulator_id_map.keys() :
-            # rospy.logerr("AffordanceTemplate::trajectory_has_ee() -- no ee of that name found in robot config")
             return False
 
         ee_id = self.robot_interface.manipulator_id_map[ee_name]
         
         if not traj_name in self.waypoint_max.keys() :
-            # rospy.logerr("AffordanceTemplate::trajectory_has_ee() -- no trajectory of that name found in tempalate")
             return False  
         
         if not ee_id in self.waypoint_max[traj_name].keys() :  
-            # rospy.logerr("AffordanceTemplate::trajectory_has_ee() -- no ee of that name found in trajectory")
             return False
 
         return True
@@ -1412,63 +1353,8 @@ class AffordanceTemplate(threading.Thread) :
 
         return next_path_idx
 
-    def get_waypoint_index_path(self, end_effector, goal, direct, backwards=False) :
-
-        path = []
-
-        ee_id = self.robot_interface.manipulator_id_map[end_effector]
-        idx = self.waypoint_index[self.current_trajectory][ee_id]
-        max_idx = self.waypoint_max[self.current_trajectory][ee_id]
-
-        # check to make sure goal waypoint id is in the valid range of [0,max_id] for the current trajectory
-        if goal < 0 or goal > max_idx :
-            rospy.logerr(str("AffordanceTemplate::get_waypoint_index_path() -- index " + str(goal) + " out of range[0," + str(self.waypoint_max[self.current_trajectory][ee_id])))
-            return path, -1
-
-        # the path is just the goal, if we are going directly
-        if direct: 
-            path = [goal]
-            goal_idx = goal
-        else :
-            steps = 0
-            if not backwards :
-                if idx < goal :
-                    steps = goal-idx
-                else :
-                    steps = max_idx - idx + goal
-            else :
-                if goal < idx :
-                    steps = idx-goal
-                else :
-                    steps = idx + max_idx - goal
-            path, goal_idx = self.compute_path_ids(ee_id, steps, backwards)
-        
-        return path, goal_idx
-
-    def get_next_index(self, end_effector, steps=1, backwards=False, direct=False) :
-        
-        ee_id = self.robot_interface.manipulator_id_map[end_effector]
-        
-        if steps == 999:
-            if direct:
-                path = [self.waypoint_max[self.current_trajectory][ee_id]]
-                next_path_idx = self.waypoint_max[self.current_trajectory][ee_id]
-            else :
-                path, next_path_idx = self.compute_path_ids(ee_id, self.waypoint_max[self.current_trajectory][ee_id] - self.waypoint_index[self.current_trajectory][ee_id], backwards)
-        elif steps == -999 :
-            if direct:
-                path = [0]
-                next_path_idx = 0
-            else :
-                path, next_path_idx = self.compute_path_ids(ee_id, max(0,self.waypoint_index[self.current_trajectory][ee_id]), backwards)
-        else:
-            path, next_path_idx = self.compute_path_ids(ee_id, steps, backwards)
-
-        return path, next_path_idx
-
-    def plan_path_to_waypoint(end_effector, goal=0, direct=False, backwards=False) :
-    # def plan_path_to_waypoint(self, end_effector, steps=1, backwards=False, direct=False) :
-
+    def plan_path_to_waypoint(self, end_effector, steps=1, direct=False, backwards=False) :
+    
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
         ee_offset = self.robot_interface.manipulator_pose_map[end_effector]
         tool_offset = self.robot_interface.tool_offset_map[end_effector]
@@ -1476,29 +1362,22 @@ class AffordanceTemplate(threading.Thread) :
         manipulator_name = self.robot_interface.get_manipulator(end_effector)
         ee_name = self.robot_interface.get_end_effector_name(ee_id)
         self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
-       
-        path, next_path_idx = self.get_waypoint_index_path(end_effector, goal, direct, backwards)
+        self.waypoint_execution_valid[self.current_trajectory][ee_id] = False
+               
+        path, next_path_idx = self.compute_path_ids(ee_id, steps, backwards)
+        self.waypoint_plan_index[self.current_trajectory][ee_id] = next_path_idx
 
+        if(direct) : path = [next_path_idx]
+        
         if next_path_idx == -1 :
             return next_path_idx
 
-        # path, next_path_idx = self.get_next_index(end_effector, steps, backwards, direct)
-
-        # print "path: ", path
-        # print "next_path_idx: ", next_path_idx
-
-        next_path_str = self.create_waypoint_id(ee_id, next_path_idx)
-        # print "next_path_str: ", next_path_str
-        
+        next_path_str = self.create_waypoint_id(ee_id, next_path_idx)      
         rospy.loginfo(str("AffordanceTemplate::plan_path_to_waypoint() -- computing path to index[" + str(next_path_str) + "]"))
 
         waypoints = []
         frame_id = ""
-        # print "waypoint_index: ", self.waypoint_index[ee_id]
-        # print "next_path_idx: ", next_path_idx
-        # print "max_idx: ", max_idx
 
-        # if we are gonna handle pausing, it probably should allow us to interrupt things.
         try :
             for idx in path :
                 next_path_str = self.create_waypoint_id(ee_id, idx)
@@ -1535,11 +1414,17 @@ class AffordanceTemplate(threading.Thread) :
             # check for validity
             if not r : 
                 rospy.logwarn(str("AffordanceTemplate::plan_path_to_waypoint() -- couldnt find valid plan for " + manipulator_name + " to id: " + next_path_str))
-            
+                self.path_plan_ids[self.current_trajectory][ee_id] = -1
+            else :
+                self.path_plan_ids[self.current_trajectory][ee_id] = next_path_idx
+
+            return r
+
         except :
             rospy.logerr(str("AffordanceTemplate::plan_path_to_waypoint() -- Error in calculation waypoint pose goals from id path"))
+            return False
 
-        return next_path_idx
+        return True
 
     def get_fixed_joint_offset(self, end_effector) :
         T = Frame()
@@ -1558,7 +1443,7 @@ class AffordanceTemplate(threading.Thread) :
                 break
         return T
 
-    def move_to_waypoint(self, end_effector, next_path_idx) :
+    def move_to_waypoint(self, end_effector) :
 
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
         ee_name = self.robot_interface.get_end_effector_name(ee_id)
@@ -1579,14 +1464,37 @@ class AffordanceTemplate(threading.Thread) :
                 return False
 
             # if succeeded, update the current index, and set the valid plan to False so we dont jump back later
-            self.waypoint_index[self.current_trajectory][ee_id] = next_path_idx
-            rospy.loginfo(str("AffordanceTemplate::move_to_waypoint() -- setting current waypoint idx: " + str(self.waypoint_index[self.current_trajectory][ee_id])))
-            self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
+            if r :
+                rospy.loginfo(str("AffordanceTemplate::move_to_waypoint() -- setting current waypoint idx: " + str(self.waypoint_index[self.current_trajectory][ee_id])))
+                self.waypoint_index[self.current_trajectory][ee_id] = self.path_plan_ids[self.current_trajectory][ee_id]
+                self.path_plan_ids[self.current_trajectory][ee_id] = -1
+                self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
+                self.waypoint_execution_valid[self.current_trajectory][ee_id] = True
+            else :
+                self.waypoint_execution_valid[self.current_trajectory][ee_id] = False
             return True
             
         else :
             rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- waypoint plan not valid..."))
             return False
+
+    def plan_to_waypoint_valid(self, end_effector, trajectory) :
+        
+        if not end_effector in self.robot_interface.manipulator_id_map.keys() :
+            rospy.logerr("AffordanceTemplate::plan_path_to_waypoint() -- invalid end-effector in id map")
+            return False
+        
+        ee_id = self.robot_interface.manipulator_id_map[end_effector]
+        
+        if not trajectory in self.waypoint_plan_valid.keys() :
+            rospy.logerr("AffordanceTemplate::plan_path_to_waypoint() -- invalid trajectory in valid map")
+            return False
+
+        if not ee_id in self.waypoint_plan_valid[trajectory].keys() :
+            rospy.logerr("AffordanceTemplate::plan_path_to_waypoint() -- invalid end-effector in valid map")
+            return False
+
+        return self.waypoint_plan_valid[trajectory][ee_id]
 
     def create_origin_from_pose(self, ps) :
         origin = {}

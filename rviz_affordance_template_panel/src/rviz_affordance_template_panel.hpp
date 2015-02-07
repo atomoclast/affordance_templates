@@ -78,7 +78,7 @@ namespace rviz_affordance_template_panel
         void configChanged();
 
         // print stored template status info
-        void print_template_status();
+        void printTemplateStatus();
 
     public Q_SLOTS:
 
@@ -172,11 +172,11 @@ namespace rviz_affordance_template_panel
 
         /** \brief Go To Start Command.
          */
-        void go_to_start();
+        void goToStart();
 
         // /** \brief Go To End Command.
         //  */
-        void go_to_end();
+        void goToEnd();
 
         // /** \brief Stop Command.
         //  */
@@ -184,24 +184,29 @@ namespace rviz_affordance_template_panel
 
         // /** \brief Step Backward Command.
         //  */
-        void step_backward();
+        void stepBackward();
 
         // /** \brief Step Forward Command.
         //  */
-        void step_forward();
+        void stepForward();
 
         // /** \brief Go to Current.
         //  */
-        void go_to_current_waypoint();
+        void goToCurrentWaypoint();
 
         // /** \brief Execute Command.
         //  */
-        void execute_plan();
+        void executePlan();
 
         // /** \brief Get Status Update.
         //  */
-        void control_status_update();
+        void controlStatusUpdate();
 
+        void updateStatusFromControls();
+    
+        void updateTable(std::string name, std::string trajectory);
+
+        void doCommand(Controls::CommandType command_type);
 
         void updateObjectScale(int value);
         void updateEndEffectorScaleAdjustment(int value);

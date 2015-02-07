@@ -12,11 +12,14 @@ string trajectory_name
 # which end effectors to plan
 string[] end_effectors
 
-# the goal IDs for each end-effector
-uint8[] waypoint_goal_ids
+# the number of steps to send each end_effector
+int8[] steps
 
 # go directly to the waypoint (if not adjacent)
 bool direct
+
+# go backwards in the plan
+bool backwards
 
 ---
 

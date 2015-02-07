@@ -12,11 +12,14 @@ uint8 num_waypoints
 # the current index of the end effector in a trajectory
 int8 waypoint_index
 
-# the last wp index of the trajectory
-#int8 final_waypoint_idx
+# the index of the waypoint that was last planned to
+int8 waypoint_plan_index
 
 # the plan status
 bool plan_valid
+
+# the execution status
+bool execution_valid
 
 # waypoint info
 #geometry_msgs/PoseStamped[] waypoint_poses

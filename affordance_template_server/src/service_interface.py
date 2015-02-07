@@ -169,86 +169,9 @@ class ServiceInterface(object):
         response = DeleteRecognitionObjectResponse()
         return response
 
-
-    # def handle_command(self, request):
-    #     rospy.loginfo(str("ServiceInterface::handle_command() -- new command request for template " + request.type + "[" + str(request.id) + "]: " + str(request.command)))        
-    #     response = AffordanceTemplateCommandResponse()
-    #     response.status = False
-
-    #     try:
-            
-    #         at = self.server.at_data.class_map[request.type][int(request.id)]
-            
-    #         if not request.execute_precomputed_plan :
-    #             # plan first
-    #             for ee in request.end_effectors:
-
-    #                 if not at.trajectory_has_ee(at.current_trajectory, ee): 
-    #                     rospy.logwarn(str("ServiceInterface::handle_command() -- " + ee + " not in trajectory, can't plan"))
-    #                     continue
-
-    #                 if request.command == request.GO_TO_START :
-    #                     self.stored_idx[ee] = at.plan_path_to_waypoint(str(ee), backwards=True, steps=-999, direct=True)
-    #                 elif request.command == request.GO_TO_END :
-    #                     self.stored_idx[ee] = at.plan_path_to_waypoint(str(ee), steps=999, direct=True)
-    #                 elif request.command == request.PLAY_BACKWARD :
-    #                     self.stored_idx[ee] = at.plan_path_to_waypoint(str(ee), backwards=True, steps=-999, direct=False)
-    #                 elif request.command == request.PLAY_FORWARD :
-    #                     self.stored_idx[ee] = at.plan_path_to_waypoint(str(ee), steps=999, direct=False)
-    #                 elif request.command == request.STEP_BACKWARD :
-    #                     self.stored_idx[ee] = at.plan_path_to_waypoint(str(ee), backwards=True, steps=request.steps)
-    #                 elif request.command == request.STEP_FORWARD :
-    #                     self.stored_idx[ee] = at.plan_path_to_waypoint(str(ee), steps=request.steps)
-    #                 elif request.command == request.STOP :
-    #                     at.stop(str(ee))
-
-    #                 rospy.loginfo(str("ServiceInterface::handle_command() -- done planning path for " + ee))
-
-    #         # execute after
-    #         for ee in request.end_effectors :
-
-    #             if not at.trajectory_has_ee(at.current_trajectory, ee): 
-    #                 rospy.logwarn(str("ServiceInterface::handle_command() -- " + ee + " not in trajectory, can't execute"))
-    #                 continue
-
-    #             if request.execute_on_plan:        
-    #                 rospy.loginfo(str("ServiceInterface::handle_command() -- executing path for " + ee))
-    #                 at.move_to_waypoint(str(ee), self.stored_idx[ee])
-    #                 wp = WaypointInfo()
-    #                 wp.id = int(at.robot_interface.manipulator_id_map[str(ee)])
-    #                 wp.waypoint_index = self.stored_idx[ee]
-    #                 wp.num_waypoints = at.waypoint_max[at.current_trajectory][wp.id]+1
-    #                 response.waypoint_info.append(wp)
-    #             elif request.execute_precomputed_plan :
-    #                 rospy.loginfo(str("ServiceInterface::handle_command() -- executing existing path for " + ee))
-
-    #                 try :
-    #                     at.move_to_waypoint(str(ee), self.stored_idx[ee])
-    #                     wp = WaypointInfo()
-    #                     wp.id = int(at.robot_interface.manipulator_id_map[str(ee)])
-    #                     wp.waypoint_index = self.stored_idx[ee]
-    #                     wp.num_waypoints = at.waypoint_max[at.current_trajectory][wp.id]+1
-    #                     response.waypoint_info.append(wp)
-    #                 except :
-    #                     rospy.logwarn(str("ServiceInterface::handle_command() -- error moving to precomputed plan for ee: " + str(ee)))
-                    
-    #             else :
-    #                 wp = WaypointInfo()
-    #                 wp.id = int(at.robot_interface.manipulator_id_map[str(ee)])
-    #                 wp.waypoint_index = int(at.waypoint_index[at.current_trajectory][wp.id])
-    #                 wp.num_waypoints = at.waypoint_max[at.current_trajectory][wp.id]+1
-    #                 response.waypoint_info.append(wp)                  
-
-    #             rospy.loginfo(str("ServiceInterface::handle_command() -- done executing path for " + ee))
-    #         response.status = True
-    #     except:
-    #         rospy.logerr(str("ServiceInterface::handle_command() -- error performing command!!"))
-    #     return response
-
     def handle_plan_command(self, request):
         
         rospy.loginfo(str("ServiceInterface::handle_plan_command() -- new plan request for  " + request.type + ":" + str(request.id) + ", trajectory " + str(request.trajectory_name)))        
-        
         response = AffordanceTemplatePlanCommandResponse()
         response.status = False
         r = {}
@@ -257,35 +180,41 @@ class ServiceInterface(object):
             
             # get the AT instance
             at = self.server.at_data.class_map[request.type][int(request.id)]
-
+            
+            # check if a specific trajectory was given
+            if request.trajectory_name == "":
+                request.trajectory_name = at.current_trajectory
+                        
             # go through all the EE waypoints in the request
-            for id in len(request.end_effectors):
-                ee   = request.end_effectors[id]
-                goal = request.waypoint_goal_ids[id]
-                
+            id = 0
+            for ee in request.end_effectors:
+                                
+                steps = int(request.steps[id])
                 # make sure the EE is in the trajectory
                 if not at.trajectory_has_ee(request.trajectory_name, ee): 
                     rospy.logwarn(str("ServiceInterface::handle_plan_command() -- " + ee + " not in trajectory, can't plan"))
                     continue
-                
+                                
                 # compute path plan
-                r[ee] = at.plan_path_to_waypoint(str(ee), goal=goal, direct=request.direct, backwards=backwards)
+                r[ee] = at.plan_path_to_waypoint(str(ee), steps=steps, direct=request.direct, backwards=request.backwards)
                 rospy.loginfo(str("ServiceInterface::handle_plan_command() -- done planning path for " + ee))
-        
+                
+                id += 1
+
             # status will return True only when all ee's in plan are valid
             response.status = (not False in r.values()) 
             response.affordance_template_status = self.get_template_status(request.type, request.id, request.trajectory_name)
     
         except:
             rospy.logerr(str("ServiceInterface::handle_plan_command() -- error performing command!!"))
-
+        
         return response
 
 
     def handle_execute_command(self, request):
 
         rospy.loginfo(str("ServiceInterface::handle_execute_command() -- new execute request for  " + request.type + ":" + str(request.id) + ", trajectory " + str(request.trajectory_name)))        
-        
+       
         response = AffordanceTemplateExecuteCommandResponse()
         response.status = False
         r = {}
@@ -294,10 +223,13 @@ class ServiceInterface(object):
             
             # get the AT instance
             at = self.server.at_data.class_map[request.type][int(request.id)]
+            
+            # check if a specific trajectory was given
+            if request.trajectory_name == "":
+                request.trajectory_name = at.current_trajectory
 
             # go through all the EE waypoints in the request
-            for id in len(request.end_effectors):
-                ee = request.end_effectors[id]
+            for ee in request.end_effectors:
     
                 # make sure the EE is in the trajectory
                 if not at.trajectory_has_ee(request.trajectory_name, ee): 
@@ -305,14 +237,13 @@ class ServiceInterface(object):
                     continue
 
                 # if the AT has prevously computed a valid plan (can't execute unless this is True) 
-                if at.plan_to_waypoint_valid(ee) :
+                if at.plan_to_waypoint_valid(str(ee),request.trajectory_name) :
                     # command the execution (this is currently open loop on the AT side -- FIXME)
                     r[ee] = at.move_to_waypoint(str(ee)) 
                     rospy.loginfo(str("ServiceInterface::handle_execute_command() -- done executing plan for " + ee))
                 else :
                     rospy.loginfo(str("ServiceInterface::handle_execute_command() -- no valid plan found for " + ee))
-
-            
+     
             # status will return True only when all ee's in plan are valid
             response.status = (not False in r.values()) 
             response.affordance_template_status = self.get_template_status(request.type, request.id, request.trajectory_name)
@@ -377,15 +308,12 @@ class ServiceInterface(object):
 
 
     def handle_template_status_request(self, request):
-        print "in status update callback"
         response = GetAffordanceTemplateStatusResponse()
         response.affordance_template_status = []
         if request.name :
             try:
-                print "req name: ", request.name
                 ss = request.name.split(":")
                 ats = self.get_template_status(ss[0], int(ss[1]), request.trajectory_name)
-                print "created new ATS"
                 response.affordance_template_status.append(ats)
                 response.current_trajectory = self.server.at_data.class_map[ss[0]][int(ss[1])].current_trajectory
             except :
@@ -406,7 +334,6 @@ class ServiceInterface(object):
             ats.id = template_id
             if not trajectory_name : trajectory_name = at.current_trajectory
             ats.trajectory_name = trajectory_name
-            print "new traj: ", trajectory_name
             ats.waypoint_info = []
 
             if not trajectory_name in at.waypoint_max.keys() :
@@ -421,6 +348,8 @@ class ServiceInterface(object):
                 wp.num_waypoints = at.waypoint_max[trajectory_name][wp.id]+1
                 wp.waypoint_index = int(at.waypoint_index[trajectory_name][wp.id])
                 wp.plan_valid = at.waypoint_plan_valid[trajectory_name][wp.id]
+                wp.execution_valid = at.waypoint_execution_valid[trajectory_name][wp.id]  
+                wp.waypoint_plan_index = at.waypoint_plan_index[trajectory_name][wp.id]                               
                 ats.waypoint_info.append(wp)                
         except :
             rospy.logerr("ServiceInterface::get_template_status() -- error generating status message")
