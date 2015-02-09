@@ -9,3 +9,4 @@ qtcreator-build/*
 */Makefile
 */*.cmake
 */cmake/*
+build-*
