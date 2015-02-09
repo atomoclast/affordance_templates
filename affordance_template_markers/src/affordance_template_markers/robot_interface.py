@@ -82,9 +82,7 @@ class RobotInterface(object) :
             f = open(filename)
             self.yaml_config = yaml.load(f.read())
             f.close()
-       
-            rospy.logwarn(str("SETTING YAML ROS PARAM: " + filename))
-        
+              
             yaml_stuff = filename.split("/")
             yaml_base = yaml_stuff[len(yaml_stuff)-1]
             rospy.set_param("/affordance_templates/robot_yaml", yaml_base)
