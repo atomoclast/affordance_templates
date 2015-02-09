@@ -32,6 +32,9 @@ class AffordanceTemplateServer(Thread):
         Thread.__init__(self)
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         
+        if robot_yaml=="" :
+            rospy.logwarn("AffordanceTemplateServer::init() -- NO ROBOT YAML GIVEN, BE SURE TO LOAD ROBOT FROM SERVICE!!")
+            
         self.robot_interface = None
         self.structure = {}
       
