@@ -28,18 +28,16 @@ class RobotInterface(object) :
         if yaml_file and robot_config :
             rospy.logerr("RobotInterface() -- can't load from both yaml and robot_config!")
         elif yaml_file :
-            # rospy.loginfo(("RobotInterface() -- loading with input yaml: " + yaml_file))
+            rospy.loginfo(("RobotInterface() -- loading with input yaml: " + yaml_file))
             self.load_from_file(yaml_file)
         elif robot_config :
-            # rospy.loginfo(("RobotInterface() -- loading from input robot config: " + robot_config.name))
+            rospy.loginfo(("RobotInterface() -- loading from input robot config: " + robot_config.name))
             self.load_from_msg(robot_config)
         else:
             rospy.logwarn("RobotInterface() -- no robot configuration given...")
 
     def reset(self) :
-
         self.robot_config = RobotConfig()
-
         self.moveit_ee_groups = []
         self.end_effector_names = []
         self.end_effector_name_map = {}
@@ -52,11 +50,12 @@ class RobotInterface(object) :
         self.end_effector_markers = {}
         self.stored_poses = {}
         self.gripper_service = None
-
         self.configured = False
 
     def load_from_msg(self, robot_config) :
         self.robot_config = robot_config
+
+        rospy.set_param("/affordance_templates/robot_yaml", "")
 
         for ee_config in self.robot_config.end_effectors:
             self.manipulator_pose_map[ee_config.name] = ee_config.pose_offset
@@ -79,9 +78,16 @@ class RobotInterface(object) :
     def load_from_file(self, filename) :
 
         try:
+        
             f = open(filename)
             self.yaml_config = yaml.load(f.read())
             f.close()
+       
+            rospy.logwarn(str("SETTING YAML ROS PARAM: " + filename))
+        
+            yaml_stuff = filename.split("/")
+            yaml_base = yaml_stuff[len(yaml_stuff)-1]
+            rospy.set_param("/affordance_templates/robot_yaml", yaml_base)
 
             self.robot_config.filename  = filename
             self.robot_config.name = self.yaml_config['robot_name']
@@ -182,7 +188,7 @@ class RobotInterface(object) :
             rospy.loginfo(str("RobotInterface::load_from_file() -- loaded: " + filename))
 
         except :
-            rospy.logdebug("RobotInterface::load_from_file() -- error opening config file")
+            rospy.logerr("RobotInterface::load_from_file() -- error opening config file")
             return False
 
         # print self.robot_config
@@ -192,9 +198,9 @@ class RobotInterface(object) :
 
 
     def configure(self) :
-
-        print "configuring for robot name: ", self.robot_config.name
-        print "configuring for moveit package: ", self.robot_config.moveit_config_package
+        rospy.loginfo(str("\n--------------------------\nRobotInterface::configure()"))
+        rospy.loginfo(str("RobotInterface::configure() -- configuring for robot name: " + self.robot_config.name))
+        rospy.loginfo(str("RobotInterface::configure() -- configuring for moveit package: " + self.robot_config.moveit_config_package))
         self.moveit_interface = MoveItInterface(self.robot_config.name,self.robot_config.moveit_config_package)
         self.root_frame = self.moveit_interface.get_planning_frame()
         self.moveit_ee_groups = self.moveit_interface.srdf_model.get_end_effector_groups()
@@ -205,14 +211,14 @@ class RobotInterface(object) :
             else :
 
                 # self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, self.moveit_interface.get_control_frame(g), self.tf_listener)
-                print "control frame: ", self.moveit_interface.srdf_model.group_end_effectors[g].parent_link
+                rospy.loginfo(str("RobotInterface::configure() -- control frame: " + self.moveit_interface.srdf_model.group_end_effectors[g].parent_link))
                 self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, self.moveit_interface.srdf_model.group_end_effectors[g].parent_link, self.tf_listener)
                 self.end_effector_link_data[g].populate_data(self.moveit_interface.get_group_links(g), self.moveit_interface.get_urdf_model(), self.moveit_interface.get_srdf_model())
                 rospy.sleep(2)
                 self.end_effector_markers[g] = self.end_effector_link_data[g].get_current_position_marker_array(scale=1.0,color=(1,1,1,0.5))
                 pg = self.moveit_interface.srdf_model.get_end_effector_parent_group(g)
                 if not pg == None :
-                    print "trying to add MoveIt! group: ", pg
+                    rospy.loginfo(str("RobotInterface::configure() -- trying to add MoveIt! group: " + pg))
                     self.moveit_interface.add_group(pg, group_type="manipulator")
                     self.moveit_interface.set_display_mode(pg, "all_points")
                     # self.moveit_interface_threads[pg] = MoveItInterfaceThread(self.robot_config.name,self.robot_config.moveit_config_pacakge, g)
@@ -224,7 +230,7 @@ class RobotInterface(object) :
 
 
                 else :
-                    print "no manipulator group found for end-effector: ", g
+                    rospy.logerror(str("RobotInterface::configure -- no manipulator group found for end-effector: " + g))
 
             self.stored_poses[g] = {}
             for state_name in self.moveit_interface.get_stored_state_list(g) :
@@ -236,11 +242,12 @@ class RobotInterface(object) :
             self.moveit_interface.set_gripper_service(self.robot_config.gripper_service)
 
         # what do we have?
-        print "RobotInterface::configure() -- moveit groups: ", self.moveit_interface.groups.keys()
-        print "RobotInterface::configure() -- end_effector_names: ",self.end_effector_names
-        print "RobotInterface::configure() -- end_effector_groups: ",self.moveit_ee_groups
+        # rospy.loginfo(str("RobotInterface::configure() -- moveit groups: " + self.moveit_interface.groups.keys()))
+        # rospy.loginfo(str("RobotInterface::configure() -- end_effector_names: " + self.end_effector_names))
+        # rospy.loginfo(str("RobotInterface::configure() -- end_effector_groups: " + self.moveit_ee_groups))
         
         self.moveit_interface.print_basic_info()
+        rospy.loginfo(str("RobotInterface::configure() -- end\n--------------------------\n"))
         return True
 
     def joint_state_callback(self, data) :

@@ -228,6 +228,8 @@ namespace rviz_affordance_template_panel
         void setupRobotPanel(const string& key);
         void setupEndEffectorConfigPanel(const string& key);
 
+        bool tryToLoadRobotFromYAML();
+
         void removeAffordanceTemplates();
         int sendAffordanceTemplateAdd(const string& class_name);
         void sendAffordanceTemplateKill(const string& class_name, int id);
@@ -266,7 +268,8 @@ namespace rviz_affordance_template_panel
         std::map<std::string, RobotConfigSharedPtr> robotMap_;
         std::string descriptionRobot_;
         std::string robot_name_;
-
+        bool robot_configured_;
+        
         ros::NodeHandle nh_;
 
         // affordance template services

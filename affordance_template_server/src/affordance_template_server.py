@@ -56,11 +56,14 @@ class AffordanceTemplateServer(Thread):
         # create the robot interface and configure if there is an input yaml
         if not os.path.isfile(robot_yaml) :
             robot_yaml = self.robot_path + "/" + robot_yaml
+            rospy.loginfo(str("AffordanceTemplateServer::init() -- robot_yaml: " + robot_yaml))
             
         if os.path.isfile(robot_yaml) : 
             self.robot_interface = RobotInterface(yaml_file=robot_yaml)
             self.robot_interface.configure()
+            rospy.loginfo(str("AffordanceTemplateServer::init() -- robot_yaml: " + robot_yaml + " -- configuring..."))
         else :
+            rospy.loginfo(str("AffordanceTemplateServer::init() -- no robot_yaml given"))
             self.robot_interface = RobotInterface()
 
     def configure_server(self):

@@ -21,17 +21,12 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
     srv.request.trajectory_name = template_status_->getCurrentTrajectory();
     srv.request.backwards = (command_type==CommandType::STEP_BACKWARD);
 
-    cout << "test 1 " <<endl;
     vector<pair<string,int> > ee_info = getSelectedEndEffectorInfo();
 
-
-    cout << "test 2 " <<endl;
     for(auto &ee : ee_info) {
         srv.request.end_effectors.push_back(ee.first);
     }
-
-    cout << "test 3 " <<endl;
-   
+  
     if(command_type==CommandType::CURRENT) {
         for(auto &ee : ee_info) {
             if (template_status_->getTrajectoryInfo().find(srv.request.trajectory_name) == template_status_->getTrajectoryInfo().end()) {
@@ -47,35 +42,26 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
         }
     } else if(command_type==CommandType::START || command_type==CommandType::END) {
      
-        cout << "test 4 " <<endl;
-    
         srv.request.direct = true;
         for(auto &ee : ee_info) {
 
-            cout << "test 4a " <<endl;
             if (template_status_->getTrajectoryInfo().find(srv.request.trajectory_name) == template_status_->getTrajectoryInfo().end()) {
                 ROS_ERROR("Controls::requestPlan() -- trajectory \'%s\' not found in template status", srv.request.trajectory_name.c_str());
                 return false;
             }
-            cout << "test 4b " <<endl;
-
+ 
             if (template_status_->getTrajectoryInfo()[srv.request.trajectory_name].find(ee.first) == template_status_->getTrajectoryInfo()[srv.request.trajectory_name].end()) {
                 ROS_ERROR("Controls::requestPlan() -- end-effector \'%s\' not found in template status for traj \'%s\'", ee.first.c_str(),srv.request.trajectory_name.c_str());
                 return false;
             }
-            cout << "test 4c " <<endl;
             template_status_->getTrajectoryInfo()[srv.request.trajectory_name][ee.first];
-            cout << "test 4d " <<endl;
-
+ 
             int idx = template_status_->getTrajectoryInfo()[srv.request.trajectory_name][ee.first]->waypoint_index;
-            cout << "test 4e " <<endl;
             int N = template_status_->getTrajectoryInfo()[srv.request.trajectory_name][ee.first]->num_waypoints;
-            cout << "test 4f " <<endl;
             int steps = 0;
 
             
             if(command_type==CommandType::START) {
-                cout << "test 4a.a " <<endl;
                 if(idx==-1) {
                     steps = 1;
                 } else {
@@ -83,7 +69,6 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
                     srv.request.backwards = true;
                 }
             } else if(command_type==CommandType::END) {
-                cout << "test 4a.b " <<endl;
                 if(idx==-1) {
                     steps = N;
                 } else {
@@ -92,10 +77,8 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
                 }
             }
             srv.request.steps.push_back(steps);
-            cout << "test 4c " <<endl;
                 
         }
-        cout << "test 4d " <<endl;
                 
     } else {
         for(auto &ee : ee_info) {
@@ -103,15 +86,11 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
             srv.request.steps.push_back(steps);
         }
     }
-
-    cout << "test 5 " <<endl;
-                
+              
     if (planService_.call(srv))
     {
         ROS_INFO("PLAN command successful, returned status: %d", (int)(srv.response.status)); // FIXME
-        cout << "test 5a " <<endl;
         affordance_template_msgs::AffordanceTemplateStatusConstPtr ptr(new affordance_template_msgs::AffordanceTemplateStatus(srv.response.affordance_template_status));
-        cout << "test 5b " <<endl;
         bool r = template_status_->updateTrajectoryStatus(ptr);
         if(!r) {
             ROS_ERROR("Controls::requestPlan() -- error updating template status");
@@ -123,7 +102,6 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
         ROS_ERROR("Failed to call plan service command");
         return false;
     }
-    cout << "test 6 " <<endl;
                 
 }
 

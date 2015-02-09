@@ -23,7 +23,8 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     rviz::Panel(parent),
     ui_(new Ui::RVizAffordanceTemplatePanel),
     descriptionRobot_(""),
-    controls_(new Controls(ui_))
+    controls_(new Controls(ui_)),
+    robot_configured_(false)
 {
     // Setup the panel.
     ui_->setupUi(this);
@@ -53,22 +54,55 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     setupWidgets();
     getAvailableInfo();
 
-    descriptionRobot_ = getRobotFromDescription();
-    if (descriptionRobot_ != "") {
-        std::string yamlRobotCandidate = descriptionRobot_ + ".yaml";
-        ROS_INFO("RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel() -- searching for Robot: %s", yamlRobotCandidate.c_str());
+    tryToLoadRobotFromYAML();
+
+    getRunningItems();
+    selected_template = make_pair("",-1);
+
+}
+
+
+bool RVizAffordanceTemplatePanel::tryToLoadRobotFromYAML() {
+
+    std::string yamlRobotCandidate = "";
+    bool foundRobotYaml = false;
+
+    // first try to get robot yaml on param server
+    if(nh_.getParam("affordance_templates/robot_yaml", yamlRobotCandidate)) {      
+        if(yamlRobotCandidate!="") {
+            foundRobotYaml = true;
+            ROS_INFO("RVizAffordanceTemplatePanel::tryToLoadRobotFromYAML() -- found robot yaml on param server: %s", yamlRobotCandidate.c_str());
+        }
+    }
+
+    // next try getting it by getting robot name from robot_description
+    if(!foundRobotYaml) {
+        descriptionRobot_ = getRobotFromDescription();
+        if (descriptionRobot_ != "") {
+            yamlRobotCandidate = descriptionRobot_ + ".yaml";
+            ROS_INFO("RVizAffordanceTemplatePanel::tryToLoadRobotFromYAML() -- trying robot name based yaml: %s", yamlRobotCandidate.c_str());
+        }
+    }
+
+    if(yamlRobotCandidate!="") {
+        ROS_INFO("RVizAffordanceTemplatePanel::tryToLoadRobotFromYAML() -- searching for Robot: %s", yamlRobotCandidate.c_str());
         map<string,RobotConfigSharedPtr>::const_iterator it = robotMap_.find(yamlRobotCandidate);
         if (it != robotMap_.end() ) {
             int idx= ui_->robot_select->findText(QString(yamlRobotCandidate.c_str()));
             ui_->robot_select->setCurrentIndex(idx);
             setupRobotPanel(yamlRobotCandidate);
             loadConfig();
+        } else {
+            ROS_WARN("RVizAffordanceTemplatePanel::tryToLoadRobotFromYAML() -- no robot yaml found in database of name: %s", yamlRobotCandidate.c_str());
+            return false;
         }
+    } else {
+        ROS_WARN("RVizAffordanceTemplatePanel::tryToLoadRobotFromYAML() -- not able to construct a candidate robot yaml");
+        return false;
     }
 
-    getRunningItems();
+    return true;
 
-    selected_template = make_pair("",-1);
 }
 
 RVizAffordanceTemplatePanel::~RVizAffordanceTemplatePanel()
@@ -227,6 +261,12 @@ void RVizAffordanceTemplatePanel::refreshCallback() {
     removeAffordanceTemplates();
     getAvailableInfo();
     getRunningItems();
+
+    if(!robot_configured_) {
+        tryToLoadRobotFromYAML();
+    }
+    ROS_WARN("ROBOT NAME: %s", robot_name_.c_str());
+    
 }
 
 void RVizAffordanceTemplatePanel::getAvailableInfo() {
@@ -303,7 +343,7 @@ void RVizAffordanceTemplatePanel::getAvailableRecognitionObjects() {
 
 void RVizAffordanceTemplatePanel::getAvailableRobots() {
 
-    ROS_INFO("querying available robots");    
+    ROS_INFO("RVizAffordanceTemplatePanel::getAvailableRobots() -- querying available robots");    
 
     affordance_template_msgs::GetRobotConfigInfo srv;
     if (get_robots_client_.call(srv))
@@ -314,8 +354,10 @@ void RVizAffordanceTemplatePanel::getAvailableRobots() {
         ui_->end_effector_select->disconnect(SIGNAL(currentIndexChanged(int)));
         ui_->robot_select->clear();
         ui_->end_effector_select->clear();
+        
 
         for (auto& r: srv.response.robots) {
+
 
             RobotConfigSharedPtr pitem(new RobotConfig(r.filename));
             pitem->uid(r.filename);
@@ -326,6 +368,7 @@ void RVizAffordanceTemplatePanel::getAvailableRobots() {
 
             vector<float> root_offset = util::poseMsgToVector(r.root_offset);
             pitem->root_offset(root_offset);
+
 
             for (auto& e: r.end_effectors) {
 
@@ -341,6 +384,7 @@ void RVizAffordanceTemplatePanel::getAvailableRobots() {
                 pitem->endeffectorMap[e.name] = eitem;
 
             }
+
             for (auto& p: r.end_effector_pose_data) {
                 EndEffectorPoseIDConfigSharedPtr piditem(new EndEffectorPoseConfig(p.name));
                 piditem->id(int(p.id))  ;
@@ -348,14 +392,19 @@ void RVizAffordanceTemplatePanel::getAvailableRobots() {
                 pitem->endeffectorPoseMap[p.name] = piditem;
             }
 
+
             addRobot(pitem);
 
             ui_->robot_select->addItem(QString(pitem->uid().c_str()));
+
         }
 
+
         setupRobotPanel(robotMap_.begin()->first);
+
         QObject::connect(ui_->robot_select, SIGNAL(currentIndexChanged(int)), this, SLOT(changeRobot(int)));
         QObject::connect(ui_->end_effector_select, SIGNAL(currentIndexChanged(int)), this, SLOT(changeEndEffector(int)));
+
 
         // set Controls
         controls_->setRobotMap(robotMap_);
@@ -1007,6 +1056,7 @@ void RVizAffordanceTemplatePanel::loadConfig() {
         
     robot_name_ = key;
     controls_->setRobotName(robot_name_);
+    robot_configured_ = true;
 
     if(ui_->robot_lock->isChecked()) {
         enableConfigPanel(Qt::Checked);
