@@ -42,6 +42,7 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     get_running_client_ = nh_.serviceClient<affordance_template_msgs::GetRunningAffordanceTemplates>("/affordance_template_server/get_running");
     get_templates_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateConfigInfo>("/affordance_template_server/get_templates");
     get_template_status_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateStatus>("/affordance_template_server/get_template_status");
+    //get_server_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateServerStatus>("/affordance_template_server/status");
     load_robot_client_ = nh_.serviceClient<affordance_template_msgs::LoadRobotConfig>("/affordance_template_server/load_robot");
     save_template_client_ = nh_.serviceClient<affordance_template_msgs::SaveAffordanceTemplate>("/affordance_template_server/save_template");
     scale_object_client_ = nh_.serviceClient<affordance_template_msgs::ScaleDisplayObject>("/affordance_template_server/scale_object");
@@ -53,12 +54,15 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
 
     setupWidgets();
     getAvailableInfo();
-
     tryToLoadRobotFromYAML();
 
     getRunningItems();
     selected_template = make_pair("",-1);
 
+    // start up server monitor thread
+    server_monitor = new AffordanceTemplateServerStatusMonitor(nh_, std::string("/affordance_template_server/status"), 1);
+    server_monitor->setUI(ui_);
+    server_monitor->start();
 }
 
 
@@ -111,6 +115,9 @@ RVizAffordanceTemplatePanel::~RVizAffordanceTemplatePanel()
     for (auto &ats : template_status_info) {
         delete ats.second;
     }
+
+    server_monitor->stop();
+    delete server_monitor;
 }
 
 void RVizAffordanceTemplatePanel::setupWidgets() {

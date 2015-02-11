@@ -27,6 +27,7 @@ class ServiceInterface(object):
         self.add_trajectory =          rospy.Service('/affordance_template_server/add_trajectory', AddAffordanceTemplateTrajectory, self.handle_add_trajectory)
         self.scale_object =            rospy.Service('/affordance_template_server/scale_object', ScaleDisplayObject, self.handle_object_scale)
         self.template_status_service = rospy.Service('/affordance_template_server/get_template_status', GetAffordanceTemplateStatus, self.handle_template_status_request)
+        self.server_status_service =   rospy.Service('/affordance_template_server/status', GetAffordanceTemplateServerStatus, self.handle_server_status_request)
 
         # subscribers
         self.scale_object_stream =     rospy.Subscriber('/affordance_template_server/scale_object_streamer', ScaleDisplayObjectInfo, self.handle_object_scale_stream)
@@ -34,6 +35,7 @@ class ServiceInterface(object):
         self.stored_idx = {}
 
     def handle_robot_request(self, request) :
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_robot_request() -- requested robot info " + request.name))
         response = GetRobotConfigInfoResponse()
         if request.name and request.name in self.server.robot_map.keys() :
@@ -41,9 +43,11 @@ class ServiceInterface(object):
         else :
             for r in self.server.robot_map.keys() :
                 response.robots.append(self.server.robot_map[r].robot_config)
+        self.server.status = True
         return response
 
     def handle_template_request(self, request) :
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_template_request() -- requested template info " + request.name))
         response = GetAffordanceTemplateConfigInfoResponse()
         if request.name and request.name in self.server.at_data.class_map.keys() :
@@ -82,9 +86,12 @@ class ServiceInterface(object):
                 for obj in self.server.at_data.object_map[class_type] :
                     at_config.display_objects.append(obj)
                 response.templates.append(at_config)
+        self.server.status = True
         return response
 
+
     def handle_object_request(self, request) :
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_object_request() -- requested object info " + request.name))
         response = GetRecognitionObjectConfigInfoResponse()
         if request.name and request.name in self.server.ro_data.object_map.keys() :
@@ -105,9 +112,11 @@ class ServiceInterface(object):
                 ro_config.launch_file = self.server.ro_data.launch_map[object_type]
                 ro_config.marker_topic = self.server.ro_data.marker_topic_map[object_type]
                 response.recognition_objects.append(ro_config)
+        self.server.status = True        
         return response
 
     def handle_load_robot(self, request):
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_load_robot() -- load request for robot " + request.robot_config.name))
         response = LoadRobotConfigResponse()
         response.status = False
@@ -121,9 +130,11 @@ class ServiceInterface(object):
             response.status = self.server.robot_interface.configure()
         except:
             rospy.logerr("ServiceInterface::handle_load_robot()  -- Error trying to load robot from message")
+        self.server.status = True        
         return response
 
     def handle_add_template(self, request):
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_add_template() -- adding template " + request.class_type))
         response = AddAffordanceTemplateResponse()
         response.status = False
@@ -133,15 +144,19 @@ class ServiceInterface(object):
             response.status = self.server.add_template(request.class_type, pid)
         except:
             rospy.logerr("ServiceInterface::handle_add_template() -- error adding template to server")
+        self.server.status = True
         return response
 
     def handle_add_object(self, request) :
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_add_object() -- add object of type " + request.object_type))
         rospy.logwarn(str("ServiceInterface::handle_add_object() -- not implemeneted yet"))
         response = AddRecognitionObjectResponse()
+        self.server.status = True
         return response
 
     def handle_running(self, request):
+        self.server.status = False
         rospy.loginfo("ServiceInterface::handle_running()")
         response = GetRunningAffordanceTemplatesResponse()
         try:
@@ -151,9 +166,11 @@ class ServiceInterface(object):
             response.templates.sort()
         except:
             rospy.logerr("ServiceInterface::handle_running() -- error getting running templates")
+        self.server.status = True
         return response
 
     def handle_template_kill(self, request):
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_template_kill() -- killing template " + request.class_type + "[" + str(request.id) + "]"))
         response = DeleteAffordanceTemplateResponse()
         response.status = False
@@ -161,16 +178,19 @@ class ServiceInterface(object):
             response.status = self.server.remove_template(request.class_type, request.id)
         except:
             rospy.logerr("ServiceInterface::handle_template_kill() -- error deleting requested templates")
+        self.server.status = True
         return response
 
     def handle_object_kill(self, request) :
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_object_kill() -- delete object of type " + request.object_type))
         rospy.logwarn(str("ServiceInterface::handle_object_kill() -- not implemeneted yet"))
         response = DeleteRecognitionObjectResponse()
+        self.server.status = True
         return response
 
     def handle_plan_command(self, request):
-        
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_plan_command() -- new plan request for  " + request.type + ":" + str(request.id) + ", trajectory " + str(request.trajectory_name)))        
         response = AffordanceTemplatePlanCommandResponse()
         response.status = False
@@ -208,11 +228,13 @@ class ServiceInterface(object):
         except:
             rospy.logerr(str("ServiceInterface::handle_plan_command() -- error performing command!!"))
         
+        self.server.status = True
         return response
 
 
     def handle_execute_command(self, request):
-
+        self.server.status = False
+        
         rospy.loginfo(str("ServiceInterface::handle_execute_command() -- new execute request for  " + request.type + ":" + str(request.id) + ", trajectory " + str(request.trajectory_name)))        
        
         response = AffordanceTemplateExecuteCommandResponse()
@@ -251,10 +273,12 @@ class ServiceInterface(object):
         except:
             rospy.logerr(str("ServiceInterface::handle_execute_command() -- error performing command!!"))
 
+        self.server.status = True
         return response
 
 
     def handle_save_template(self, request):
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_save_template() -- save request for robot " + request.original_class_type + ":" + str(request.id) + 
             " as " + request.new_class_type + ":" + str(request.id) + " with " + request.filename + " with image: " + request.image))
         response = SaveAffordanceTemplateResponse()
@@ -268,9 +292,11 @@ class ServiceInterface(object):
             response.status = save_status and remove_status and add_status
         except:
             rospy.logerr("ServiceInterface::handle_load_robot()  -- Error trying to save template")
+        self.server.status = True
         return response
 
     def handle_add_trajectory(self, request):
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_add_trajectory() -- add trajectory [" + request.trajectory_name +  "] to " + request.class_type + ":" + str(request.id)))
         response = AddAffordanceTemplateTrajectoryResponse()
         response.status = False    
@@ -280,9 +306,11 @@ class ServiceInterface(object):
             response.status = True
         except:
             rospy.logerr("ServiceInterface::handle_add_trajectory()  -- Error trying to add trajectory")
+        self.server.status = True
         return response
 
     def handle_object_scale(self, request):
+        self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_object_scale() -- scale " + request.scale_info.class_type + ":" + str(request.scale_info.id) 
             + " -> object[" + request.scale_info.object_name + "] by " + str(request.scale_info.scale_factor) + "," + str(request.scale_info.end_effector_scale_factor) + ")"))
         response = ScaleDisplayObjectResponse()
@@ -293,6 +321,7 @@ class ServiceInterface(object):
             response.status = True
         except:
             rospy.logerr("ServiceInterface::handle_object_scale()  -- Error trying to scale object")
+        self.server.status = True
         return response
 
 
@@ -308,6 +337,7 @@ class ServiceInterface(object):
 
 
     def handle_template_status_request(self, request):
+        self.server.status = False
         response = GetAffordanceTemplateStatusResponse()
         response.affordance_template_status = []
         if request.name :
@@ -321,6 +351,7 @@ class ServiceInterface(object):
         else :           
             rospy.logerr("ServiceInterface::handle_template_status_request() -- no template name provided")
 
+        self.server.status = True
         return response
 
     def get_template_status(self, template_name, template_id, trajectory_name) :
@@ -354,3 +385,10 @@ class ServiceInterface(object):
         except :
             rospy.logerr("ServiceInterface::get_template_status() -- error generating status message")
         return ats
+
+
+    def handle_server_status_request(self, request) :
+        response = GetAffordanceTemplateServerStatusResponse()
+        response.ready = self.server.get_status()
+        return response
+

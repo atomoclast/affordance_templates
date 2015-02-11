@@ -67,6 +67,7 @@ add_service_files(
   GetRecognitionObjectConfigInfo.srv
   GetRunningAffordanceTemplates.srv
   GetAffordanceTemplateStatus.srv
+  GetAffordanceTemplateServerStatus.srv
   LoadRobotConfig.srv
   AddAffordanceTemplate.srv
   DeleteAffordanceTemplate.srv

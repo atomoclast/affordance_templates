@@ -21,8 +21,6 @@
 #include "util.hpp"
 #include "ui_rviz_affordance_template_panel.h"
 
-#include "AffordanceTemplateStatusInfo.hpp"
-
 #include <geometry_msgs/Pose.h>
 
 // affordance template messages and services
@@ -50,6 +48,9 @@
 #include <affordance_template_msgs/LoadRobotConfig.h>
 #include <affordance_template_msgs/ScaleDisplayObjectInfo.h>
 #include <affordance_template_msgs/ScaleDisplayObject.h>
+
+#include "AffordanceTemplateStatusInfo.hpp"
+#include "AffordanceTemplateServerStatusMonitor.hpp"
 
 namespace Ui {
 class RVizAffordanceTemplatePanel;
@@ -288,6 +289,7 @@ namespace rviz_affordance_template_panel
         ros::ServiceClient save_template_client_;
         ros::ServiceClient scale_object_client_;
         ros::ServiceClient get_template_status_client_;
+        //ros::ServiceClient get_server_status_client_;
 
         // affordance template publishers
         ros::Publisher scale_object_streamer_;
@@ -302,6 +304,8 @@ namespace rviz_affordance_template_panel
         TemplateInstanceID selected_template;
 
         std::map<std::string, AffordanceTemplateStatusInfo*> template_status_info; 
+
+        AffordanceTemplateServerStatusMonitor *server_monitor;
 
     };
 }
