@@ -90,7 +90,7 @@ namespace rviz_affordance_template_panel
 	    				if (srv_.call(server_status))
 	    				{
 	 						ready_ = server_status.response.ready;
-	        				ROS_INFO("AffordanceTemplateServerStatusMonitor::thread() -- got response: %d", (int)(server_status.response.ready)); 
+	        				ROS_DEBUG("AffordanceTemplateServerStatusMonitor::thread() -- got response: %d", (int)(server_status.response.ready)); 
 	    				}
 	    				else
 	    				{
