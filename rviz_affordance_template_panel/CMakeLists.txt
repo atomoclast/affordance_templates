@@ -15,22 +15,27 @@ set(QT_FORMS ${PROJECT_SOURCE_DIR}/ui/rviz_affordance_template_panel.ui)
 set(QT_RESS ${PROJECT_SOURCE_DIR}/resources/images.qrc)
 
 qt4_wrap_cpp(MOC_FILES
-    src/rviz_affordance_template_panel.hpp
+    src/AffordanceTemplateMsgHeaders.hpp
+    src/AffordanceTemplateServerStatusMonitor.hpp
+    src/AffordanceTemplateRVizClient.hpp  
     src/Affordance.hpp
     src/RecognitionObject.hpp
     src/RobotConfig.hpp
     src/Controls.hpp
     src/util.hpp
+    src/rviz_affordance_template_panel.hpp
 )
 qt4_wrap_ui(QT_FORMS_HPP ${QT_FORMS})
 qt4_add_resources(QT_RESOURCES ${QT_RESS})
 
 set(SRC_FILES
-    src/rviz_affordance_template_panel.cpp
+    src/AffordanceTemplateServerStatusMonitor.cpp
+    src/AffordanceTemplateRVizClient.cpp  
     src/Affordance.cpp
     src/RecognitionObject.cpp
     src/Controls.cpp
     src/util.cpp
+    src/rviz_affordance_template_panel.cpp
     ${MOC_FILES}
 )
 

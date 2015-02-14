@@ -7,7 +7,7 @@ class ServiceInterface(object):
 
     def __init__(self, server):
         
-        rospy.loginfo("ServiceInterface() starting")
+        # rospy.loginfo("ServiceInterface() starting")
         # the affordance template server
         self.server = server
 
@@ -28,6 +28,7 @@ class ServiceInterface(object):
         self.scale_object =            rospy.Service('/affordance_template_server/scale_object', ScaleDisplayObject, self.handle_object_scale)
         self.template_status_service = rospy.Service('/affordance_template_server/get_template_status', GetAffordanceTemplateStatus, self.handle_template_status_request)
         self.server_status_service =   rospy.Service('/affordance_template_server/status', GetAffordanceTemplateServerStatus, self.handle_server_status_request)
+        self.set_trajectory_service =  rospy.Service('/affordance_template_server/set_template_trajectory', SetAffordanceTemplateTrajectory, self.handle_set_trajectory)
 
         # subscribers
         self.scale_object_stream =     rospy.Subscriber('/affordance_template_server/scale_object_streamer', ScaleDisplayObjectInfo, self.handle_object_scale_stream)
@@ -291,7 +292,7 @@ class ServiceInterface(object):
             add_status = self.server.add_template(request.new_class_type, request.id)
             response.status = save_status and remove_status and add_status
         except:
-            rospy.logerr("ServiceInterface::handle_load_robot()  -- Error trying to save template")
+            rospy.logerr("ServiceInterface::handle_save_template()  -- Error trying to save template")
         self.server.status = True
         return response
 
@@ -340,26 +341,27 @@ class ServiceInterface(object):
         self.server.status = False
         response = GetAffordanceTemplateStatusResponse()
         response.affordance_template_status = []
+        response.current_trajectory = ""
+        response.trajectory_names = []
         if request.name :
             try:
                 ss = request.name.split(":")
                 ats = self.get_template_status(ss[0], int(ss[1]), request.trajectory_name)
                 response.affordance_template_status.append(ats)
                 response.current_trajectory = self.server.at_data.class_map[ss[0]][int(ss[1])].current_trajectory
+                for t in self.server.at_data.traj_map[ss[0]] :
+                    response.trajectory_names.append(t)
             except :
                 rospy.logerr("ServiceInterface::handle_template_status_request() -- error getting template status")
-        else :           
-            rospy.logerr("ServiceInterface::handle_template_status_request() -- no template name provided")
 
-        self.server.status = True
+        else :           
+            rospy.logdebug("ServiceInterface::handle_template_status_request() -- no template name provided")
+        self.server.status = True       
         return response
 
     def get_template_status(self, template_name, template_id, trajectory_name) :
         ats = AffordanceTemplateStatus()
         try :
-            # print template_name
-            # print template_id
-            # print trajectory_name
             at = self.server.at_data.class_map[template_name][template_id]
             ats.type = template_name
             ats.id = template_id
@@ -368,7 +370,7 @@ class ServiceInterface(object):
             ats.waypoint_info = []
 
             if not trajectory_name in at.waypoint_max.keys() :
-                rospy.logerr(str("ServiceInterface::get_template_status() -- no trajectory caleld " + trajectory_name + " found"))
+                rospy.logerr(str("ServiceInterface::get_template_status() -- no trajectory called " + trajectory_name + " found"))
                 return None
 
             for ee in at.robot_interface.end_effector_names :
@@ -381,7 +383,8 @@ class ServiceInterface(object):
                 wp.plan_valid = at.waypoint_plan_valid[trajectory_name][wp.id]
                 wp.execution_valid = at.waypoint_execution_valid[trajectory_name][wp.id]  
                 wp.waypoint_plan_index = at.waypoint_plan_index[trajectory_name][wp.id]                               
-                ats.waypoint_info.append(wp)                
+                ats.waypoint_info.append(wp)  
+
         except :
             rospy.logerr("ServiceInterface::get_template_status() -- error generating status message")
         return ats
@@ -391,4 +394,50 @@ class ServiceInterface(object):
         response = GetAffordanceTemplateServerStatusResponse()
         response.ready = self.server.get_status()
         return response
+
+
+    def handle_set_trajectory(self, request) :
+        response = SetAffordanceTemplateTrajectoryResponse()
+        response.success = False
+
+        print request.name 
+        print request.trajectory 
+        ss = request.name.split(":")
+    
+        try :
+            template = ss[0]
+            id = int(ss[1])
+            traj = request.trajectory
+
+            if not template in self.server.at_data.class_map :
+                rospy.logerr(str("ServiceInterface::handle_set_trajectory() -- " + template + " not in template class map"))
+                return response
+            
+            if not id in self.server.at_data.class_map[template] :
+                rospy.logerr(str("ServiceInterface::handle_set_trajectory()  -- " + str(id) + " not in template class map for template: " + template))
+                return response
+
+            at = self.server.at_data.class_map[ss[0]][int(ss[1])]
+            
+            if not traj in self.server.at_data.traj_map[template] :
+                rospy.logerr(str("ServiceInterface::handle_set_trajectory()  -- " + traj + " not in template trajectory class map"))
+                return response
+                
+            at.set_trajectory(request.trajectory)
+            # for wp in at.waypoints[at.current_trajectory] :
+            #     ee_id = at.waypoint_end_effectors[at.current_trajectory][wp]
+            #     wp_id = at.waypoint_ids[at.current_trajectory][wp]
+            #     at.remove_interactive_marker(wp)
+            # at.server.applyChanges()
+            # at.current_trajectory = traj
+
+            # at.create_trajectory_from_parameters(at.current_trajectory)                
+
+            response.success = True
+
+        except :
+            rospy.logerr("ServiceInterface::handle_set_trajectory() -- something wrong")
+
+        return response
+
 

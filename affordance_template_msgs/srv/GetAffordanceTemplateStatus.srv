@@ -13,3 +13,6 @@ AffordanceTemplateStatus[] affordance_template_status
 
 # current set trajectory on the server for this template
 string current_trajectory
+
+# trajectory names
+string[] trajectory_names

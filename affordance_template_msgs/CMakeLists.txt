@@ -78,6 +78,7 @@ add_service_files(
   SaveAffordanceTemplate.srv
   AddAffordanceTemplateTrajectory.srv
   ScaleDisplayObject.srv
+  SetAffordanceTemplateTrajectory.srv
 )
 
 ## Generate actions in the 'action' folder

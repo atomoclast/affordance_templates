@@ -1194,6 +1194,37 @@ class AffordanceTemplate(threading.Thread) :
         self.marker_menus[feedback.marker_name].apply( self.server, feedback.marker_name )
         self.server.applyChanges()
 
+    def set_trajectory(self, traj_name) :
+
+        marker_keys = self.marker_menus.keys()
+        for k in marker_keys :
+            old_key = (k,"Choose Trajectory", self.current_trajectory)
+            new_key = (k,"Choose Trajectory", traj_name)
+
+            if (old_key in self.menu_handles.keys()) and (new_key in self.menu_handles.keys()) :
+                self.marker_menus[k].setCheckState( self.menu_handles[old_key], MenuHandler.UNCHECKED )
+                self.marker_menus[k].setCheckState( self.menu_handles[new_key], MenuHandler.CHECKED )
+
+                self.marker_menus[k].apply( self.server, k )        
+
+        # clear old trajectory 
+        for wp in self.waypoints[self.current_trajectory] :
+            ee_id = self.waypoint_end_effectors[self.current_trajectory][wp]
+            wp_id = self.waypoint_ids[self.current_trajectory][wp]
+            self.remove_interactive_marker(wp)
+
+        self.server.applyChanges()
+        self.current_trajectory = traj_name
+
+        # re-draw new one
+        print "creating new one from params"
+        self.create_trajectory_from_parameters(self.current_trajectory)
+            
+        print "applying changes (again)"
+        self.server.applyChanges()
+
+
+
     def stored_pose_callback(self, feedback) :
         ee_id =int(feedback.marker_name.split(".")[0])
         ee_name = self.robot_interface.get_end_effector_name(ee_id)
