@@ -1428,7 +1428,7 @@ class AffordanceTemplate(threading.Thread) :
                     T_tool = getFrameFromPose(tool_offset).Inverse()
                     T_fixed_joint_offset = self.get_fixed_joint_offset(end_effector)
 
-                    T = T_goal*T_offset*T_tool
+                    # T = T_goal*T_offset*T_tool
                     T = T_goal*T_offset*T_fixed_joint_offset*T_tool
                     pt.pose = getPoseFromFrame(T)
                     waypoints.append(pt.pose)
