@@ -26,10 +26,10 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <buildtool_depend>affordance_template_library</buildtool_depend>
-  <buildtool_depend>affordance_template_msgs</buildtool_depend>
-  <buildtool_depend>nasa_robot_teleop</buildtool_depend>
-  <buildtool_depend>rviz_affordance_template_panel</buildtool_depend>
+  <build_depend>affordance_template_library</build_depend>
+  <build_depend>affordance_template_msgs</build_depend>
+  <build_depend>nasa_robot_teleop</build_depend>
+  <build_depend>rviz_affordance_template_panel</build_depend>
 
   <run_depend>rospy</run_depend>
   <run_depend>affordance_template_markers</run_depend>
