@@ -6,7 +6,7 @@ using namespace std;
 namespace rviz_affordance_template_panel
 {
 
-	class EndEffectorConfig
+    class EndEffectorConfig
     {
     public:
         EndEffectorConfig(const string& name) {name_=name;};
@@ -57,7 +57,7 @@ namespace rviz_affordance_template_panel
     class RobotConfig
     {
     public:
-    	typedef boost::shared_ptr<EndEffectorConfig> EndEffectorConfigSharedPtr;
+        typedef boost::shared_ptr<EndEffectorConfig> EndEffectorConfigSharedPtr;
         typedef boost::shared_ptr<EndEffectorPoseConfig> EndEffectorPoseIDConfigSharedPtr;
 
         RobotConfig(const string& uid) {uid_=uid;};
@@ -84,7 +84,7 @@ namespace rviz_affordance_template_panel
         string gripper_service() const { return gripper_service_; }
         void gripper_service(const string& gripper_service ) { gripper_service_=gripper_service; }
 
-		vector<float> root_offset() const { return root_offset_; }
+        vector<float> root_offset() const { return root_offset_; }
         void root_offset(const vector<float> root_offset ) { root_offset_=root_offset; }
 
         std::map<std::string, EndEffectorConfigSharedPtr> endeffectorMap;

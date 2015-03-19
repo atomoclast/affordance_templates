@@ -36,7 +36,7 @@ namespace rviz_affordance_template_panel
             PAUSE
         };
 
-    	typedef boost::shared_ptr<RobotConfig> RobotConfigSharedPtr;
+        typedef boost::shared_ptr<RobotConfig> RobotConfigSharedPtr;
 
         Controls();
         ~Controls() {};

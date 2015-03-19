@@ -269,9 +269,9 @@ class RobotInterface(object) :
             self.path_planner.set_gripper_service(self.robot_config.gripper_service)
 
         # what do we have?
-        rospy.logdebug(str("RobotInterface::configure() -- groups: " + self.path_planner.groups.keys()))
-        rospy.logdebug(str("RobotInterface::configure() -- end_effector_names: " + self.end_effector_names))
-        rospy.logdebug(str("RobotInterface::configure() -- end_effector_groups: " + self.ee_groups))
+        # rospy.logdebug(str("RobotInterface::configure() -- groups: " + self.path_planner.groups.keys()))
+        # rospy.logdebug(str("RobotInterface::configure() -- end_effector_names: " + self.end_effector_names))
+        # rospy.logdebug(str("RobotInterface::configure() -- end_effector_groups: " + self.ee_groups))
         
         self.path_planner.print_basic_info()
         rospy.loginfo(str("RobotInterface::configure() -- end\n--------------------------\n"))
