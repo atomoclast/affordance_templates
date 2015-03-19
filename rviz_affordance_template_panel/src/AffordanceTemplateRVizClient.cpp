@@ -276,7 +276,7 @@ void AffordanceTemplateRVizClient::refreshCallback() {
 
 void AffordanceTemplateRVizClient::getAvailableInfo() {
     getAvailableTemplates();
-    getAvailableRecognitionObjects();
+    //getAvailableRecognitionObjects();
     getAvailableRobots();
 }
 
