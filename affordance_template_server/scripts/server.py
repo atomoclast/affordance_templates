@@ -6,12 +6,10 @@ import rospy
 from affordance_template_server import AffordanceTemplateServer
 
 if __name__ == '__main__':
-    # TODO: parge arguments properly
-    robot_yaml = ""
-    if len(sys.argv) > 1:
-        robot_yaml = str(sys.argv[1])
 
     rospy.init_node('AffordanceTemplateServer')
+
+    robot_yaml = rospy.get_param("~robot_config")
 
     server = AffordanceTemplateServer(robot_yaml)
     server.start()

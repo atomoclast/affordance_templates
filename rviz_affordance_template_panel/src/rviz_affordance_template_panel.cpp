@@ -150,7 +150,9 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->robot_lock, SIGNAL(stateChanged(int)), this, SLOT(enableConfigPanel(int)));
 
     QObject::connect(ui_->robot_name, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
-    QObject::connect(ui_->moveit_package, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->config_package, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->config_file, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->planner_type, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
     QObject::connect(ui_->gripper_service, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
     
     QObject::connect(ui_->frame_id, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
@@ -186,7 +188,9 @@ void RVizAffordanceTemplatePanel::updateRobotConfig(const QString& text) {
     string key = ui_->robot_select->currentText().toUtf8().constData();
     // now update robotMap with current values
     (*robotMap_[key]).name(ui_->robot_select->currentText().toUtf8().constData());
-    (*robotMap_[key]).moveit_config_package(ui_->moveit_package->text().toUtf8().constData());
+    (*robotMap_[key]).config_package(ui_->config_package->text().toUtf8().constData());
+    (*robotMap_[key]).config_file(ui_->config_file->text().toUtf8().constData());
+    (*robotMap_[key]).planner_type(ui_->planner_type->text().toUtf8().constData());
     (*robotMap_[key]).frame_id(ui_->frame_id->text().toUtf8().constData());
     (*robotMap_[key]).gripper_service(ui_->gripper_service->text().toUtf8().constData());
 
@@ -362,7 +366,9 @@ void RVizAffordanceTemplatePanel::getAvailableRobots() {
             RobotConfigSharedPtr pitem(new RobotConfig(r.filename));
             pitem->uid(r.filename);
             pitem->name(r.name);
-            pitem->moveit_config_package(r.moveit_config_package);
+            pitem->config_package(r.config_package);
+            pitem->config_file(r.config_file);
+            pitem->planner_type(r.planner_type);
             pitem->frame_id(r.frame_id);
             pitem->gripper_service(r.gripper_service);
 
@@ -420,14 +426,18 @@ void RVizAffordanceTemplatePanel::getAvailableRobots() {
 void RVizAffordanceTemplatePanel::setupRobotPanel(const string& key) {
 
     string name = (*robotMap_[key]).name();
-    string pkg = (*robotMap_[key]).moveit_config_package();
+    string pkg = (*robotMap_[key]).config_package();
+    string file = (*robotMap_[key]).config_file();
+    string planner = (*robotMap_[key]).planner_type();
     string frame_id = (*robotMap_[key]).frame_id();
     string gripper_service = (*robotMap_[key]).gripper_service();
 
     vector<float> root_offset = (*robotMap_[key]).root_offset();
 
     ui_->robot_name->setText(QString(name.c_str()));
-    ui_->moveit_package->setText(QString(pkg.c_str()));
+    ui_->config_package->setText(QString(pkg.c_str()));
+    ui_->config_file->setText(QString(file.c_str()));
+    ui_->planner_type->setText(QString(planner.c_str()));
     ui_->frame_id->setText(QString(frame_id.c_str()));
     ui_->gripper_service->setText(QString(gripper_service.c_str()));
 
@@ -972,14 +982,18 @@ void RVizAffordanceTemplatePanel::loadConfig() {
     string key = ui_->robot_select->currentText().toUtf8().constData();
 
     string name = (*robotMap_[key]).name();
-    string pkg = (*robotMap_[key]).moveit_config_package();
+    string pkg = (*robotMap_[key]).config_package();
+    string file = (*robotMap_[key]).config_file();
+    string planner = (*robotMap_[key]).planner_type();
     string gripper_service = (*robotMap_[key]).gripper_service();
     string frame_id = (*robotMap_[key]).frame_id();
     vector<float> root_offset = (*robotMap_[key]).root_offset();
 
     srv.request.robot_config.filename = key;
     srv.request.robot_config.name = name;
-    srv.request.robot_config.moveit_config_package = pkg;
+    srv.request.robot_config.config_package = pkg;
+    srv.request.robot_config.config_file = file;
+    srv.request.robot_config.planner_type = planner;
     srv.request.robot_config.gripper_service = gripper_service;
     srv.request.robot_config.frame_id = frame_id;
     srv.request.robot_config.root_offset = util::vectorToPoseMsg(root_offset);

@@ -1,5 +1,7 @@
 robot_name: pr2
-moveit_config_package: pr2_moveit_config
+planner_type: moveit
+config_package: pr2_moveit_config
+config_file: config/pr2.srdf
 frame_id: base_link
 root_offset: [0.6,0, 1.0, 3.14,0,3.14]
 end_effector_group_map:

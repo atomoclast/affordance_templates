@@ -1,5 +1,7 @@
 robot_name: v1
-moveit_config_package: v1_moveit_config
+planner_type: moveit
+config_package: v1_moveit_config
+config_file: config/v1.srdf
 frame_id: v1/Pelvis
 root_offset: [0.45,0,0.05,0,0,0]
 end_effector_group_map:

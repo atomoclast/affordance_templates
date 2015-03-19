@@ -14,12 +14,12 @@ class ServiceInterface(object):
         # services
         self.robot_info_service =      rospy.Service('/affordance_template_server/get_robots', GetRobotConfigInfo, self.handle_robot_request)
         self.template_info_service =   rospy.Service('/affordance_template_server/get_templates', GetAffordanceTemplateConfigInfo, self.handle_template_request)
-        self.object_info_service =     rospy.Service('/affordance_template_server/get_recognition_objects', GetRecognitionObjectConfigInfo, self.handle_object_request)
+        # self.object_info_service =     rospy.Service('/affordance_template_server/get_recognition_objects', GetRecognitionObjectConfigInfo, self.handle_object_request)
         self.load_robot_service =      rospy.Service('/affordance_template_server/load_robot', LoadRobotConfig, self.handle_load_robot)
         self.add_template_service =    rospy.Service('/affordance_template_server/add_template', AddAffordanceTemplate, self.handle_add_template)
         self.delete_template_service = rospy.Service('/affordance_template_server/delete_template', DeleteAffordanceTemplate, self.handle_template_kill)
-        self.add_object_service =      rospy.Service('/affordance_template_server/add_recognition_object', AddRecognitionObject, self.handle_add_object)
-        self.delete_object_service =   rospy.Service('/affordance_template_server/delete_recognition_object', DeleteRecognitionObject, self.handle_object_kill)
+        # self.add_object_service =      rospy.Service('/affordance_template_server/add_recognition_object', AddRecognitionObject, self.handle_add_object)
+        # self.delete_object_service =   rospy.Service('/affordance_template_server/delete_recognition_object', DeleteRecognitionObject, self.handle_object_kill)
         self.get_running_service =     rospy.Service('/affordance_template_server/get_running', GetRunningAffordanceTemplates, self.handle_running)
         self.plan_command_service =    rospy.Service('/affordance_template_server/plan_command', AffordanceTemplatePlanCommand, self.handle_plan_command)
         self.execute_command_service = rospy.Service('/affordance_template_server/execute_command', AffordanceTemplateExecuteCommand, self.handle_execute_command)
@@ -84,28 +84,28 @@ class ServiceInterface(object):
                 response.templates.append(at_config)
         return response
 
-    def handle_object_request(self, request) :
-        rospy.loginfo(str("ServiceInterface::handle_object_request() -- requested object info " + request.name))
-        response = GetRecognitionObjectConfigInfoResponse()
-        if request.name and request.name in self.server.ro_data.object_map.keys() :
-            object_type = request.name
-            ro_config = RecognitionObjectConfig()
-            ro_config.type = object_type
-            ro_config.image_path = self.server.ro_data.image_map[object_type]
-            ro_config.package = self.server.ro_data.package_map[object_type]
-            ro_config.launch_file = self.server.ro_data.launch_map[object_type]
-            ro_config.marker_topic = self.server.ro_data.marker_topic_map[object_type]
-            response.recognition_objects.append(ro_config)
-        else :
-            for object_type in self.server.ro_data.object_map.keys():
-                ro_config = RecognitionObjectConfig()
-                ro_config.type = object_type
-                ro_config.image_path = self.server.ro_data.image_map[object_type]
-                ro_config.package = self.server.ro_data.package_map[object_type]
-                ro_config.launch_file = self.server.ro_data.launch_map[object_type]
-                ro_config.marker_topic = self.server.ro_data.marker_topic_map[object_type]
-                response.recognition_objects.append(ro_config)
-        return response
+    # def handle_object_request(self, request) :
+    #     rospy.loginfo(str("ServiceInterface::handle_object_request() -- requested object info " + request.name))
+    #     response = GetRecognitionObjectConfigInfoResponse()
+    #     if request.name and request.name in self.server.ro_data.object_map.keys() :
+    #         object_type = request.name
+    #         ro_config = RecognitionObjectConfig()
+    #         ro_config.type = object_type
+    #         ro_config.image_path = self.server.ro_data.image_map[object_type]
+    #         ro_config.package = self.server.ro_data.package_map[object_type]
+    #         ro_config.launch_file = self.server.ro_data.launch_map[object_type]
+    #         ro_config.marker_topic = self.server.ro_data.marker_topic_map[object_type]
+    #         response.recognition_objects.append(ro_config)
+    #     else :
+    #         for object_type in self.server.ro_data.object_map.keys():
+    #             ro_config = RecognitionObjectConfig()
+    #             ro_config.type = object_type
+    #             ro_config.image_path = self.server.ro_data.image_map[object_type]
+    #             ro_config.package = self.server.ro_data.package_map[object_type]
+    #             ro_config.launch_file = self.server.ro_data.launch_map[object_type]
+    #             ro_config.marker_topic = self.server.ro_data.marker_topic_map[object_type]
+    #             response.recognition_objects.append(ro_config)
+    #     return response
 
     def handle_load_robot(self, request):
         rospy.loginfo(str("ServiceInterface::handle_load_robot() -- load request for robot " + request.robot_config.name))
@@ -135,11 +135,11 @@ class ServiceInterface(object):
             rospy.logerr("ServiceInterface::handle_add_template() -- error adding template to server")
         return response
 
-    def handle_add_object(self, request) :
-        rospy.loginfo(str("ServiceInterface::handle_add_object() -- add object of type " + request.object_type))
-        rospy.logwarn(str("ServiceInterface::handle_add_object() -- not implemeneted yet"))
-        response = AddRecognitionObjectResponse()
-        return response
+    # def handle_add_object(self, request) :
+    #     rospy.loginfo(str("ServiceInterface::handle_add_object() -- add object of type " + request.object_type))
+    #     rospy.logwarn(str("ServiceInterface::handle_add_object() -- not implemeneted yet"))
+    #     response = AddRecognitionObjectResponse()
+    #     return response
 
     def handle_running(self, request):
         rospy.loginfo("ServiceInterface::handle_running()")
@@ -163,11 +163,11 @@ class ServiceInterface(object):
             rospy.logerr("ServiceInterface::handle_template_kill() -- error deleting requested templates")
         return response
 
-    def handle_object_kill(self, request) :
-        rospy.loginfo(str("ServiceInterface::handle_object_kill() -- delete object of type " + request.object_type))
-        rospy.logwarn(str("ServiceInterface::handle_object_kill() -- not implemeneted yet"))
-        response = DeleteRecognitionObjectResponse()
-        return response
+    # def handle_object_kill(self, request) :
+    #     rospy.loginfo(str("ServiceInterface::handle_object_kill() -- delete object of type " + request.object_type))
+    #     rospy.logwarn(str("ServiceInterface::handle_object_kill() -- not implemeneted yet"))
+    #     response = DeleteRecognitionObjectResponse()
+    #     return response
 
     def handle_plan_command(self, request):
         

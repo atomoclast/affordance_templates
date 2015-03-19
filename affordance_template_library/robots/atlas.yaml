@@ -1,5 +1,7 @@
 robot_name: atlas
-moveit_config_package: atlas_moveit_config
+planner_type: atlas
+config_package: atlas_moveit_config
+config_file: config/atlas.srdf
 frame_id: pelvis
 root_offset: [0.4,0,0.2,0,0,0]
 end_effector_group_map:

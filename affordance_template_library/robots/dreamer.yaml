@@ -1,5 +1,7 @@
 robot_name: dreamer
-moveit_config_package: dreamer_moveit_config
+planner_type: moveit
+config_package: dreamer_moveit_config
+config_file: config/dreamer.srdf
 frame_id: torso
 root_offset: [0.6,0,0.2,0,0,0]
 end_effector_group_map:

@@ -10,11 +10,10 @@ import sensor_msgs.msg
 from geometry_msgs.msg import Pose, PoseArray
 from affordance_template_msgs.msg import *
 
-from nasa_robot_teleop.moveit_interface import *
-from nasa_robot_teleop.kdl_posemath import *
+from nasa_robot_teleop.path_planner import *
+from nasa_robot_teleop.util.kinematics_util import *
 from nasa_robot_teleop.pose_update_thread import *
 from nasa_robot_teleop.end_effector_helper import *
-
 
 class RobotInterface(object) :
     
@@ -24,6 +23,7 @@ class RobotInterface(object) :
     
         self.tf_listener = tf.TransformListener()
         rospy.Subscriber(joint_states_topic, sensor_msgs.msg.JointState, self.joint_state_callback)
+        self.path_planner = None
 
         if yaml_file and robot_config :
             rospy.logerr("RobotInterface() -- can't load from both yaml and robot_config!")
@@ -38,7 +38,7 @@ class RobotInterface(object) :
 
     def reset(self) :
         self.robot_config = RobotConfig()
-        self.moveit_ee_groups = []
+        self.ee_groups = []
         self.end_effector_names = []
         self.end_effector_name_map = {}
         self.manipulator_pose_map = {}
@@ -89,9 +89,11 @@ class RobotInterface(object) :
 
             self.robot_config.filename  = filename
             self.robot_config.name = self.yaml_config['robot_name']
-            self.robot_config.moveit_config_package = str(self.yaml_config['moveit_config_package'])
+            self.robot_config.config_package = str(self.yaml_config['config_package'])
+            self.robot_config.config_file = str(self.yaml_config['config_file'])
+            self.robot_config.planner_type = str(self.yaml_config['planner_type'])
             self.robot_config.frame_id = self.yaml_config['frame_id']
-
+            
             q = (kdl.Rotation.RPY(self.yaml_config['root_offset'][3],self.yaml_config['root_offset'][4],self.yaml_config['root_offset'][5])).GetQuaternion()
             self.robot_config.root_offset = Pose()
             self.robot_config.root_offset.position.x = self.yaml_config['root_offset'][0]
@@ -190,61 +192,84 @@ class RobotInterface(object) :
             return False
 
         # print self.robot_config
+        self.config_file = self.get_package_path(self.robot_config.config_package) + "/" + str(self.robot_config.config_file)
+        print self.config_file
         self.configured = True
 
         return True
 
+    def configure_path_planner(self) :
+        # planner instantiatation
+        if self.robot_config.planner_type == "moveit" :
+            from nasa_robot_teleop.planners.moveit_path_planner import MoveItPathPlanner
+            self.path_planner = MoveItPathPlanner(self.robot_config.name, self.config_file)
+        elif self.robot_config.planner_type == "atlas" :
+            from nasa_robot_teleop.planners.atlas_path_planner import AtlasPathPlanner
+            self.path_planner = AtlasPathPlanner(self.robot_config.name, self.config_file)
+        else :
+            rospy.logerr("InteractiveControl() unrecognized planner type!!")
+            return False
+        return True
 
     def configure(self) :
         rospy.loginfo(str("\n--------------------------\nRobotInterface::configure()"))
         rospy.loginfo(str("RobotInterface::configure() -- configuring for robot name: " + self.robot_config.name))
-        rospy.loginfo(str("RobotInterface::configure() -- configuring for moveit package: " + self.robot_config.moveit_config_package))
-        self.moveit_interface = MoveItInterface(self.robot_config.name,self.robot_config.moveit_config_package)
-        self.root_frame = self.moveit_interface.get_planning_frame()
-        self.moveit_ee_groups = self.moveit_interface.srdf_model.get_end_effector_groups()
+        rospy.loginfo(str("RobotInterface::configure() -- configuring for package: " + self.config_file))
+        rospy.loginfo(str("RobotInterface::configure() -- planner type: " + self.robot_config.planner_type))
+        
+
+        self.configure_path_planner()     
+
+
+        self.root_frame = self.path_planner.get_robot_planning_frame()
+        self.ee_groups = self.path_planner.get_end_effector_names()
         for g in self.end_effector_names :
-            if not g in self.moveit_ee_groups:
-                rospy.logerr("RobotInterface::configure() -- group ", g, " not in moveit end effector groups!")
+    
+            if not g in self.ee_groups:
+                rospy.logerr("RobotInterface::configure() -- group " + str(g) + " not in end effector groups!")
                 return False
             else :
+                if self.path_planner.add_planning_group(g, "endeffector") :
+                    self.path_planner.set_goal_joint_tolerance(g, 0.05)
+                    rospy.loginfo(str("RobotInterface::configure() -- control frame: " + self.path_planner.get_control_frame(g)))
+                    self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, self.path_planner.get_srdf_model().get_end_effector_link(g), self.tf_listener)
+                    self.end_effector_link_data[g].populate_data(self.path_planner.get_group_links(g), self.path_planner.get_urdf_model(), self.path_planner.get_srdf_model())
+                    rospy.sleep(2)
+                    self.end_effector_markers[g] = self.end_effector_link_data[g].get_current_position_marker_array(scale=1.0,color=(1,1,1,0.5))
+                    pg = self.path_planner.get_srdf_model().get_end_effector_parent_group(g)
+                    if not pg == None :
+                        rospy.loginfo(str("RobotInterface::configure() -- trying to add group: " + pg))
+                        self.path_planner.add_planning_group(pg, group_type="cartesian")
+                        self.path_planner.set_display_mode(pg, "all_points")
+                        self.path_planner.set_goal_position_tolerances(pg, [.005]*3)
+                        self.path_planner.set_goal_orientation_tolerances(pg, [.02]*3)
+                        self.path_planner.set_goal_joint_tolerance(pg, 0.05)
 
-                # self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, self.moveit_interface.get_control_frame(g), self.tf_listener)
-                rospy.loginfo(str("RobotInterface::configure() -- control frame: " + self.moveit_interface.srdf_model.group_end_effectors[g].parent_link))
-                self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, self.moveit_interface.srdf_model.group_end_effectors[g].parent_link, self.tf_listener)
-                self.end_effector_link_data[g].populate_data(self.moveit_interface.get_group_links(g), self.moveit_interface.get_urdf_model(), self.moveit_interface.get_srdf_model())
-                rospy.sleep(2)
-                self.end_effector_markers[g] = self.end_effector_link_data[g].get_current_position_marker_array(scale=1.0,color=(1,1,1,0.5))
-                pg = self.moveit_interface.srdf_model.get_end_effector_parent_group(g)
-                if not pg == None :
-                    rospy.loginfo(str("RobotInterface::configure() -- trying to add MoveIt! group: " + pg))
-                    self.moveit_interface.add_group(pg, group_type="manipulator")
-                    self.moveit_interface.set_display_mode(pg, "all_points")
-                    # self.moveit_interface_threads[pg] = MoveItInterfaceThread(self.robot_config.name,self.robot_config.moveit_config_pacakge, g)
+                        self.stored_poses[pg] = {}
+                        for state_name in self.path_planner.get_stored_state_list(pg) :
+                            rospy.loginfo(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + pg + "\'"))
+                            self.stored_poses[pg][state_name] = self.path_planner.get_stored_group_state(pg, state_name)
 
-                    self.stored_poses[pg] = {}
-                    for state_name in self.moveit_interface.get_stored_state_list(pg) :
-                        rospy.loginfo(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + pg + "\'"))
-                        self.stored_poses[pg][state_name] = self.moveit_interface.get_stored_group_state(pg, state_name)
-
-
+                    else :
+                        rospy.logerror(str("RobotInterface::configure -- no manipulator group found for end-effector: " + g))
                 else :
-                    rospy.logerror(str("RobotInterface::configure -- no manipulator group found for end-effector: " + g))
-
+                    rospy.logerr(str("RobotInterface::configure() -- problem adding end-effector group[" + g + "] to planner"))
+                    return False
             self.stored_poses[g] = {}
-            for state_name in self.moveit_interface.get_stored_state_list(g) :
+            for state_name in self.path_planner.get_stored_state_list(g) :
                 rospy.loginfo(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + g + "\'"))
-                self.stored_poses[g][state_name] = self.moveit_interface.get_stored_group_state(g, state_name)
+                self.stored_poses[g][state_name] = self.path_planner.get_stored_group_state(g, state_name)
 
 
         if self.robot_config.gripper_service :
-            self.moveit_interface.set_gripper_service(self.robot_config.gripper_service)
+            self.path_planner.set_gripper_service(self.robot_config.gripper_service)
 
         # what do we have?
-        # rospy.loginfo(str("RobotInterface::configure() -- moveit groups: " + self.moveit_interface.groups.keys()))
+        # rospy.loginfo(str("RobotInterface::configure() -- groups: " + self.path_planner.groups.keys()))
         # rospy.loginfo(str("RobotInterface::configure() -- end_effector_names: " + self.end_effector_names))
-        # rospy.loginfo(str("RobotInterface::configure() -- end_effector_groups: " + self.moveit_ee_groups))
+        # rospy.loginfo(str("RobotInterface::configure() -- end_effector_groups: " + self.ee_groups))
         
-        self.moveit_interface.print_basic_info()
+        self.path_planner.print_basic_info()
         rospy.loginfo(str("RobotInterface::configure() -- end\n--------------------------\n"))
         return True
 
@@ -258,12 +283,22 @@ class RobotInterface(object) :
         return self.manipulator_id_map[name]
 
     def get_manipulator(self, ee) :
-        return self.moveit_interface.srdf_model.get_end_effector_parent_group(ee)
+        return self.path_planner.get_srdf_model().get_end_effector_parent_group(ee)
+
+    def get_package_path(self, pkg):
+        """Return the path to the ROS package."""
+        import rospkg
+        try:
+            rp = rospkg.RosPack()
+            return rp.get_path(pkg)
+        except:
+            rospy.logwarn(str("RobotInterface::get_package_path() -- can't find package: " + str(pkg)))
+            return ""
 
     def tear_down(self) :
         for k in self.end_effector_link_data.keys() :
             self.end_effector_link_data[k].stop_offset_update_thread()
-        self.moveit_interface.tear_down()
+        self.path_planner.tear_down()
         self.configured = False
         
 
