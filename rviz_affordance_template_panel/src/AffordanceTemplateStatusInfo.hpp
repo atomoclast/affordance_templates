@@ -36,6 +36,21 @@ namespace rviz_affordance_template_panel
 
 		EndEffectorInfo getTrajectoryStatus(std::string traj_name) { return trajectory_info_[traj_name]; }
 
+		bool endEffectorInTrajectory(std::string traj_name, std::string ee) {
+
+			auto traj_search = trajectory_info_.find(traj_name);
+    		if(traj_search == trajectory_info_.end()) {
+    			return false;
+    		}
+
+			auto ee_search = trajectory_info_[traj_name].find(ee);
+    		if(ee_search == trajectory_info_[traj_name].end()) {
+    			return false;
+    		}
+
+    		return true;
+		}
+
 		bool updateTrajectoryStatus(const affordance_template_msgs::AffordanceTemplateStatusConstPtr& status) {
 
 			if(status->type!=name_) {
@@ -59,13 +74,13 @@ namespace rviz_affordance_template_panel
 					trajectory_info_[status->trajectory_name][ee] = new affordance_template_msgs::WaypointInfo();
 				}
 
-				ROS_INFO("AffordanceTemplateStatusInfo::updateTrajectoryStatus() -- adding waypoint info for ee: %s", ee.c_str());
-				ROS_INFO("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- id: %d", w.id);
-				ROS_INFO("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- num_waypoints: %d", (int)(w.num_waypoints));
-				ROS_INFO("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- waypoint_index: %d", (int)(w.waypoint_index));
-				ROS_INFO("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- waypoint_plan_index: %d", (int)(w.waypoint_plan_index));
-				ROS_INFO("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- plan_valid: %d", (int)(w.plan_valid));
-				ROS_INFO("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- execution_valid: %d", (int)(w.execution_valid));
+				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() -- adding waypoint info for ee: %s", ee.c_str());
+				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- id: %d", w.id);
+				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- num_waypoints: %d", (int)(w.num_waypoints));
+				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- waypoint_index: %d", (int)(w.waypoint_index));
+				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- waypoint_plan_index: %d", (int)(w.waypoint_plan_index));
+				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- plan_valid: %d", (int)(w.plan_valid));
+				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- execution_valid: %d", (int)(w.execution_valid));
 
 				trajectory_info_[status->trajectory_name][ee] = new affordance_template_msgs::WaypointInfo();
 				trajectory_info_[status->trajectory_name][ee]->id = w.id;

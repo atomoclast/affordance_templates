@@ -53,6 +53,8 @@ class RobotInterface(object) :
         self.configured = False
 
     def load_from_msg(self, robot_config) :
+
+        self.reset()
         self.robot_config = robot_config
 
         rospy.set_param("/affordance_templates/robot_yaml", "")
@@ -76,6 +78,8 @@ class RobotInterface(object) :
         return True
 
     def load_from_file(self, filename) :
+
+        self.reset()
 
         try:
         
@@ -185,7 +189,7 @@ class RobotInterface(object) :
             except :
                 self.robot_config.gripper_service = ""
                 
-            rospy.loginfo(str("RobotInterface::load_from_file() -- loaded: " + filename))
+            rospy.logdebug(str("RobotInterface::load_from_file() -- loaded: " + filename))
 
         except :
             rospy.logerr("RobotInterface::load_from_file() -- error opening config file")
@@ -257,7 +261,7 @@ class RobotInterface(object) :
                     return False
             self.stored_poses[g] = {}
             for state_name in self.path_planner.get_stored_state_list(g) :
-                rospy.loginfo(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + g + "\'"))
+                rospy.logdebug(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + g + "\'"))
                 self.stored_poses[g][state_name] = self.path_planner.get_stored_group_state(g, state_name)
 
 
@@ -265,9 +269,9 @@ class RobotInterface(object) :
             self.path_planner.set_gripper_service(self.robot_config.gripper_service)
 
         # what do we have?
-        # rospy.loginfo(str("RobotInterface::configure() -- groups: " + self.path_planner.groups.keys()))
-        # rospy.loginfo(str("RobotInterface::configure() -- end_effector_names: " + self.end_effector_names))
-        # rospy.loginfo(str("RobotInterface::configure() -- end_effector_groups: " + self.ee_groups))
+        rospy.logdebug(str("RobotInterface::configure() -- groups: " + self.path_planner.groups.keys()))
+        rospy.logdebug(str("RobotInterface::configure() -- end_effector_names: " + self.end_effector_names))
+        rospy.logdebug(str("RobotInterface::configure() -- end_effector_groups: " + self.ee_groups))
         
         self.path_planner.print_basic_info()
         rospy.loginfo(str("RobotInterface::configure() -- end\n--------------------------\n"))

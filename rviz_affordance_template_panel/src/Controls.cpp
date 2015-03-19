@@ -3,8 +3,7 @@
 using namespace rviz_affordance_template_panel;
 using namespace std;
 
-Controls::Controls(Ui::RVizAffordanceTemplatePanel* ui) :
-    ui_(ui) {}
+Controls::Controls() {}
 
 
 bool Controls::requestPlan(Controls::CommandType command_type) {
@@ -24,11 +23,17 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
     vector<pair<string,int> > ee_info = getSelectedEndEffectorInfo();
 
     for(auto &ee : ee_info) {
+        if(!template_status_->endEffectorInTrajectory(template_status_->getCurrentTrajectory(), ee.first)) {
+            continue;
+        }
         srv.request.end_effectors.push_back(ee.first);
     }
   
     if(command_type==CommandType::CURRENT) {
         for(auto &ee : ee_info) {
+            if(!template_status_->endEffectorInTrajectory(template_status_->getCurrentTrajectory(), ee.first)) {
+                continue;
+            }
             if (template_status_->getTrajectoryInfo().find(srv.request.trajectory_name) == template_status_->getTrajectoryInfo().end()) {
                 ROS_ERROR("Controls::requestPlan() -- trajectory \'%s\' not found in template status", srv.request.trajectory_name.c_str());
                 return false;
@@ -45,6 +50,10 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
         srv.request.direct = true;
         for(auto &ee : ee_info) {
 
+            if(!template_status_->endEffectorInTrajectory(template_status_->getCurrentTrajectory(), ee.first)) {
+                continue;
+            }
+            
             if (template_status_->getTrajectoryInfo().find(srv.request.trajectory_name) == template_status_->getTrajectoryInfo().end()) {
                 ROS_ERROR("Controls::requestPlan() -- trajectory \'%s\' not found in template status", srv.request.trajectory_name.c_str());
                 return false;

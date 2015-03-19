@@ -10,3 +10,11 @@ qtcreator-build/*
 */*.cmake
 */cmake/*
 build-*
+stack.xml
+*/build
+*/manifest.xml
+*/lib
+*/bin
+*/msg_gen
+*/srv_gen
+

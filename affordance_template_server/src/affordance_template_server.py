@@ -37,6 +37,8 @@ class AffordanceTemplateServer(Thread):
         self.robot_interface = None
         self.structure = {}
       
+        self.status = False
+
         self.server = InteractiveMarkerServer("affordance_template_server")
 
         # get path to template marker package
@@ -62,17 +64,24 @@ class AffordanceTemplateServer(Thread):
         else :
             rospy.loginfo(str("AffordanceTemplateServer::init() -- no robot_yaml given"))
             self.robot_interface = RobotInterface()
+ 
+        rospy.loginfo(str("AffordanceTemplateServer::init() -- finished initialization"))
+           
 
     def configure_server(self):
         """Configure the interface connections for clients."""
         self.interfaces = {}
         self.interfaces['service'] = ServiceInterface(self)
-
+        self.status = True
+        
 
     def run(self):
         self.configure_server()
         while not rospy.is_shutdown():
             rospy.sleep(1)
+
+    def get_status(self) :
+        return self.status
 
     def remove_template(self, class_type, instance_id):
         """Stop a template process and remove it from the server's map.

@@ -67,6 +67,7 @@ add_service_files(
   GetRecognitionObjectConfigInfo.srv
   GetRunningAffordanceTemplates.srv
   GetAffordanceTemplateStatus.srv
+  GetAffordanceTemplateServerStatus.srv
   LoadRobotConfig.srv
   AddAffordanceTemplate.srv
   DeleteAffordanceTemplate.srv
@@ -77,6 +78,7 @@ add_service_files(
   SaveAffordanceTemplate.srv
   AddAffordanceTemplateTrajectory.srv
   ScaleDisplayObject.srv
+  SetAffordanceTemplateTrajectory.srv
 )
 
 ## Generate actions in the 'action' folder
