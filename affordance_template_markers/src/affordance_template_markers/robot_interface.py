@@ -185,7 +185,7 @@ class RobotInterface(object) :
             try :
                 gs = self.yaml_config['gripper_service']
                 self.robot_config.gripper_service = gs
-                rospy.loginfo(str("RobotInterface() -- found gripper service : " + self.robot_config.gripper_service))
+                rospy.logwarn(str("RobotInterface() -- found gripper service : " + self.robot_config.gripper_service))
             except :
                 self.robot_config.gripper_service = ""
                 
@@ -221,9 +221,7 @@ class RobotInterface(object) :
         rospy.loginfo(str("RobotInterface::configure() -- configuring for package: " + self.config_file))
         rospy.loginfo(str("RobotInterface::configure() -- planner type: " + self.robot_config.planner_type))
         
-
         self.configure_path_planner()     
-
 
         self.root_frame = self.path_planner.get_robot_planning_frame()
         self.ee_groups = self.path_planner.get_end_effector_names()
@@ -236,9 +234,16 @@ class RobotInterface(object) :
                 if self.path_planner.add_planning_group(g, "endeffector") :
                     self.path_planner.set_goal_joint_tolerance(g, 0.05)
                     rospy.loginfo(str("RobotInterface::configure() -- control frame: " + self.path_planner.get_control_frame(g)))
-                    self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, self.path_planner.get_srdf_model().get_end_effector_link(g), self.tf_listener)
+
+                    # ee_root_frame = self.path_planner.get_srdf_model().get_end_effector_link(g)
+                    ee_root_frame =  self.path_planner.get_control_frame(g)
+                    
+                    self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
+
+                    print "EE Link:" , self.path_planner.get_control_frame(g)
+
                     self.end_effector_link_data[g].populate_data(self.path_planner.get_group_links(g), self.path_planner.get_urdf_model(), self.path_planner.get_srdf_model())
-                    rospy.sleep(2)
+                    rospy.sleep(1)
                     self.end_effector_markers[g] = self.end_effector_link_data[g].get_current_position_marker_array(scale=1.0,color=(1,1,1,0.5))
                     pg = self.path_planner.get_srdf_model().get_end_effector_parent_group(g)
                     if not pg == None :

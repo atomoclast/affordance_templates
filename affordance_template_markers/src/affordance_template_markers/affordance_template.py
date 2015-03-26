@@ -1217,10 +1217,10 @@ class AffordanceTemplate(threading.Thread) :
         self.current_trajectory = traj_name
 
         # re-draw new one
-        print "creating new one from params"
+        # print "creating new one from params"
         self.create_trajectory_from_parameters(self.current_trajectory)
             
-        print "applying changes (again)"
+        # print "applying changes (again)"
         self.server.applyChanges()
 
 
@@ -1386,6 +1386,8 @@ class AffordanceTemplate(threading.Thread) :
 
     def plan_path_to_waypoint(self, end_effector, steps=1, direct=False, backwards=False) :
     
+        rospy.loginfo("AffordanceTemplate::plan_path_to_waypoint()")
+
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
         ee_offset = self.robot_interface.manipulator_pose_map[end_effector]
         tool_offset = self.robot_interface.tool_offset_map[end_effector]
@@ -1426,11 +1428,52 @@ class AffordanceTemplate(threading.Thread) :
 
                     T_goal = getFrameFromPose(pt.pose)
                     T_offset = getFrameFromPose(ee_offset)
+                    T_fixed_joint_offset = self.get_fixed_joint_offset(end_effector).Inverse()
                     T_tool = getFrameFromPose(tool_offset).Inverse()
-                    T_fixed_joint_offset = self.get_fixed_joint_offset(end_effector)
+                    
+                    # print end_effector
+                    
+                    manipulator_group = self.robot_interface.path_planner.get_srdf_model().group_end_effectors[end_effector].parent_group
+                    # print manipulator_group
+                    
+                    control_frame = self.robot_interface.path_planner.get_control_frame(manipulator_group)
+                    # print control_frame
+                    
+                    # print self.robot_interface.path_planner.get_srdf_model().group_end_effectors.keys()
+                    # print self.robot_interface.path_planner.get_srdf_model().group_end_effectors[end_effector]
+                    end_effector_frame = self.robot_interface.path_planner.get_srdf_model().group_end_effectors[end_effector].parent_link
+                    # print end_effector_frame
+                    
+                    # print "getting offset frame from ", control_frame, "to ", end_effector_frame
+                    self.tf_listener.waitForTransform(control_frame, end_effector_frame, rospy.Time.now(), rospy.Duration(5.0))
+                    (trans, rot) = self.tf_listener.lookupTransform(control_frame, end_effector_frame, rospy.Time.now())
+                    # rot = normalize_vector(rot)
+                    T_ee = fromMsg(toPose(trans,rot)).Inverse()
+
+                    # print "------------------------"
+                    # print "------T_goal: "
+                    # print T_goal
+                    # print "------T_offset: "
+                    # print T_offset
+                    # print "------T_fixed_joint_offset: "
+                    # print T_fixed_joint_offset
+                    # # print getPoseFromFrame(T_fixed_joint_offset)
+                    # print "------T_ee: "
+                    # print T_ee
+
+                    T_hand = T_goal*T_offset*T_fixed_joint_offset.Inverse()
+                    # print "------T_hand: "
+                    # print T_hand
 
                     # T = T_goal*T_offset*T_tool
-                    T = T_goal*T_offset*T_fixed_joint_offset*T_tool
+                    # T = T_goal*T_offset*T_ee#*T_fixed_joint_offset*T_tool
+                    # print "------T:"
+                    # print T
+                    T = T_hand*T_ee#*T_fixed_joint_offset*T_tool
+                    # print "------T:"
+                    # print T
+
+                    # print "------------------------"
                     pt.pose = getPoseFromFrame(T)
                     waypoints.append(pt)
 
@@ -1441,7 +1484,11 @@ class AffordanceTemplate(threading.Thread) :
                     self.robot_interface.path_planner.create_joint_plan_to_target(ee_name, self.robot_interface.stored_poses[ee_name][pn])
 
             # create plan through the waypoints 
+            # print "AT: planning path for ", manipulator_name, " in frame ", frame_id, " to : "
+            # print waypoints
+
             r = self.robot_interface.path_planner.create_path_plan(manipulator_name, frame_id, waypoints)
+            rospy.loginfo(str("AffordanceTemplate::plan_path_to_waypoint() -- return: " + str(r)))
             self.waypoint_plan_valid[self.current_trajectory][ee_id] = r
 
             # check for validity
@@ -1462,9 +1509,11 @@ class AffordanceTemplate(threading.Thread) :
     def get_fixed_joint_offset(self, end_effector) :
         T = Frame()
         manipulator_group = self.robot_interface.path_planner.get_srdf_model().group_end_effectors[end_effector].parent_group
-        control_frame = self.robot_interface.path_planner.get_control_frame(manipulator_group)
+        # control_frame = self.robot_interface.path_planner.get_control_frame(manipulator_group)
+        control_frame = self.robot_interface.path_planner.get_srdf_model().group_end_effectors[end_effector].parent_link
         urdf = self.robot_interface.path_planner.get_urdf_model()
         link = control_frame
+
         while True :
             joint = get_link_joint(link, urdf)
             if urdf.joint_map[joint].type == "fixed" :
@@ -1474,10 +1523,13 @@ class AffordanceTemplate(threading.Thread) :
                 link = get_parent_link(link,urdf)
             else :
                 break
+        # print "Got fixed joint offset from:"
+        # print " ", control_frame, " to ", link
         return T
 
     def move_to_waypoint(self, end_effector) :
 
+        rospy.logwarn(str("AffordanceTemplate::move_to_waypoint() -- " + str(end_effector)))
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
         ee_name = self.robot_interface.get_end_effector_name(ee_id)
         manipulator_name = self.robot_interface.get_manipulator(end_effector)
@@ -1485,13 +1537,14 @@ class AffordanceTemplate(threading.Thread) :
         if self.waypoint_plan_valid[self.current_trajectory][ee_id] :
             
             # first execute for the manipulator (arm)
-            r = self.robot_interface.path_planner.execute_plan(manipulator_name,from_stored=True, wait=False)
+            r = self.robot_interface.path_planner.execute(manipulator_name,from_stored=True, wait=False)
             if not r :
                 rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- failed execution for group: " + manipulator_name + ". re-synching..."))
                 return False
 
             # next execute for the end-effector (hand)
-            r = self.robot_interface.path_planner.execute_plan(ee_name,from_stored=True, wait=False)
+            print "executing end-effector plan"
+            r = self.robot_interface.path_planner.execute(ee_name,from_stored=True, wait=False)
             if not r :
                 rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- failed execution for group: " + ee_name + ". re-synching..."))
                 return False
