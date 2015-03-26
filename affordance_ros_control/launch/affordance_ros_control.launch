@@ -1,4 +1,0 @@
-<launch>
-    <node name="at_server" pkg="affordance_template_server" type="server.py" />
-    <node name="ros_at" pkg="affordance_ros_control" type="ros_control.py" />    
-</launch>

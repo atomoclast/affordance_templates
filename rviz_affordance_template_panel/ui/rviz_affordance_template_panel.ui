@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_8">
+  <layout class="QFormLayout" name="formLayout">
    <item row="0" column="0">
     <widget class="QTabWidget" name="config_tab">
      <property name="sizePolicy">
@@ -29,7 +29,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="server_tab">
       <attribute name="title">
@@ -758,41 +758,6 @@
        <string>Robot Config</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="1">
-        <widget class="QCheckBox" name="robot_lock">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="font">
-          <font>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="layoutDirection">
-          <enum>Qt::RightToLeft</enum>
-         </property>
-         <property name="text">
-          <string>Locked</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QPushButton" name="load_config_button">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>Load Config</string>
-         </property>
-         <property name="checkable">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="0" colspan="2">
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
@@ -858,6 +823,22 @@
            </widget>
           </item>
           <item row="2" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>planner:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="planner_type"/>
+          </item>
+          <item row="3" column="0">
            <widget class="QLabel" name="package_label">
             <property name="font">
              <font>
@@ -866,12 +847,12 @@
              </font>
             </property>
             <property name="text">
-             <string>MoveIt! package:</string>
+             <string>config package:</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="moveit_package">
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="config_package">
             <property name="enabled">
              <bool>true</bool>
             </property>
@@ -892,7 +873,23 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>config file:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLineEdit" name="config_file"/>
+          </item>
+          <item row="5" column="0">
            <widget class="QLabel" name="frame_id_label">
             <property name="font">
              <font>
@@ -905,7 +902,7 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="1">
+          <item row="5" column="1">
            <widget class="QLineEdit" name="frame_id">
             <property name="enabled">
              <bool>true</bool>
@@ -927,7 +924,7 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="0">
+          <item row="6" column="0">
            <widget class="QLabel" name="frame_id_label_2">
             <property name="font">
              <font>
@@ -940,7 +937,7 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="1">
+          <item row="6" column="1">
            <widget class="QLineEdit" name="gripper_service">
             <property name="enabled">
              <bool>true</bool>
@@ -962,7 +959,7 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="0" colspan="2">
+          <item row="7" column="0" colspan="2">
            <layout class="QVBoxLayout" name="verticalLayout_4">
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -1133,7 +1130,7 @@
             </item>
            </layout>
           </item>
-          <item row="6" column="0" colspan="2">
+          <item row="8" column="0" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
              <widget class="QLabel" name="end_effector_label">
@@ -1166,7 +1163,7 @@
             </item>
            </layout>
           </item>
-          <item row="7" column="0" colspan="2">
+          <item row="9" column="0" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout_6">
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -1236,7 +1233,7 @@
             </item>
            </layout>
           </item>
-          <item row="8" column="0" colspan="2">
+          <item row="10" column="0" colspan="2">
            <layout class="QVBoxLayout" name="verticalLayout_5">
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_10">
@@ -1408,6 +1405,41 @@
            </layout>
           </item>
          </layout>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QCheckBox" name="robot_lock">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="layoutDirection">
+          <enum>Qt::RightToLeft</enum>
+         </property>
+         <property name="text">
+          <string>Locked</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="load_config_button">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Load Config</string>
+         </property>
+         <property name="checkable">
+          <bool>false</bool>
+         </property>
         </widget>
        </item>
       </layout>

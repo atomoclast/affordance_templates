@@ -39,7 +39,7 @@ namespace rviz_affordance_template_panel
     {
     public:
 
-		// typedefs
+        // typedefs
         typedef boost::shared_ptr<Affordance> AffordanceSharedPtr;
         typedef boost::shared_ptr<RecognitionObject> RecognitionObjectSharedPtr;
         typedef boost::shared_ptr<RobotConfig> RobotConfigSharedPtr;
@@ -57,12 +57,12 @@ namespace rviz_affordance_template_panel
 
         // thread functions
         void start();
-		void stop();
+        void stop();
 
         // print stored template status info
         void printTemplateStatus();
-		
-    	// helper functions for front-end widgets
+        
+        // helper functions for front-end widgets
         void getAvailableInfo();
         void getAvailableTemplates();
         void getAvailableRecognitionObjects();
@@ -99,7 +99,7 @@ namespace rviz_affordance_template_panel
         void updateObjectScale(int value);
         void updateEndEffectorScaleAdjustment(int value);
         void selectScaleObject(const QString& object_name);
-		void scaleSliderReleased();
+        void scaleSliderReleased();
         void controlStatusUpdate();
         void resetScale();      
         void enableConfigPanel(int state);
@@ -107,7 +107,7 @@ namespace rviz_affordance_template_panel
         
     protected:
 
-		void run_function();
+        void run_function();
 
         void setupRobotPanel(const string& key);
         void setupEndEffectorConfigPanel(const string& key);
@@ -142,7 +142,7 @@ namespace rviz_affordance_template_panel
         void updateServerStatus();
         void setLabelText(QColor color, std::string text);
 
-		void updateStatusFromControls();   
+        void updateStatusFromControls();   
         void updateTable(std::string name, std::string trajectory);
         void doCommand(Controls::CommandType command_type);
         void sendScaleInfo();
@@ -152,12 +152,12 @@ namespace rviz_affordance_template_panel
         std::string getRobotFromDescription();
         std::vector<std::string> getSelectedEndEffectors();
 
-		// boost thread
-		boost::thread *thread_;
-    	boost::mutex mutex;
+        // boost thread
+        boost::thread *thread_;
+        boost::mutex mutex;
 
-    	// status flag
-    	bool running_;
+        // status flag
+        bool running_;
         int server_status_;
         
         // ros node handle
@@ -212,8 +212,8 @@ namespace rviz_affordance_template_panel
         std::map<std::string, AffordanceTemplateStatusInfo*> template_status_info; 
 
         // extra graphics stuff
-		QPalette *label_palette_;
-		QColor red, blue, green;
+        QPalette *label_palette_;
+        QColor red, blue, green;
 
     };
 }

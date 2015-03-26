@@ -6,13 +6,19 @@ string filename
 # the name of the robot
 string name
 
-# the name of the robot's moveit configuration package that will enable the robot to be used by the ATs
-string moveit_config_package
+# the name of the robot's configuration package that will enable the robot to be used by the ATs
+string config_package
+
+# the name of the robot's configuration file that will enable the robot to be used by the ATs
+string config_file
+
+# the name of the planner type to use for solving paths
+string planner_type
 
 # the robot's base frame id
 string frame_id
 
-# if the gripper/end-effector is to be controlled by a seperate service (not by a MoveIt! trajectory), this is the service name
+# if the gripper/end-effector is to be controlled by a seperate service (not by a trajectory), this is the service name
 string gripper_service
 
 # offset position for where all ATs are initially placed in robot's base frame

@@ -6,7 +6,7 @@ using namespace std;
 namespace rviz_affordance_template_panel
 {
 
-	class EndEffectorConfig
+    class EndEffectorConfig
     {
     public:
         EndEffectorConfig(const string& name) {name_=name;};
@@ -57,7 +57,7 @@ namespace rviz_affordance_template_panel
     class RobotConfig
     {
     public:
-    	typedef boost::shared_ptr<EndEffectorConfig> EndEffectorConfigSharedPtr;
+        typedef boost::shared_ptr<EndEffectorConfig> EndEffectorConfigSharedPtr;
         typedef boost::shared_ptr<EndEffectorPoseConfig> EndEffectorPoseIDConfigSharedPtr;
 
         RobotConfig(const string& uid) {uid_=uid;};
@@ -72,13 +72,19 @@ namespace rviz_affordance_template_panel
         string frame_id() const { return frame_id_; }
         void frame_id(const string& frame_id ) { frame_id_=frame_id; }
 
-        string moveit_config_package() const { return moveit_config_package_; }
-        void moveit_config_package(const string& moveit_config_package ) { moveit_config_package_=moveit_config_package; }
+        string config_package() const { return config_package_; }
+        void config_package(const string& config_package ) { config_package_=config_package; }
+
+        string config_file() const { return config_file_; }
+        void config_file(const string& config_file ) { config_file_=config_file; }
+
+        string planner_type() const { return planner_type_; }
+        void planner_type(const string& planner_type ) { planner_type_=planner_type; }
 
         string gripper_service() const { return gripper_service_; }
         void gripper_service(const string& gripper_service ) { gripper_service_=gripper_service; }
 
-		vector<float> root_offset() const { return root_offset_; }
+        vector<float> root_offset() const { return root_offset_; }
         void root_offset(const vector<float> root_offset ) { root_offset_=root_offset; }
 
         std::map<std::string, EndEffectorConfigSharedPtr> endeffectorMap;
@@ -89,7 +95,9 @@ namespace rviz_affordance_template_panel
         string uid_;
         string name_;
         string frame_id_;
-        string moveit_config_package_;
+        string config_package_;
+        string config_file_;
+        string planner_type_;
         string gripper_service_;
         vector<float> root_offset_;
 

@@ -59,7 +59,9 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->robot_lock, SIGNAL(stateChanged(int)), this, SLOT(enableConfigPanel(int)));
 
     QObject::connect(ui_->robot_name, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
-    QObject::connect(ui_->moveit_package, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->config_package, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->config_file, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->planner_type, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
     QObject::connect(ui_->gripper_service, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
     
     QObject::connect(ui_->frame_id, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
@@ -86,8 +88,8 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->reset_scale_button, SIGNAL(clicked()), this, SLOT(resetScale()));
     QObject::connect(ui_->object_scale_combo_box, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(selectScaleObject(const QString&)));
 
-}
 
+}
 
 #include <pluginlib/class_list_macros.h>
 #if ROS_VERSION_MINIMUM(1,9,41)
