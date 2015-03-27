@@ -1,0 +1,11 @@
+<package>
+  <description brief="affordance_ros_control">
+
+     affordance_ros_control
+
+  </description>
+  <depend package="rospy"/>
+
+</package>
+
+

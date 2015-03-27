@@ -1,0 +1,9 @@
+<package>
+  <description brief="affordance_template_library">
+
+     affordance_template_library
+
+  </description>
+  <depend package="rospy"/>
+
+</package>
