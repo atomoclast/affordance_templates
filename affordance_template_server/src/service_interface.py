@@ -201,28 +201,29 @@ class ServiceInterface(object):
                         
             # go through all the EE waypoints in the request
             id = 0
+            ee_names = []
+
             for ee in request.end_effectors:
-                                
+                r[ee] = False
                 steps = int(request.steps[id])
                 # make sure the EE is in the trajectory
                 if not at.trajectory_has_ee(request.trajectory_name, ee): 
                     rospy.logwarn(str("ServiceInterface::handle_plan_command() -- " + ee + " not in trajectory, can't plan"))
                     continue
                                 
-                # compute path plan
-                r[ee] = at.plan_path_to_waypoint(str(ee), steps=steps, direct=request.direct, backwards=request.backwards)
-                rospy.loginfo(str("ServiceInterface::handle_plan_command() -- done planning path for " + ee))
-                
+                ee_names.append(str(ee))
                 id += 1
 
-            # status will return True only when all ee's in plan are valid
-            response.status = (not False in r.values()) 
+            # compute path plan (returns dictionary of bools keyed off EE name)
+            r = at.plan_path_to_waypoints(ee_names, steps=steps, direct=request.direct, backwards=request.backwards)
+            rospy.loginfo(str("ServiceInterface::handle_plan_command() -- done planning path for end-effectors: " + str(r)))
+            
             response.affordance_template_status = self.get_template_status(request.type, request.id, request.trajectory_name)
-    
+            
         except:
             rospy.logerr(str("ServiceInterface::handle_plan_command() -- error performing command!!"))
         
-        self.server.status = True
+        self.server.status = r 
         return response
 
 

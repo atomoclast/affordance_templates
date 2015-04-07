@@ -4,7 +4,7 @@ config_package: atlas_moveit_config
 config_file: config/atlas.srdf
 gripper_service: /atlas/gripper_service
 frame_id: pelvis
-root_offset: [0.4,0,0.2,0,0,0]
+root_offset: [0.6,0,0.2,0,0,0]
 end_effector_group_map:
   - name: left_sri_hand
     id: 0
