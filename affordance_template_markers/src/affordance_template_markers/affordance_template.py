@@ -1527,17 +1527,17 @@ class AffordanceTemplate(threading.Thread) :
     def plan_to_waypoint_valid(self, end_effector, trajectory) :
         
         if not end_effector in self.robot_interface.manipulator_id_map.keys() :
-            rospy.logerr("AffordanceTemplate::plan_path_to_waypoint() -- invalid end-effector in id map")
+            rospy.logerr("AffordanceTemplate::plan_to_waypoint_valid() -- invalid end-effector in id map")
             return False
         
         ee_id = self.robot_interface.manipulator_id_map[end_effector]
         
         if not trajectory in self.waypoint_plan_valid.keys() :
-            rospy.logerr("AffordanceTemplate::plan_path_to_waypoint() -- invalid trajectory in valid map")
+            rospy.logerr("AffordanceTemplate::plan_to_waypoint_valid() -- invalid trajectory in valid map")
             return False
 
         if not ee_id in self.waypoint_plan_valid[trajectory].keys() :
-            rospy.logerr("AffordanceTemplate::plan_path_to_waypoint() -- invalid end-effector in valid map")
+            rospy.logerr("AffordanceTemplate::plan_to_waypoint_valid() -- invalid end-effector in valid map")
             return False
 
         return self.waypoint_plan_valid[trajectory][ee_id]
