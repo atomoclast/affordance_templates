@@ -3,6 +3,8 @@ import os
 import sys
 import rospy
 
+import roslib; roslib.load_manifest("affordance_template_server")
+
 from affordance_template_server import AffordanceTemplateServer
 
 if __name__ == '__main__':

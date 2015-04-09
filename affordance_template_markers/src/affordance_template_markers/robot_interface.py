@@ -7,6 +7,8 @@ import PyKDL as kdl
 
 import sensor_msgs.msg
 
+import roslib; roslib.load_manifest("nasa_robot_teleop"); roslib.load_manifest("affordance_template_msgs")
+
 from geometry_msgs.msg import Pose, PoseArray
 from affordance_template_msgs.msg import *
 
