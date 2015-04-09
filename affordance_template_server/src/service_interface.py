@@ -246,21 +246,24 @@ class ServiceInterface(object):
                 request.trajectory_name = at.current_trajectory
 
             # go through all the EE waypoints in the request
+
+            ee_list = []
             for ee in request.end_effectors:
     
                 # make sure the EE is in the trajectory
                 if not at.trajectory_has_ee(request.trajectory_name, ee): 
                     rospy.logwarn(str("ServiceInterface::handle_execute_command() -- " + ee + " not in trajectory, can't execute"))
-                    continue
-
-                # if the AT has prevously computed a valid plan (can't execute unless this is True) 
-                if at.plan_to_waypoint_valid(str(ee),request.trajectory_name) :
-                    # command the execution (this is currently open loop on the AT side -- FIXME)
-                    r[ee] = at.move_to_waypoint(str(ee)) 
-                    rospy.loginfo(str("ServiceInterface::handle_execute_command() -- done executing plan for " + ee))
                 else :
-                    rospy.loginfo(str("ServiceInterface::handle_execute_command() -- no valid plan found for " + ee))
-     
+                    ee_list.append(ee)
+
+            # if the AT has prevously computed a valid plan (can't execute unless this is True) 
+            if at.plan_to_waypoints_valid(ee_list,request.trajectory_name) :
+                # command the execution (this is currently open loop on the AT side -- FIXME)
+                r = at.move_to_waypoints(ee_list) 
+                rospy.loginfo(str("ServiceInterface::handle_execute_command() -- done executing plan for " + request.trajectory_name))
+            else :
+                rospy.loginfo(str("ServiceInterface::handle_execute_command() -- no valid plan found for " + request.trajectory_name))
+ 
             # status will return True only when all ee's in plan are valid
             response.status = (not False in r.values()) 
             response.affordance_template_status = self.get_template_status(request.type, request.id, request.trajectory_name)
