@@ -3,8 +3,11 @@
 CMakeLists.txt
 package.xml
 Makefile
-manifest.xmlaffordance_template_server_protobuf/proto_gen/*
+manifest.xml
+affordance_template_server_protobuf/proto_gen/*
+*.orig
 *.bak
+*/*.orig
 qtcreator-build/*
 *.user
 */CMakeFiles/*
