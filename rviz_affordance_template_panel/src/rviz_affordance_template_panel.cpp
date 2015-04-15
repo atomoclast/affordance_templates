@@ -62,7 +62,7 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->config_package, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
     QObject::connect(ui_->config_file, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
     QObject::connect(ui_->planner_type, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
-    QObject::connect(ui_->gripper_service, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
+    QObject::connect(ui_->gripper_action, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
     
     QObject::connect(ui_->frame_id, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));
     QObject::connect(ui_->robot_tx, SIGNAL(textEdited(const QString&)), this, SLOT(updateRobotConfig(const QString&)));

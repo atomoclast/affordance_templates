@@ -51,7 +51,7 @@ class RobotInterface(object) :
         self.end_effector_link_data = {}
         self.end_effector_markers = {}
         self.stored_poses = {}
-        self.gripper_service = None
+        self.gripper_client = None
         self.configured = False
 
     def load_from_msg(self, robot_config) :
@@ -185,11 +185,11 @@ class RobotInterface(object) :
             
 
             try :
-                gs = self.yaml_config['gripper_service']
-                self.robot_config.gripper_service = gs
-                rospy.logwarn(str("RobotInterface() -- found gripper service : " + self.robot_config.gripper_service))
+                ga = self.yaml_config['gripper_action']
+                self.robot_config.gripper_action = ga
+                rospy.logwarn(str("RobotInterface() -- found gripper action : " + self.robot_config.gripper_action))
             except :
-                self.robot_config.gripper_service = ""
+                self.robot_config.gripper_action = ""
                 
             rospy.logdebug(str("RobotInterface::load_from_file() -- loaded: " + filename))
 
@@ -272,8 +272,8 @@ class RobotInterface(object) :
                 self.stored_poses[g][state_name] = self.path_planner.get_stored_group_state(g, state_name)
 
 
-        if self.robot_config.gripper_service :
-            self.path_planner.set_gripper_service(self.robot_config.gripper_service)
+        if self.robot_config.gripper_action :
+            self.path_planner.set_gripper_action(self.robot_config.gripper_action)
 
         # what do we have?
         # rospy.logdebug(str("RobotInterface::configure() -- groups: " + self.path_planner.groups.keys()))

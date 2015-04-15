@@ -2,7 +2,7 @@ robot_name: atlas
 planner_type: atlas
 config_package: atlas_moveit_config
 config_file: config/atlas.srdf
-gripper_service: /atlas/gripper_service
+gripper_action: /atlas/gripper/server
 frame_id: pelvis
 root_offset: [0.6,0,0.2,0,0,0]
 end_effector_group_map:

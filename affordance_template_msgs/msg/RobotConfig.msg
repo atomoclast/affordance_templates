@@ -18,8 +18,8 @@ string planner_type
 # the robot's base frame id
 string frame_id
 
-# if the gripper/end-effector is to be controlled by a seperate service (not by a trajectory), this is the service name
-string gripper_service
+# if the gripper/end-effector is to be controlled by a seperate action (not by a trajectory), this is the service name
+string gripper_action
 
 # offset position for where all ATs are initially placed in robot's base frame
 geometry_msgs/Pose root_offset

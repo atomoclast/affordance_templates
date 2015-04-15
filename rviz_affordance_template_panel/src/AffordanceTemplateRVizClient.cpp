@@ -193,7 +193,7 @@ void AffordanceTemplateRVizClient::updateRobotConfig(const QString& text) {
     (*robotMap_[key]).config_file(ui_->config_file->text().toUtf8().constData());
     (*robotMap_[key]).planner_type(ui_->planner_type->text().toUtf8().constData());
     (*robotMap_[key]).frame_id(ui_->frame_id->text().toUtf8().constData());
-    (*robotMap_[key]).gripper_service(ui_->gripper_service->text().toUtf8().constData());
+    (*robotMap_[key]).gripper_action(ui_->gripper_action->text().toUtf8().constData());
 
     vector<float> root_offset(7);
     vector<float> q = util::RPYToQuaternion(ui_->robot_rr->text().toFloat(), ui_->robot_rp->text().toFloat(), ui_->robot_ry->text().toFloat());
@@ -369,7 +369,7 @@ void AffordanceTemplateRVizClient::getAvailableRobots() {
             pitem->config_file(r.config_file);
             pitem->planner_type(r.planner_type);
             pitem->frame_id(r.frame_id);
-            pitem->gripper_service(r.gripper_service);
+            pitem->gripper_action(r.gripper_action);
 
             vector<float> root_offset = util::poseMsgToVector(r.root_offset);
             pitem->root_offset(root_offset);
@@ -425,7 +425,7 @@ void AffordanceTemplateRVizClient::setupRobotPanel(const string& key) {
     string file = (*robotMap_[key]).config_file();
     string planner = (*robotMap_[key]).planner_type();
     string frame_id = (*robotMap_[key]).frame_id();
-    string gripper_service = (*robotMap_[key]).gripper_service();
+    string gripper_action = (*robotMap_[key]).gripper_action();
 
     vector<float> root_offset = (*robotMap_[key]).root_offset();
 
@@ -434,7 +434,7 @@ void AffordanceTemplateRVizClient::setupRobotPanel(const string& key) {
     ui_->config_file->setText(QString(file.c_str()));
     ui_->planner_type->setText(QString(planner.c_str()));
     ui_->frame_id->setText(QString(frame_id.c_str()));
-    ui_->gripper_service->setText(QString(gripper_service.c_str()));
+    ui_->gripper_action->setText(QString(gripper_action.c_str()));
 
     ui_->robot_tx->setText(QString::number(root_offset[0]));
     ui_->robot_ty->setText(QString::number(root_offset[1]));
@@ -991,7 +991,7 @@ void AffordanceTemplateRVizClient::loadConfig() {
     string pkg = (*robotMap_[key]).config_package();
     string file = (*robotMap_[key]).config_file();
     string planner = (*robotMap_[key]).planner_type();
-    string gripper_service = (*robotMap_[key]).gripper_service();
+    string gripper_action = (*robotMap_[key]).gripper_action();
     string frame_id = (*robotMap_[key]).frame_id();
     vector<float> root_offset = (*robotMap_[key]).root_offset();
 
@@ -1000,7 +1000,7 @@ void AffordanceTemplateRVizClient::loadConfig() {
     srv.request.robot_config.config_package = pkg;
     srv.request.robot_config.config_file = file;
     srv.request.robot_config.planner_type = planner;
-    srv.request.robot_config.gripper_service = gripper_service;
+    srv.request.robot_config.gripper_action = gripper_action;
     srv.request.robot_config.frame_id = frame_id;
     srv.request.robot_config.root_offset = util::vectorToPoseMsg(root_offset);
     
