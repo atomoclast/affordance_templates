@@ -17,4 +17,16 @@ stack.xml
 */bin
 */msg_gen
 */srv_gen
-
+affordance_template_library/CMakeLists.txt
+affordance_template_library/package.xml
+affordance_template_markers/CMakeLists.txt
+affordance_template_markers/package.xml
+affordance_template_msgs/CMakeLists.txt
+affordance_template_msgs/package.xml
+affordance_template_server/CMakeLists.txt
+affordance_template_server/package.xml
+affordance_templates/CMakeLists.txt
+affordance_templates/package.xml
+rviz_affordance_template_panel/CMakeLists.txt
+rviz_affordance_template_panel/manifest.xml
+rviz_affordance_template_panel/package.xml
