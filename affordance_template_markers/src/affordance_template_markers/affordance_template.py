@@ -1004,6 +1004,7 @@ class AffordanceTemplate(threading.Thread) :
                 for wp in ee_group['end_effector_waypoint'] :
                     wp['display_object'] = self.append_id(wp['display_object'])
                     
+                    
         return structure
 
     def print_structure(self) :

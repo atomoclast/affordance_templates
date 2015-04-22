@@ -3,6 +3,9 @@
 
 using namespace std;
 
+#include <affordance_template_msgs/GripperActionMap.h>
+
+
 namespace rviz_affordance_template_panel
 {
 
@@ -81,8 +84,8 @@ namespace rviz_affordance_template_panel
         string planner_type() const { return planner_type_; }
         void planner_type(const string& planner_type ) { planner_type_=planner_type; }
 
-        string gripper_action() const { return gripper_action_; }
-        void gripper_action(const string& gripper_action ) { gripper_action_=gripper_action; }
+        vector<affordance_template_msgs::GripperActionMap> gripper_action() const { return gripper_action_; }
+        void gripper_action(const vector<affordance_template_msgs::GripperActionMap>& gripper_action ) { gripper_action_=gripper_action; }
 
         vector<float> root_offset() const { return root_offset_; }
         void root_offset(const vector<float> root_offset ) { root_offset_=root_offset; }
@@ -98,7 +101,7 @@ namespace rviz_affordance_template_panel
         string config_package_;
         string config_file_;
         string planner_type_;
-        string gripper_action_;
+        vector<affordance_template_msgs::GripperActionMap> gripper_action_;
         vector<float> root_offset_;
 
 

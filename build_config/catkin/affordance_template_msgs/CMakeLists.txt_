@@ -57,6 +57,7 @@ add_message_files(
   AffordanceTemplateStatus.msg
   RecognitionObjectConfig.msg
   ScaleDisplayObjectInfo.msg
+  GripperActionMap.msg
 )
 
 ## Generate services in the 'srv' folder
