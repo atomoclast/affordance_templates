@@ -51,7 +51,6 @@ class RobotInterface(object) :
         self.end_effector_link_data = {}
         self.end_effector_markers = {}
         self.stored_poses = {}
-        self.gripper_client = None
         self.configured = False
 
     def load_from_msg(self, robot_config) :
@@ -183,14 +182,17 @@ class RobotInterface(object) :
                 
                 # print "ee[", ee['group'], "] adding group [", ee['name'], "] with id [", ee['id'], "]"
             
-
+            self.robot_config.gripper_action = []
             try :
                 ga = self.yaml_config['gripper_action']
-                self.robot_config.gripper_action = ga
-                rospy.logwarn(str("RobotInterface() -- found gripper action : " + self.robot_config.gripper_action))
+                for g in ga :
+                    gm = GripperActionMap()
+                    gm.name = g['name']
+                    gm.action = g['action']
+                    self.robot_config.gripper_action.append(gm)
+                    rospy.logwarn(str("RobotInterface() -- found " + g['name'] + " gripper action : " + g['action']))
             except :
-                self.robot_config.gripper_action = ""
-                
+                pass                
             rospy.logdebug(str("RobotInterface::load_from_file() -- loaded: " + filename))
 
         except :
@@ -223,12 +225,14 @@ class RobotInterface(object) :
         rospy.loginfo(str("RobotInterface::configure() -- configuring for package: " + self.config_file))
         rospy.loginfo(str("RobotInterface::configure() -- planner type: " + self.robot_config.planner_type))
         
+        print "Test 1"
         self.configure_path_planner()     
-
+        print "Test 2"
+        
         self.root_frame = self.path_planner.get_robot_planning_frame()
         self.ee_groups = self.path_planner.get_end_effector_names()
         for g in self.end_effector_names :
-    
+            print "------" , g
             if not g in self.ee_groups:
                 rospy.logerr("RobotInterface::configure() -- group " + str(g) + " not in end effector groups!")
                 return False
@@ -271,9 +275,13 @@ class RobotInterface(object) :
                 rospy.logdebug(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + g + "\'"))
                 self.stored_poses[g][state_name] = self.path_planner.get_stored_group_state(g, state_name)
 
-
+        print "HELLO"
         if self.robot_config.gripper_action :
-            self.path_planner.set_gripper_action(self.robot_config.gripper_action)
+            grippers = []
+            for g in self.robot_config.gripper_action :
+                grippers.append({"name" : g.name, "action" : g.action})
+            print "Grippers:", grippers
+            self.path_planner.set_gripper_actions(grippers)
 
         # what do we have?
         # rospy.logdebug(str("RobotInterface::configure() -- groups: " + self.path_planner.groups.keys()))

@@ -193,7 +193,16 @@ void AffordanceTemplateRVizClient::updateRobotConfig(const QString& text) {
     (*robotMap_[key]).config_file(ui_->config_file->text().toUtf8().constData());
     (*robotMap_[key]).planner_type(ui_->planner_type->text().toUtf8().constData());
     (*robotMap_[key]).frame_id(ui_->frame_id->text().toUtf8().constData());
-    (*robotMap_[key]).gripper_action(ui_->gripper_action->text().toUtf8().constData());
+
+    string ee_key = ui_->end_effector_select->currentText().toUtf8().constData();
+    vector<affordance_template_msgs::GripperActionMap> gm = (*robotMap_[key]).gripper_action();
+
+    for (auto& g: gm) {
+        if(g.name == ee_key) {
+            g.action = ui_->gripper_action->text().toUtf8().constData();
+        }    
+    }
+    //(*robotMap_[key]).gripper_action(gm);
 
     vector<float> root_offset(7);
     vector<float> q = util::RPYToQuaternion(ui_->robot_rr->text().toFloat(), ui_->robot_rp->text().toFloat(), ui_->robot_ry->text().toFloat());
@@ -425,7 +434,7 @@ void AffordanceTemplateRVizClient::setupRobotPanel(const string& key) {
     string file = (*robotMap_[key]).config_file();
     string planner = (*robotMap_[key]).planner_type();
     string frame_id = (*robotMap_[key]).frame_id();
-    string gripper_action = (*robotMap_[key]).gripper_action();
+    //string gripper_action = (*robotMap_[key]).gripper_action();
 
     vector<float> root_offset = (*robotMap_[key]).root_offset();
 
@@ -434,7 +443,7 @@ void AffordanceTemplateRVizClient::setupRobotPanel(const string& key) {
     ui_->config_file->setText(QString(file.c_str()));
     ui_->planner_type->setText(QString(planner.c_str()));
     ui_->frame_id->setText(QString(frame_id.c_str()));
-    ui_->gripper_action->setText(QString(gripper_action.c_str()));
+    //ui_->gripper_action->setText(QString(gripper_action.c_str()));
 
     ui_->robot_tx->setText(QString::number(root_offset[0]));
     ui_->robot_ty->setText(QString::number(root_offset[1]));
@@ -475,6 +484,11 @@ void AffordanceTemplateRVizClient::setupEndEffectorConfigPanel(const string& key
             ui_->ee_rp->setText(QString::number(rpy[1]));
             ui_->ee_ry->setText(QString::number(rpy[2]));
 
+            for (auto& g: (*robotMap_[robot_key]).gripper_action()) {
+                if (g.name == e.second->name()) {
+                    ui_->gripper_action->setText(g.action.c_str());
+                }
+            }
             // FIX ME, THIS NEEDS TO BE DONE FOR TOOL OFFSET
             /*vector<float> tool_offset = e.second->tool_offset();
             ui_->ee_totx->setText(QString::number(tool_offset[0]));
@@ -991,9 +1005,10 @@ void AffordanceTemplateRVizClient::loadConfig() {
     string pkg = (*robotMap_[key]).config_package();
     string file = (*robotMap_[key]).config_file();
     string planner = (*robotMap_[key]).planner_type();
-    string gripper_action = (*robotMap_[key]).gripper_action();
+    //string gripper_action = (*robotMap_[key]).gripper_action();
     string frame_id = (*robotMap_[key]).frame_id();
     vector<float> root_offset = (*robotMap_[key]).root_offset();
+    vector<affordance_template_msgs::GripperActionMap> gripper_action = (*robotMap_[key]).gripper_action();
 
     srv.request.robot_config.filename = key;
     srv.request.robot_config.name = name;

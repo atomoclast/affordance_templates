@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>409</width>
+    <width>415</width>
     <height>944</height>
    </rect>
   </property>
@@ -823,7 +823,7 @@
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="label_8">
+           <widget class="QLabel" name="planner_label">
             <property name="font">
              <font>
               <weight>75</weight>
@@ -874,7 +874,7 @@
            </widget>
           </item>
           <item row="4" column="0">
-           <widget class="QLabel" name="label_7">
+           <widget class="QLabel" name="config_file_label">
             <property name="font">
              <font>
               <weight>75</weight>
@@ -924,42 +924,7 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="frame_id_label_2">
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>gripper service:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1">
-           <widget class="QLineEdit" name="gripper_action">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>100</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>200</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="readOnly">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="0" colspan="2">
+          <item row="6" column="0" colspan="2">
            <layout class="QVBoxLayout" name="verticalLayout_4">
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -1130,7 +1095,7 @@
             </item>
            </layout>
           </item>
-          <item row="8" column="0" colspan="2">
+          <item row="7" column="0" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
              <widget class="QLabel" name="end_effector_label">
@@ -1163,7 +1128,7 @@
             </item>
            </layout>
           </item>
-          <item row="9" column="0" colspan="2">
+          <item row="8" column="0" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout_6">
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -1230,6 +1195,45 @@
                </widget>
               </item>
              </layout>
+            </item>
+           </layout>
+          </item>
+          <item row="9" column="0" colspan="2">
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <item>
+             <widget class="QLabel" name="frame_id_label_2">
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>gripper action:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="gripper_action">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>100</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>200</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="readOnly">
+               <bool>false</bool>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
