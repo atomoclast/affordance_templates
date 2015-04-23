@@ -1,77 +1,54 @@
 {
-  "name": "Door",
-  "image": "package://affordance_template_library/images/door.png",
+  "image": "package://affordance_template_library/images/door.png", 
   "display_objects": [
     {
       "name": "door",
-      "shape": {
-        "type": "mesh",
-        "data": "package://affordance_template_library/models/door.dae",
+      "origin": 
+      {
+        "rpy": [0.0, 0.0, 0.0], 
+        "xyz": [0.5, 0.0, 0.0]
+      }, 
+      "shape": 
+      {
+        "type": "mesh", 
+        "data": "package://affordance_template_library/models/door.stl", 
         "size": [1.0, 1.0, 1.0]
+      }, 
+      "controls": 
+      {
+        "rpy": [false, false, false], 
+        "xyz": [false, false, false], 
+        "scale": 0.5
+      }
+    },
+    {
+      "name": "im_control",
+      "parent": "door",
+      "shape": {
+        "type": "box",
+        "material": {
+          "color": "blue",
+          "rgba": [0.0, 0.0, 1.0, 1.0]
+        },
+        "size": [0.01, 0.01, 0.01]
       },
       "origin" : {
-        "xyz": [0.5, 0.0, 0.0],
+        "xyz": [0.5, 0.0, 1.3917697668075562],
         "rpy": [0.0, 0.0, 0.0]
       },
       "controls": {
         "xyz": [true, true, true],
         "rpy": [false, false, true],
-        "scale": 0.3
+        "scale": 0.5
       }
     }
-  ],
-
+  ], 
+  "name": "Door", 
+  
   "end_effector_trajectory": [
     {
-      "name": "Left Hand Grasp",
-      "end_effector_group" : [
-        { 
-          "id": 0,
-          "end_effector_waypoint" : [
-            {
-              "ee_pose": 1,
-              "display_object": "door",
-              "origin": {
-                "xyz": [-0.04, -0.31, 0.03],
-                "rpy": [0.29, 0.15, 1.79]
-              },
-              "controls": {
-                "xyz": [true, true, true],
-                "rpy": [true, true, true],
-                "scale": 0.25
-              }
-            },
-            {
-              "ee_pose": 1,
-              "display_object": "door",
-              "origin": {
-                "xyz": [-0.02, -0.085, 0.0],
-                "rpy": [0.21, 0.007, 1.74]
-              },
-              "controls": {
-                "xyz": [true, true, true],
-                "rpy": [true, true, true],
-                "scale": 0.25
-              }
-            },
-            {
-              "ee_pose": 2,
-              "display_object": "door",
-              "origin": {
-                "xyz": [-0.02, -0.08, -0.003],
-                "rpy": [-0.004, 0.007, 1.74]
-              },
-              "controls": {
-                "xyz": [true, true, true],
-                "rpy": [true, true, true],
-                "scale": 0.25
-              }
-            }
-          ]
-        }
-      ]
+      "end_effector_group": [], 
+      "name": "Left Hand Grasp"
     }
   ]
 }
-
-
