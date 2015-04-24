@@ -156,8 +156,59 @@
   
   "end_effector_trajectory": [
     {
-      "end_effector_group": [], 
-      "name": "empty trajectory"
+      "name": "Grasp Handle",
+      "end_effector_group" : [
+        {
+          "id": 0,
+          "end_effector_waypoint" : [
+            {
+              "ee_pose": 0,
+              "display_object": "handle_closed",
+              "origin": 
+              {
+                "xyz": [-0.3, -0.075, 0.1],
+                "rpy": [-1.57, 1.57, 0.0]
+              },
+              "controls": 
+              {
+                "xyz": [true, true, true],
+                "rpy": [true, true, true],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 0,
+              "display_object": "handle_closed",
+              "origin": 
+              {
+                "xyz": [-0.1, -0.075, 0.1],
+                "rpy": [-1.57, 1.57, 0.0]
+              },
+              "controls": 
+              {
+                "xyz": [true, true, true],
+                "rpy": [true, true, true],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 2,
+              "display_object": "handle_closed",
+              "origin": 
+              {
+                "xyz": [-0.1, -0.075, 0.1],
+                "rpy": [-1.57, 1.57, 0.0]
+              },
+              "controls": 
+              {
+                "xyz": [true, true, true],
+                "rpy": [true, true, true],
+                "scale": 0.25
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }
