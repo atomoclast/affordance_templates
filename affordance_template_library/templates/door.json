@@ -47,14 +47,35 @@
       }
     },
     {
+      "name": "handle_closed", 
+      "parent": "door_closed",
+      "origin":
+      {
+        "rpy": [0.0, 0.0, 0.0],
+        "xyz": [0.0, 0.3972, 0.98186838472]
+      },
+      "shape":
+      {
+        "type": "mesh",
+        "data": "package://affordance_template_library/models/lever_handle.dae",
+        "size": [ 1, 1, 1]
+      },
+      "controls":
+      {
+        "rpy": [false, false, false],
+        "xyz": [false, false, false],
+        "scale": 0.3
+      }
+    },
+    {
       "name": "door_half",
       "parent": "im_control",
-      "origin": 
+      "origin":
       {
-        "rpy": [0.0, 0.0, -0.785], 
+        "rpy": [0.0, 0.0, -0.785],
         "xyz": [0.323289, -0.145, -0.98186838472]
-      }, 
-      "shape": 
+      },
+      "shape":
       {
         "type": "mesh", 
         "data": "package://affordance_template_library/models/door_cut.stl", 
@@ -65,6 +86,27 @@
         "rpy": [false, false, false], 
         "xyz": [false, false, false], 
         "scale": 0.5
+      }
+    },
+    {
+      "name": "handle_half", 
+      "parent": "door_half",
+      "origin":
+      {
+        "rpy": [0.0, 0.0, 0.0],
+        "xyz": [0.0, 0.3972, 0.98186838472]
+      },
+      "shape":
+      {
+        "type": "mesh",
+        "data": "package://affordance_template_library/models/lever_handle.dae",
+        "size": [ 1, 1, 1]
+      },
+      "controls":
+      {
+        "rpy": [false, false, false],
+        "xyz": [false, false, false],
+        "scale": 0.3
       }
     },
     {
@@ -87,6 +129,27 @@
         "xyz": [false, false, false], 
         "scale": 0.5
       }
+    },
+    {
+      "name": "handle_open", 
+      "parent": "door_open",
+      "origin":
+      {
+        "rpy": [0.0, 0.0, 0.0],
+        "xyz": [0.0, 0.3972, 0.98186838472]
+      },
+      "shape":
+      {
+        "type": "mesh",
+        "data": "package://affordance_template_library/models/lever_handle.dae",
+        "size": [ 1, 1, 1]
+      },
+      "controls":
+      {
+        "rpy": [false, false, false],
+        "xyz": [false, false, false],
+        "scale": 0.3
+      }
     }
   ], 
   "name": "Door", 
@@ -94,7 +157,7 @@
   "end_effector_trajectory": [
     {
       "end_effector_group": [], 
-      "name": "Left Hand Grasp"
+      "name": "empty trajectory"
     }
   ]
 }
