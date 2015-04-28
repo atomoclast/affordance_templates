@@ -1,6 +1,6 @@
 {
   "name": "Wheel",
-  "image": "package://affordance_template_library/images/wheel.png",
+  "image": "package://affordance_template_library/images/torus.jpg",
   "display_objects": [
     {
       "name": "wheel",
