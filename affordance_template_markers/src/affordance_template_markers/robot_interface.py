@@ -201,7 +201,6 @@ class RobotInterface(object) :
 
         # print self.robot_config
         self.config_file = self.get_package_path(self.robot_config.config_package) + "/" + str(self.robot_config.config_file)
-        print self.config_file
         self.configured = True
 
         return True
@@ -225,14 +224,11 @@ class RobotInterface(object) :
         rospy.loginfo(str("RobotInterface::configure() -- configuring for package: " + self.config_file))
         rospy.loginfo(str("RobotInterface::configure() -- planner type: " + self.robot_config.planner_type))
         
-        print "Test 1"
         self.configure_path_planner()     
-        print "Test 2"
         
         self.root_frame = self.path_planner.get_robot_planning_frame()
         self.ee_groups = self.path_planner.get_end_effector_names()
         for g in self.end_effector_names :
-            print "------" , g
             if not g in self.ee_groups:
                 rospy.logerr("RobotInterface::configure() -- group " + str(g) + " not in end effector groups!")
                 return False
@@ -243,11 +239,7 @@ class RobotInterface(object) :
 
                     # ee_root_frame = self.path_planner.get_srdf_model().get_end_effector_link(g)
                     ee_root_frame =  self.path_planner.get_control_frame(g)
-                    
                     self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
-
-                    print "EE Link:" , self.path_planner.get_control_frame(g)
-
                     self.end_effector_link_data[g].populate_data(self.path_planner.get_group_links(g), self.path_planner.get_urdf_model(), self.path_planner.get_srdf_model())
                     rospy.sleep(1)
                     self.end_effector_markers[g] = self.end_effector_link_data[g].get_current_position_marker_array(scale=1.0,color=(1,1,1,0.5))
@@ -275,12 +267,10 @@ class RobotInterface(object) :
                 rospy.logdebug(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + g + "\'"))
                 self.stored_poses[g][state_name] = self.path_planner.get_stored_group_state(g, state_name)
 
-        print "HELLO"
         if self.robot_config.gripper_action :
             grippers = []
             for g in self.robot_config.gripper_action :
                 grippers.append({"name" : g.name, "action" : g.action})
-            print "Grippers:", grippers
             self.path_planner.set_gripper_actions(grippers)
 
         # what do we have?

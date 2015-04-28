@@ -155,7 +155,6 @@ class AffordanceTemplate(threading.Thread) :
 
     def get_package_path(self, pkg):
         """Return the path to the ROS package."""
-        import rospkg
         try:
             rp = rospkg.RosPack()
             return rp.get_path(pkg)
@@ -1430,9 +1429,13 @@ class AffordanceTemplate(threading.Thread) :
             waypoints = []
             frame_id = ""
 
+            print "next_path_idx: ", next_path_idx
+            print path
+
             try :
                 for idx in path :
                     next_path_str = self.create_waypoint_id(ee_id, idx)
+                    print "next_path_str: ", next_path_str
                     if not next_path_str in self.objTwp[self.current_trajectory] :
                         rospy.logerr(str("AffordanceTemplate::plan_path_to_waypoints() -- path index[" + str(next_path_str) + "] not found!!"))
                         return ret
@@ -1463,7 +1466,6 @@ class AffordanceTemplate(threading.Thread) :
                         waypoints.append(pt)
 
                    
-                    # rospy.logwarn("HANDS DISABLED -- FIX ME LATER!!")
                     if not self.waypoint_pose_map[self.current_trajectory][next_path_str] == None :
                         rospy.logwarn(str("AffordanceTemplate::plan_path_to_waypoints() -- planning for end_effector: " + ee_name))
 
@@ -1471,10 +1473,12 @@ class AffordanceTemplate(threading.Thread) :
                         pn = self.robot_interface.end_effector_id_map[ee_name][id]
                         rospy.loginfo("AffordanceTemplate::plan_path_to_waypoints() -- planning path for ee[" + str(ee_name) + "] to " + pn)
                         self.robot_interface.path_planner.create_joint_plan([ee_name], [self.robot_interface.stored_poses[ee_name][pn]])
+                        rospy.logwarn(str("AffordanceTemplate::plan_path_to_waypoints() -- planning for end_effector " + ee_name + " done"))
 
             except :
-                rospy.logerr(str("AffordanceTemplate::plan_path_to_waypoints() -- Error in calculation waypoint pose goals from id path"))
+                rospy.logerr(str("AffordanceTemplate::plan_path_to_waypoints() -- Error in calculating waypoint pose goals from id path"))
                 
+            
             # create plan through the waypoints 
             # frame_ids.append(frame_id)
             manipulator_names.append(manipulator_name)
@@ -1482,6 +1486,9 @@ class AffordanceTemplate(threading.Thread) :
             ee_ids.append(ee_id)
             next_path_strs.append(next_path_str)
             next_path_idxs.append(next_path_idx)
+
+        print "final waypoint list: "
+        print waypoints_list
 
         try :
             planner_result = self.robot_interface.path_planner.create_path_plan(manipulator_names, waypoints_list)
