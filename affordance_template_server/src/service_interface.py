@@ -380,7 +380,7 @@ class ServiceInterface(object):
                 wp.plan_valid = at.waypoint_plan_valid[trajectory_name][wp.id]
                 wp.execution_valid = at.waypoint_execution_valid[trajectory_name][wp.id]  
                 wp.waypoint_plan_index = at.waypoint_plan_index[trajectory_name][wp.id]                               
-                rospy.logwarn("ServiceInterface::get_template_status() -- ee[" + ee + "]: plan=" + str(wp.plan_valid) + ", execution=" + str(wp.execution_valid))
+                # rospy.logwarn("ServiceInterface::get_template_status() -- ee[" + ee + "]: plan=" + str(wp.plan_valid) + ", execution=" + str(wp.execution_valid))
                 ats.waypoint_info.append(wp)  
 
         except :

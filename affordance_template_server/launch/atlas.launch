@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <launch>
     <node pkg="affordance_template_server" type="server.py" name="affordance_template_server" output="screen"> 
-		<param name="robot_config" value="atlas.yaml"/>
+		<param name="robot_config" value="atlas_sim_moveit.yaml"/>
     </node>
 </launch>
