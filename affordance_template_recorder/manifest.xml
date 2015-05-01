@@ -1,0 +1,18 @@
+<package>
+  <description brief="affordance_template_recorder">
+
+     affordance_template_recorder
+
+  </description>
+  <author>karan</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/affordance_template_recorder</url>
+  <depend package="tf"/>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+
+</package>
+
+
