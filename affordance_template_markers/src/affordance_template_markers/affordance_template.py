@@ -1477,8 +1477,7 @@ class AffordanceTemplate(threading.Thread) :
 
             except :
                 rospy.logerr(str("AffordanceTemplate::plan_path_to_waypoints() -- Error in calculating waypoint pose goals from id path"))
-                
-            
+
             # create plan through the waypoints 
             # frame_ids.append(frame_id)
             manipulator_names.append(manipulator_name)
@@ -1541,7 +1540,7 @@ class AffordanceTemplate(threading.Thread) :
         ret = {}
         for end_effector in end_effectors :
 
-            rospy.logwarn(str("AffordanceTemplate::move_to_waypoint() -- " + str(end_effector)))
+            rospy.logwarn(str("AffordanceTemplate::move_to_waypoints() -- " + str(end_effector)))
             ee_id = self.robot_interface.manipulator_id_map[end_effector]
             ee_name = self.robot_interface.get_end_effector_name(ee_id)
             manipulator_name = self.robot_interface.get_manipulator(end_effector)
@@ -1559,37 +1558,35 @@ class AffordanceTemplate(threading.Thread) :
 
         # first execute for the manipulator (arm)
         ret = self.robot_interface.path_planner.execute(plan_names,from_stored=True, wait=False)
-
         for ee_name in ee_names :
             del ret[ee_name]
 
-        idx = 0
-        for idx in range(len(ee_ids)) :
-            manipulator_name = manipulator_names[idx]
-            ee_id = ee_ids[idx]
-            if not ret[manipulator_name] :
-                rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- failed execution for group: " + manipulator_name + ". re-synching..."))
-                self.waypoint_execution_valid[self.current_trajectory][ee_id] = False
+        try :
+            for idx in range(len(ee_ids)) :
+                manipulator_name = manipulator_names[idx]
+                ee_id = ee_ids[idx]
+                if not ret[manipulator_name] :
+                    rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- failed execution for group: " + manipulator_name + ". re-synching..."))
+                    self.waypoint_execution_valid[self.current_trajectory][ee_id] = False
 
-            # # next execute for the end-effector (hand)
-            # r = self.robot_interface.path_planner.execute(ee_name,from_stored=True, wait=False)
-            # if not r :
-            #     rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- failed execution for group: " + ee_name + ". re-synching..."))
-            #     return False
+                # # next execute for the end-effector (hand)
+                # r = self.robot_interface.path_planner.execute(ee_name,from_stored=True, wait=False)
+                # if not r :
+                #     rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- failed execution for group: " + ee_name + ". re-synching..."))
+                #     return False
 
-            # if succeeded, update the current index, and set the valid plan to False so we dont jump back later
-            else :
-                rospy.loginfo(str("AffordanceTemplate::move_to_waypoint() -- setting current waypoint idx for " + manipulator_name + " to " + str(self.waypoint_index[self.current_trajectory][ee_id])))
-                self.waypoint_index[self.current_trajectory][ee_id] = self.path_plan_ids[self.current_trajectory][ee_id]
-                self.path_plan_ids[self.current_trajectory][ee_id] = -1
-                self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
-                self.waypoint_execution_valid[self.current_trajectory][ee_id] = True
-
-            return ret
-            
-        else :
+                # if succeeded, update the current index, and set the valid plan to False so we dont jump back later
+                else :
+                    rospy.loginfo(str("AffordanceTemplate::move_to_waypoint() -- setting current waypoint idx for " + manipulator_name + " to " + str(self.waypoint_index[self.current_trajectory][ee_id]+1)))
+                    self.waypoint_index[self.current_trajectory][ee_id] = self.path_plan_ids[self.current_trajectory][ee_id]
+                    self.path_plan_ids[self.current_trajectory][ee_id] = -1
+                    self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
+                    self.waypoint_execution_valid[self.current_trajectory][ee_id] = True
+                
+        except :
             rospy.logerr(str("AffordanceTemplate::move_to_waypoint() -- waypoint plan not valid..."))
-            return ret
+        
+        return ret
 
     def plan_to_waypoints_valid(self, end_effectors, trajectory) :
         
