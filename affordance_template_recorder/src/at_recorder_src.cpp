@@ -35,9 +35,7 @@ int main(int argc, char** argv)
   //std::cout << base_frame << "\t" << target_frame << std::endl;
   
   ros::init(argc, argv, "record_traj_point_node");
-  
   ros::NodeHandle node;
-
   ros::Rate rate(0.1);
  
   tf::StampedTransform transform;
@@ -68,58 +66,47 @@ int main(int argc, char** argv)
     tf_matrix.getRPY(roll, pitch, yaw);
     tf_matrix.getEulerYPR(yaw, pitch, roll);
 
-    //Populate the translation elements of T_abs_obj
 
+    //Populate the translation elements of T_ee_obj
     T_ee_obj.p.data[0] = position.x;
     T_ee_obj.p.data[1] = position.y;
     T_ee_obj.p.data[2] = position.z;
 
-    //Populate the rotation elements of T_abs_obj
-
-    /*tf::Vector3 tf_matrix_row[3];
-    tf_matrix_row[0] = tf_matrix.getRow(0);
-    tf_matrix_row[1] = tf_matrix.getRow(1);
-    tf_matrix_row[2] = tf_matrix.getRow(2);
- 
-    T_ee_obj.M.data[0] = tf_matrix_row[0].getX();	T_ee_obj.M.data[1] = tf_matrix_row[0].getY();	T_ee_obj.M.data[2] = tf_matrix_row[0].getZ();
-    T_ee_obj.M.data[3] = tf_matrix_row[1].getX();	T_ee_obj.M.data[4] = tf_matrix_row[1].getY();	T_ee_obj.M.data[5] = tf_matrix_row[1].getZ();
-    T_ee_obj.M.data[6] = tf_matrix_row[2].getX();	T_ee_obj.M.data[7] = tf_matrix_row[2].getY();	T_ee_obj.M.data[8] = tf_matrix_row[2].getZ();*/
-
+    //Populate the rotation elements of T_ee_obj
     T_ee_obj.M.RPY(roll, pitch, yaw);
 
+    std::cout << "hand wrt object" << std::endl;
+    std::cout << "position: " << position.x << "\t" << position.y << "\t" << position.z << "\t" << std::endl;
+    std::cout << "rotation: " << roll << "\t" << pitch << "\t" << yaw << "\t" << std::endl << std::endl;
     
-    std::cout << position.x << "\t" << position.y << "\t" << position.z << "\t" << std::endl;
-    /*std::cout << roll << "\t" << pitch << "\t" << yaw << "\t" << std::endl;
-    
-    op_file_id << position.x << "\t" << position.y << "\t" << position.z << "\n";
+    /*op_file_id << position.x << "\t" << position.y << "\t" << position.z << "\n";
     op_file_id << roll << "\t" << pitch << "\t" << yaw << "\n\n";*/
 
-    //Populate the translation elements of T_abs_ee
 
+    //Populate the translation elements of T_ee_abs
     T_ee_abs.p.data[0] = 0.1;
     T_ee_abs.p.data[1] = -0.2;
     T_ee_abs.p.data[2] = 0.0;
 
-    //Populate the rotation elements of T_abs_ee 
-
-    /*tf_matrix.setRPY(0.0, 1.57, 3.14);
-
-    tf_matrix_row[0] = tf_matrix.getRow(0);
-    tf_matrix_row[1] = tf_matrix.getRow(1);
-    tf_matrix_row[2] = tf_matrix.getRow(2);
-
-    T_ee_abs.M.data[0] = tf_matrix_row[0].getX();	T_ee_abs.M.data[1] = tf_matrix_row[0].getY();	T_ee_abs.M.data[2] = tf_matrix_row[0].getZ();
-    T_ee_abs.M.data[3] = tf_matrix_row[1].getX();	T_ee_abs.M.data[4] = tf_matrix_row[1].getY();	T_ee_abs.M.data[5] = tf_matrix_row[1].getZ();
-    T_ee_abs.M.data[6] = tf_matrix_row[2].getX();	T_ee_abs.M.data[7] = tf_matrix_row[2].getY();	T_ee_abs.M.data[8] = tf_matrix_row[2].getZ();*/
-
+    //Populate the rotation elements of T_ee_abs
     T_ee_abs.M.RPY(0.0, 1.57, 3.14);
+
+    std::cout << "yaml: hand wrt abstract" << std::endl;
+    std::cout << "position: " << T_ee_abs.p.data[0] << "\t" << T_ee_abs.p.data[1] << "\t" << T_ee_abs.p.data[2] << "\t" << std::endl;
+    std::cout << "rotation: " << 0.0 << "\t" << 1.57 << "\t" << 3.14 << "\t" << std::endl << std::endl;
 
     T_abs_obj = T_ee_obj *  T_ee_abs.Inverse();
 
-    std::cout << T_ee_obj.M.data[0] << "\t" <<	T_ee_obj.M.data[1] << "\t" <<	T_ee_obj.M.data[2] << "\t" << T_ee_obj.p.data[0] << std::endl;
-    std::cout << T_ee_obj.M.data[3] << "\t" <<	T_ee_obj.M.data[4] << "\t" <<	T_ee_obj.M.data[5] << "\t" << T_ee_obj.p.data[1] << std::endl;
-    std::cout << T_ee_obj.M.data[6] << "\t" <<	T_ee_obj.M.data[7] << "\t" <<	T_ee_obj.M.data[8] << "\t" << T_ee_obj.p.data[2] << std::endl;
-    std::cout << std::endl;
+    /*std::cout << T_abs_obj.M.data[0] << "\t" <<	T_abs_obj.M.data[1] << "\t" <<	T_abs_obj.M.data[2] << "\t" << T_abs_obj.p.data[0] << std::endl;
+    std::cout << T_abs_obj.M.data[3] << "\t" <<	T_abs_obj.M.data[4] << "\t" <<	T_abs_obj.M.data[5] << "\t" << T_abs_obj.p.data[1] << std::endl;
+    std::cout << T_abs_obj.M.data[6] << "\t" <<	T_abs_obj.M.data[7] << "\t" <<	T_abs_obj.M.data[8] << "\t" << T_abs_obj.p.data[2] << std::endl;
+    std::cout << std::endl;*/
+
+    T_abs_obj.M.GetRPY(roll, pitch, yaw);
+
+    std::cout << "abstract wrt object" << std::endl;
+    std::cout << "position: " << T_abs_obj.p.data[0] << "\t" << T_abs_obj.p.data[1] << "\t" << T_abs_obj.p.data[2] << "\t" << std::endl;
+    std::cout << "rotation: " << roll << "\t" << pitch << "\t" << yaw << "\t" << std::endl << std::endl;
 
     rate.sleep();
 
