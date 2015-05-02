@@ -12,6 +12,7 @@
   <depend package="rospy"/>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
+  <depend package="orocos_kdl"/>
 
 </package>
 
