@@ -49,7 +49,7 @@ int main(int argc, char** argv)
   {
 
     try {
-      listener.waitForTransform(base_frame, target_frame, ros::Time::now(), ros::Duration(3.0));
+      listener.waitForTransform(base_frame, target_frame, ros::Time(0), ros::Duration(3.0));
       listener.lookupTransform(base_frame, target_frame, ros::Time(0), transform);
     }
     catch (tf::TransformException &ex) {
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
     T_ee_obj.p.data[2] = position.z;
 
     //Populate the rotation elements of T_ee_obj
-    T_ee_obj.M.RPY(roll, pitch, yaw);
+    T_ee_obj.M = KDL::Rotation::RPY(roll, pitch, yaw);
 
     std::cout << "hand wrt object" << std::endl;
     std::cout << "position: " << position.x << "\t" << position.y << "\t" << position.z << "\t" << std::endl;
@@ -82,14 +82,13 @@ int main(int argc, char** argv)
     /*op_file_id << position.x << "\t" << position.y << "\t" << position.z << "\n";
     op_file_id << roll << "\t" << pitch << "\t" << yaw << "\n\n";*/
 
-
     //Populate the translation elements of T_ee_abs
     T_ee_abs.p.data[0] = 0.1;
     T_ee_abs.p.data[1] = -0.2;
     T_ee_abs.p.data[2] = 0.0;
 
     //Populate the rotation elements of T_ee_abs
-    T_ee_abs.M.RPY(0.0, 1.57, 3.14);
+    T_ee_abs.M = KDL::Rotation::RPY(0.0, 1.57, 3.14);
 
     std::cout << "yaml: hand wrt abstract" << std::endl;
     std::cout << "position: " << T_ee_abs.p.data[0] << "\t" << T_ee_abs.p.data[1] << "\t" << T_ee_abs.p.data[2] << "\t" << std::endl;
@@ -97,7 +96,8 @@ int main(int argc, char** argv)
 
     T_abs_obj = T_ee_obj *  T_ee_abs.Inverse();
 
-    /*std::cout << T_abs_obj.M.data[0] << "\t" <<	T_abs_obj.M.data[1] << "\t" <<	T_abs_obj.M.data[2] << "\t" << T_abs_obj.p.data[0] << std::endl;
+    /*std::cout << "T_abs_obj" << std::endl;
+    std::cout << T_abs_obj.M.data[0] << "\t" <<	T_abs_obj.M.data[1] << "\t" <<	T_abs_obj.M.data[2] << "\t" << T_abs_obj.p.data[0] << std::endl;
     std::cout << T_abs_obj.M.data[3] << "\t" <<	T_abs_obj.M.data[4] << "\t" <<	T_abs_obj.M.data[5] << "\t" << T_abs_obj.p.data[1] << std::endl;
     std::cout << T_abs_obj.M.data[6] << "\t" <<	T_abs_obj.M.data[7] << "\t" <<	T_abs_obj.M.data[8] << "\t" << T_abs_obj.p.data[2] << std::endl;
     std::cout << std::endl;*/
