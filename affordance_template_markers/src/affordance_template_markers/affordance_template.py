@@ -1557,7 +1557,7 @@ class AffordanceTemplate(threading.Thread) :
 
 
         # first execute for the manipulator (arm)
-        ret = self.robot_interface.path_planner.execute(plan_names,from_stored=True, wait=False)
+        ret = self.robot_interface.path_planner.execute(plan_names, from_stored=True, wait=True)
         for ee_name in ee_names :
             del ret[ee_name]
 
@@ -1662,5 +1662,5 @@ class AffordanceTemplate(threading.Thread) :
             finally :
                 self.mutex.release()
 
-            rospy.sleep(0.1)
+            rospy.sleep(0.01)
         rospy.logdebug(str("AffordanceTemplate::run() -- Killing frame update thread for AT: " + self.name))

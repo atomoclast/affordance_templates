@@ -213,6 +213,9 @@ class RobotInterface(object) :
         elif self.robot_config.planner_type == "atlas" :
             from nasa_robot_teleop.planners.atlas_path_planner import AtlasPathPlanner
             self.path_planner = AtlasPathPlanner(self.robot_config.name, self.config_file)
+        elif self.robot_config.planner_type == "hybrid" :
+            from nasa_robot_teleop.planners.atlas_hybrid_path_planner import AtlasHybridPathPlanner
+            self.path_planner = AtlasHybridPathPlanner(self.robot_config.name, self.config_file)
         else :
             rospy.logerr("InteractiveControl() unrecognized planner type!!")
             return False
@@ -239,6 +242,8 @@ class RobotInterface(object) :
 
                     # ee_root_frame = self.path_planner.get_srdf_model().get_end_effector_link(g)
                     ee_root_frame =  self.path_planner.get_control_frame(g)
+                    rospy.logwarn(str("RobotInterface::configure() -- ee_root_frame: " + ee_root_frame))
+
                     self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
                     self.end_effector_link_data[g].populate_data(self.path_planner.get_group_links(g), self.path_planner.get_urdf_model(), self.path_planner.get_srdf_model())
                     rospy.sleep(1)
