@@ -71,8 +71,6 @@ int main(int argc, char** argv)
 
     tf_matrix.setRotation(transform.getRotation());
     tf_matrix.getRPY(roll, pitch, yaw);
-    tf_matrix.getEulerYPR(yaw, pitch, roll);
-
 
     //Populate the translation elements of T_ee_obj
     T_ee_obj.p.data[0] = position.x;

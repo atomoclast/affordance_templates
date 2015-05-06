@@ -58,7 +58,7 @@ class AffordanceTemplate(threading.Thread) :
         self.object_scale_factor = {}
         self.end_effector_scale_factor = {}
 
-        self.tf_listener = tf.TransformListener()
+        self.tf_listener = tf.TransformListener(True, rospy.Duration(30.0))
         self.tf_broadcaster = tf.TransformBroadcaster()
         self.tf_frame = "template:0"
 
@@ -1662,5 +1662,5 @@ class AffordanceTemplate(threading.Thread) :
             finally :
                 self.mutex.release()
 
-            rospy.sleep(0.01)
+            rospy.sleep(0.005)
         rospy.logdebug(str("AffordanceTemplate::run() -- Killing frame update thread for AT: " + self.name))

@@ -23,7 +23,7 @@ class RobotInterface(object) :
     
         self.reset()
     
-        self.tf_listener = tf.TransformListener()
+        self.tf_listener = tf.TransformListener(True, rospy.Duration(30.0))
         rospy.Subscriber(joint_states_topic, sensor_msgs.msg.JointState, self.joint_state_callback)
         self.path_planner = None
 
@@ -253,8 +253,8 @@ class RobotInterface(object) :
                         rospy.loginfo(str("RobotInterface::configure() -- trying to add group: " + pg))
                         self.path_planner.add_planning_group(pg, group_type="cartesian")
                         self.path_planner.set_display_mode(pg, "all_points")
-                        self.path_planner.set_goal_position_tolerances(pg, [.005]*3)
-                        self.path_planner.set_goal_orientation_tolerances(pg, [.02]*3)
+                        self.path_planner.set_goal_position_tolerances(pg, [.01]*3)
+                        self.path_planner.set_goal_orientation_tolerances(pg, [.03]*3)
                         self.path_planner.set_goal_joint_tolerance(pg, 0.05)
 
                         self.stored_poses[pg] = {}
