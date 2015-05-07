@@ -12,3 +12,5 @@ string trajectory_name
 # The trajectory details (each element is for a different end_effector)
 WaypointInfo[] waypoint_info
 
+# The details if the objects (frames, and transformations)
+ObjectInfo[] object_info
