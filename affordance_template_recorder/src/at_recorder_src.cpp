@@ -7,62 +7,79 @@
 #include <iostream>
 #include <fstream>
 #include <kdl/frames.hpp>
+#include <linux/input.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <vector>
 
-int main(int argc, char** argv)
+std::string base_frame;
+std::string target_frame;
+std::string hand;
+
+struct pose_struct{
+	float x, y, z, roll, pitch, yaw;
+};
+
+std::vector<pose_struct> pose_vector;
+
+int kbhit(void);
+void record_pose();
+void delete_pose();
+void reset_array();
+void save_to_jason();
+bool process_user_option(char);
+
+int kbhit(void)
 {
-  //std::cout << argc << std::endl;
-  if (argc!=3)
-  {
-    std::cout << "Three arguments are needed" << std::endl;
-    std::cout << "./at_recorder [obj_frame] [right|left]" << std::endl;
-    std::cout << "Quitting!" << std::endl;
-
-    exit(1);
-  }
-  
-  std::string base_frame = argv[1];
-  std::string hand = argv[2];
-  std::string target_frame = "";
-
-  if(hand=="right") {
-    target_frame = "r_end";
-  } else {
-    target_frame = "l_end";
-  }
-  
-  std::ofstream op_file_id;
-  op_file_id.open("op_file.txt");
-
-  KDL::Frame T_ee_obj, T_abs_obj, T_abs_ee;
-  KDL::Frame T_ee_abs;
-  KDL::Frame T_viz_offset;
-  //T_ee_obj = T_abs_obj * T_ee_abs
-  //T_abs_obj = T_ee_obj * inv(T_ee_abs)
-  
-  //std::cout << base_frame << "\t" << target_frame << std::endl;
-  
-  ros::init(argc, argv, "record_traj_point_node");
-  ros::NodeHandle node;
-  ros::Rate rate(0.1);
+  struct termios oldt, newt;
+  int ch;
+  int oldf;
  
-  tf::StampedTransform transform;
-  geometry_msgs::Vector3 position;
-  tf::Matrix3x3 tf_matrix;
-  double roll, pitch, yaw;
-
-  tf::TransformListener listener;
-
-  while (node.ok())
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+  newt.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+  oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+ 
+  ch = getchar();
+ 
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  fcntl(STDIN_FILENO, F_SETFL, oldf);
+ 
+  if(ch != EOF)
   {
+    ungetc(ch, stdin);
+    return 1;
+  }
+ 
+  return 0;
+}
 
-    try {
-      listener.waitForTransform(base_frame, target_frame, ros::Time(0), ros::Duration(3.0));
-      listener.lookupTransform(base_frame, target_frame, ros::Time(0), transform);
+void record_pose()
+{
+	KDL::Frame T_ee_obj, T_abs_obj, T_abs_ee;
+	KDL::Frame T_ee_abs;
+	KDL::Frame T_viz_offset;
+
+	tf::StampedTransform transform;
+	geometry_msgs::Vector3 position;
+	tf::Matrix3x3 tf_matrix;
+	double roll, pitch, yaw;
+
+	tf::TransformListener listener;
+
+	pose_struct pose_struct_instance;
+
+	try {
+		listener.waitForTransform(base_frame, target_frame, ros::Time(0), ros::Duration(3.0));
+		listener.lookupTransform(base_frame, target_frame, ros::Time(0), transform);
     }
     catch (tf::TransformException &ex) {
+    	std::cout << "Error" << std::endl;
         ROS_ERROR("%s",ex.what());
-       ros::Duration(1.0).sleep();
-       continue;
+       	ros::Duration(1.0).sleep();
+       	return;
     }
     
     position.x = transform.getOrigin().x();
@@ -71,9 +88,7 @@ int main(int argc, char** argv)
 
     tf_matrix.setRotation(transform.getRotation());
     tf_matrix.getRPY(roll, pitch, yaw);
-    tf_matrix.getEulerYPR(yaw, pitch, roll);
-
-
+    
     //Populate the translation elements of T_ee_obj
     T_ee_obj.p.data[0] = position.x;
     T_ee_obj.p.data[1] = position.y;
@@ -117,6 +132,9 @@ int main(int argc, char** argv)
       T_viz_offset.p.data[2] = 0.0;
       T_viz_offset.M = KDL::Rotation::RPY(0.0, 0.0, 1.57);
     }
+
+    //T_ee_obj = T_abs_obj * T_ee_abs
+    //T_abs_obj = T_ee_obj * inv(T_ee_abs)
     T_abs_obj = T_ee_obj * T_viz_offset.Inverse() * T_ee_abs.Inverse();
 
     /*std::cout << "T_abs_obj" << std::endl;
@@ -131,11 +149,148 @@ int main(int argc, char** argv)
     std::cout << "\"xyz\": [" << T_abs_obj.p.data[0] << ",  " << T_abs_obj.p.data[1] << ",  " << T_abs_obj.p.data[2] << "]," << std::endl;
     std::cout << "\"rpy\": [" << roll << ",  " << pitch << ",  " << yaw << "]" << std::endl << std::endl;
 
+    pose_struct_instance.x = T_abs_obj.p.data[0];
+    pose_struct_instance.y = T_abs_obj.p.data[1];
+    pose_struct_instance.z = T_abs_obj.p.data[2];
+    pose_struct_instance.roll = roll;
+    pose_struct_instance.pitch = pitch;
+    pose_struct_instance.yaw = yaw;
+
+    //pose_vector.resize(pose_vector.size() + 1);
+    pose_vector.push_back(pose_struct_instance);
+
+    std::cout << "Array size:" << pose_vector.size() << std::endl;
+
+    save_to_jason();
+
+}
+
+void delete_pose()
+{
+	if (!pose_vector.empty())
+		pose_vector.pop_back();
+	else
+		std::cout << "No poses stored in the scratch pad" << std::endl;
+
+	save_to_jason();
+}
+
+void reset_array()
+{
+	if (!pose_vector.empty())
+		pose_vector.clear();
+	else
+		std::cout << "No poses stored in the scratch pad" << std::endl;
+
+	save_to_jason();
+}
+
+void save_to_jason()
+{
+	if (!pose_vector.empty()){
+		std::cout << "Stored poses are:" << std::endl;
+		for(int i=0; i<pose_vector.size(); i++)
+			std::cout << "x:" << pose_vector[i].x << ",\t" << "y:" << pose_vector[i].y << ",\t" << "z:" << pose_vector[i].z << ",\t" 
+				<< "roll:" << pose_vector[i].roll << ",\t" << "pitch:" << pose_vector[i].pitch << ",\t" << "yaw:" << pose_vector[i].yaw << "\n";
+	}
+	else
+		std::cout << "No poses stored in the scratch pad" << std::endl;	
+}
+
+bool process_user_option(char user_input)
+{
+	switch(user_input)
+	{
+		case 'R':
+		case 'r': record_pose();
+				  break;
+
+		case 'D':
+		case 'd': delete_pose();
+				  break;
+
+		case 'T':
+		case 't': reset_array();
+				  break;
+
+		case 'S':
+		case 's': save_to_jason();
+				  break;
+
+		case 'Q':
+    	case 'q': return false;
+
+    	default: std::cout << std::endl;
+    			 std::cout << "Please enter 'R', 'D', 'T', 'S', or 'Q' to quit" << std::endl;
+	}
+
+	return true;
+}
+
+int main(int argc, char** argv)
+{
+  //std::cout << argc << std::endl;
+  if (argc!=3)
+  {
+    std::cout << "Three arguments are needed" << std::endl;
+    std::cout << "./at_recorder [obj_frame] [right|left]" << std::endl;
+    std::cout << "Quitting!" << std::endl;
+
+    exit(1);
+  }
+  
+  base_frame = argv[1];
+  hand = argv[2];
+  target_frame = "";
+
+  if(hand=="right") {
+    target_frame = "r_end";
+  } else if(hand=="left") {
+    target_frame = "l_end";
+  } else {
+    std::cout << "The third argument should be \"right\" or \"left\""  << std::endl;
+    std::cout << "Quitting!" << std::endl;
+    exit(1);	
+  }
+  
+  bool menu_displayed=false;
+  /*std::ofstream op_file_id;
+  op_file_id.open("op_file.txt");*/
+  
+  ros::init(argc, argv, "record_traj_point_node");
+  ros::NodeHandle node;
+  ros::Rate rate(100);
+
+  while (node.ok())
+  {
+
+    if (!menu_displayed)
+    {
+      std::cout << std::endl;
+      std::cout << "AT keyboard interaction options:" << std::endl;
+      std::cout << "Press 'R' or 'r' to record pose to scratch pad" << std::endl;
+      std::cout << "Press 'D' or 'd' to delete previously recorded pose" << std::endl;
+      std::cout << "Press 'T' or 't' to reset and start recording again" << std::endl;
+      std::cout << "Press 'S' or 's' to save the recorded poses to the JASON file" << std::endl;
+      std::cout << "Press 'Q' or 'q' to quit the program" << std::endl;
+
+      menu_displayed=true;
+    }
+
+  	if (kbhit())
+    {
+    	std::cout << "key pressed" << std::endl;
+      menu_displayed=false;
+      char key_pressed = getchar();
+      if(!process_user_option(key_pressed))
+        break;
+    }
+
     rate.sleep();
 
   }
 
-  op_file_id.close();
+  //op_file_id.close();
   
   return 0;
 
