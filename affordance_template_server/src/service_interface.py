@@ -379,7 +379,6 @@ class ServiceInterface(object):
         try :
 
             for obj in at.display_objects :
-                print obj
                 oi = ObjectInfo()
                 oi.object_name = obj
                 oi.object_pose = at.get_object_in_planning_frame(obj)

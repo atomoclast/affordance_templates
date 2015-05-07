@@ -1418,11 +1418,11 @@ class AffordanceTemplate(threading.Thread) :
 
         for end_effector in end_effectors:
 
-            rospy.loginfo(str("AffordanceTemplate::get_pose_goals() -- getting poses for " + end_effector))
+            rospy.logdebug(str("AffordanceTemplate::get_pose_goals() -- getting poses for " + end_effector))
 
             ee_id = self.robot_interface.manipulator_id_map[end_effector]
             if not ee_id in self.waypoint_index[trajectory].keys() :
-                rospy.loginfo(str("AffordanceTemplate::get_pose_goals() -- passing on " + end_effector))
+                rospy.logdebug(str("AffordanceTemplate::get_pose_goals() -- passing on " + end_effector))
                 continue
 
             ee_offset = self.robot_interface.manipulator_pose_map[end_effector]
@@ -1437,7 +1437,7 @@ class AffordanceTemplate(threading.Thread) :
             manipulator_group = self.robot_interface.path_planner.get_srdf_model().group_end_effectors[end_effector].parent_group
             cf_list[ee_name] = self.robot_interface.path_planner.get_control_frame(manipulator_group)
              
-            path = range(len(self.waypoints[trajectory]))
+            path = range(self.waypoint_max[trajectory][ee_id]+1)
 
             waypoints = []
             frame_id = ""
@@ -1449,7 +1449,7 @@ class AffordanceTemplate(threading.Thread) :
                         rospy.logerr(str("AffordanceTemplate::get_pose_goals() -- path index[" + str(next_path_str) + "] not found!!"))
                         return ret
                     else :
-                        rospy.loginfo(str("AffordanceTemplate::get_pose_goals() -- computing path to index[" + str(next_path_str) + "]"))
+                        rospy.logdebug(str("AffordanceTemplate::get_pose_goals() -- computing path to index[" + str(next_path_str) + "]"))
                         
                         k = str(next_path_str)
                         pt = geometry_msgs.msg.PoseStamped()
@@ -1472,18 +1472,15 @@ class AffordanceTemplate(threading.Thread) :
                         T = T_hand*T_ee
                         pt.pose = getPoseFromFrame(T)
                         waypoints.append(pt)
-
-                        print "control_frame: ", control_frame
-                        print "end_effector_frame: ", end_effector_frame
                         
                         ps_list[ee_name].append(pt)
                    
                     if not self.waypoint_pose_map[trajectory][next_path_str] == None :
-                        rospy.logwarn(str("AffordanceTemplate::get_pose_goals() -- getting pose of end_effector: " + ee_name))
+                        rospy.logdebug(str("AffordanceTemplate::get_pose_goals() -- getting pose of end_effector: " + ee_name))
 
                         id = self.waypoint_pose_map[trajectory][next_path_str]
                         pn = self.robot_interface.end_effector_id_map[ee_name][id]
-                        rospy.loginfo("AffordanceTemplate::get_pose_goals() -- ee[" + str(ee_name) + "] pose called: " + pn)
+                        rospy.logdebug("AffordanceTemplate::get_pose_goals() -- ee[" + str(ee_name) + "] pose called: " + pn)
                         ee_list[ee_name].append(pn)
                     else :
                         ee_list[ee_name].append("")
