@@ -1,4 +1,5 @@
 import rospy
+import copy
 
 from affordance_template_msgs.msg import *  
 from affordance_template_msgs.srv import *  
@@ -357,7 +358,9 @@ class ServiceInterface(object):
         return response
 
     def get_template_status(self, template_name, template_id, trajectory_name) :
+        
         ats = AffordanceTemplateStatus()
+
         try :
             at = self.server.at_data.class_map[template_name][template_id]
             ats.type = template_name
@@ -365,12 +368,32 @@ class ServiceInterface(object):
             if not trajectory_name : trajectory_name = at.current_trajectory
             ats.trajectory_name = trajectory_name
             ats.waypoint_info = []
-
+            ats.object_info = []
             if not trajectory_name in at.waypoint_max.keys() :
                 rospy.logerr(str("ServiceInterface::get_template_status() -- no trajectory called " + trajectory_name + " found"))
                 return None
 
+        except :
+            rospy.logerr("ServiceInterface::get_template_status() -- error generating status message on basic template info")
+
+        try :
+
+            for obj in at.display_objects :
+                oi = ObjectInfo()
+                oi.object_name = obj
+                oi.object_pose = at.get_object_in_planning_frame(obj)
+                ats.object_info.append(oi)  
+
+        except :
+            rospy.logerr("ServiceInterface::get_template_status() -- error generating status message for objects")
+        
+
+        try :
+            wp_poses, ee_pose_names, control_frames = at.get_pose_goals(trajectory_name)
+
             for ee in at.robot_interface.end_effector_names :
+                if not ee in wp_poses.keys() :
+                    continue
                 wp = WaypointInfo()
                 wp.end_effector_name = ee
                 wp.id = at.robot_interface.get_end_effector_id(ee)
@@ -380,11 +403,20 @@ class ServiceInterface(object):
                 wp.plan_valid = at.waypoint_plan_valid[trajectory_name][wp.id]
                 wp.execution_valid = at.waypoint_execution_valid[trajectory_name][wp.id]  
                 wp.waypoint_plan_index = at.waypoint_plan_index[trajectory_name][wp.id]                               
-                # rospy.logwarn("ServiceInterface::get_template_status() -- ee[" + ee + "]: plan=" + str(wp.plan_valid) + ", execution=" + str(wp.execution_valid))
-                ats.waypoint_info.append(wp)  
+                
+                wp.waypoint_poses = []
+                wp.end_effector_pose_names = []
+                for p in wp_poses[ee] :
+                    wp.waypoint_poses.append(copy.deepcopy(p))
+                for pn in ee_pose_names[ee] :
+                    wp.end_effector_pose_names.append(copy.deepcopy(pn))
 
+                wp.control_frame = control_frames[ee]
+                ats.waypoint_info.append(wp)  
+            
         except :
-            rospy.logerr("ServiceInterface::get_template_status() -- error generating status message")
+            rospy.logerr("ServiceInterface::get_template_status() -- error generating status message for waypoints")
+        
         return ats
 
 

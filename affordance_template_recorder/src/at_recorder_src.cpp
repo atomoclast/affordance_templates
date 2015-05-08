@@ -93,7 +93,7 @@ void record_pose()
 
     tf_matrix.setRotation(transform.getRotation());
     tf_matrix.getRPY(roll, pitch, yaw);
-    
+
     //Populate the translation elements of T_ee_obj
     T_ee_obj.p.data[0] = position.x;
     T_ee_obj.p.data[1] = position.y;

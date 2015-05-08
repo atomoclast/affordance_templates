@@ -4,9 +4,9 @@ config_package: atlas_moveit_config
 config_file: config/atlas.srdf
 gripper_action:
   - name: right_robotiq_hand
-    action: /atlas/gripper/server
+    action: /right_hand/gripper/server
   - name: left_sri_hand
-    action: /atlas/gripper/server
+    action: /left_hand/gripper/server
 frame_id: pelvis
 root_offset: [0.6,0,0.2,0,0,0]
 end_effector_group_map:

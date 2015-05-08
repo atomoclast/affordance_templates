@@ -23,7 +23,7 @@ class RobotInterface(object) :
     
         self.reset()
     
-        self.tf_listener = tf.TransformListener()
+        self.tf_listener = tf.TransformListener(True, rospy.Duration(30.0))
         rospy.Subscriber(joint_states_topic, sensor_msgs.msg.JointState, self.joint_state_callback)
         self.path_planner = None
 
@@ -213,6 +213,9 @@ class RobotInterface(object) :
         elif self.robot_config.planner_type == "atlas" :
             from nasa_robot_teleop.planners.atlas_path_planner import AtlasPathPlanner
             self.path_planner = AtlasPathPlanner(self.robot_config.name, self.config_file)
+        elif self.robot_config.planner_type == "hybrid" :
+            from nasa_robot_teleop.planners.atlas_hybrid_path_planner import AtlasHybridPathPlanner
+            self.path_planner = AtlasHybridPathPlanner(self.robot_config.name, self.config_file)
         else :
             rospy.logerr("InteractiveControl() unrecognized planner type!!")
             return False
@@ -239,6 +242,8 @@ class RobotInterface(object) :
 
                     # ee_root_frame = self.path_planner.get_srdf_model().get_end_effector_link(g)
                     ee_root_frame =  self.path_planner.get_control_frame(g)
+                    rospy.logwarn(str("RobotInterface::configure() -- ee_root_frame: " + ee_root_frame))
+
                     self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
                     self.end_effector_link_data[g].populate_data(self.path_planner.get_group_links(g), self.path_planner.get_urdf_model(), self.path_planner.get_srdf_model())
                     rospy.sleep(1)
@@ -248,8 +253,8 @@ class RobotInterface(object) :
                         rospy.loginfo(str("RobotInterface::configure() -- trying to add group: " + pg))
                         self.path_planner.add_planning_group(pg, group_type="cartesian")
                         self.path_planner.set_display_mode(pg, "all_points")
-                        self.path_planner.set_goal_position_tolerances(pg, [.005]*3)
-                        self.path_planner.set_goal_orientation_tolerances(pg, [.02]*3)
+                        self.path_planner.set_goal_position_tolerances(pg, [.01]*3)
+                        self.path_planner.set_goal_orientation_tolerances(pg, [.03]*3)
                         self.path_planner.set_goal_joint_tolerance(pg, 0.05)
 
                         self.stored_poses[pg] = {}

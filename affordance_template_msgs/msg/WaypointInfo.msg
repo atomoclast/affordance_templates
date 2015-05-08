@@ -22,6 +22,10 @@ bool plan_valid
 bool execution_valid
 
 # waypoint info
-#geometry_msgs/PoseStamped[] waypoint_poses
+geometry_msgs/PoseStamped[] waypoint_poses
 
+# end_effector pose names
+string[] end_effector_pose_names
 
+# end_effector control frame
+string control_frame

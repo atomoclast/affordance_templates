@@ -58,7 +58,7 @@ class AffordanceTemplate(threading.Thread) :
         self.object_scale_factor = {}
         self.end_effector_scale_factor = {}
 
-        self.tf_listener = tf.TransformListener()
+        self.tf_listener = tf.TransformListener(True, rospy.Duration(30.0))
         self.tf_broadcaster = tf.TransformBroadcaster()
         self.tf_frame = "template:0"
 
@@ -1384,6 +1384,130 @@ class AffordanceTemplate(threading.Thread) :
 
         return next_path_idx
 
+    def get_object_in_planning_frame(self, obj) :
+        
+        ps = geometry_msgs.msg.PoseStamped()
+        ps.header.stamp = rospy.Time.now()
+        ps.header.frame_id = self.frame_id
+
+        if obj in self.display_objects :
+            self.tf_listener.waitForTransform(self.frame_id, obj, rospy.Time(0), rospy.Duration(5.0))
+            (trans, rot) = self.tf_listener.lookupTransform(obj, self.frame_id, rospy.Time(0))
+            ps.pose = toPose(trans,rot)
+        else :
+            rospy.logerr(str("AffordanceTemplate::get_object_in_planning_frame() -- no object names: " + obj))
+
+        return ps
+
+    def get_pose_goals(self, trajectory=None) :
+
+        manipulator_names = []
+        waypoints_list = []
+        ee_ids = []
+        next_path_idxs = []
+        next_path_strs = []
+
+        ps_list = {}
+        ee_list = {}
+        cf_list = {}
+
+        if not trajectory :
+            trajectory = self.current_trajectory
+
+        end_effectors = self.robot_interface.manipulator_id_map.keys()
+
+        for end_effector in end_effectors:
+
+            rospy.logdebug(str("AffordanceTemplate::get_pose_goals() -- getting poses for " + end_effector))
+
+            ee_id = self.robot_interface.manipulator_id_map[end_effector]
+            if not ee_id in self.waypoint_index[trajectory].keys() :
+                rospy.logdebug(str("AffordanceTemplate::get_pose_goals() -- passing on " + end_effector))
+                continue
+
+            ee_offset = self.robot_interface.manipulator_pose_map[end_effector]
+            tool_offset = self.robot_interface.tool_offset_map[end_effector]
+            max_idx = self.waypoint_max[trajectory][ee_id]
+            manipulator_name = self.robot_interface.get_manipulator(end_effector)
+            ee_name = self.robot_interface.get_end_effector_name(ee_id)
+
+            ps_list[ee_name] = []
+            ee_list[ee_name] = []
+
+            manipulator_group = self.robot_interface.path_planner.get_srdf_model().group_end_effectors[end_effector].parent_group
+            cf_list[ee_name] = self.robot_interface.path_planner.get_control_frame(manipulator_group)
+             
+            path = range(self.waypoint_max[trajectory][ee_id]+1)
+
+            waypoints = []
+            frame_id = ""
+
+            try :
+                for idx in path :
+                    next_path_str = self.create_waypoint_id(ee_id, idx)
+                    if not next_path_str in self.objTwp[trajectory] :
+                        rospy.logerr(str("AffordanceTemplate::get_pose_goals() -- path index[" + str(next_path_str) + "] not found!!"))
+                        return ret
+                    else :
+                        rospy.logdebug(str("AffordanceTemplate::get_pose_goals() -- computing path to index[" + str(next_path_str) + "]"))
+                        
+                        k = str(next_path_str)
+                        pt = geometry_msgs.msg.PoseStamped()
+                        pt.header = self.server.get(k).header
+                        pt.header.stamp = rospy.Time(0)
+                        pt.pose = self.server.get(k).pose
+                        frame_id =  pt.header.frame_id
+                        T_goal = getFrameFromPose(pt.pose)
+                        T_offset = getFrameFromPose(ee_offset)
+                        T_fixed_joint_offset = self.get_fixed_joint_offset(end_effector).Inverse()
+                        T_tool = getFrameFromPose(tool_offset).Inverse()
+                        
+                        manipulator_group = self.robot_interface.path_planner.get_srdf_model().group_end_effectors[end_effector].parent_group
+                        control_frame = self.robot_interface.path_planner.get_control_frame(manipulator_group)
+                        end_effector_frame = self.robot_interface.path_planner.get_srdf_model().group_end_effectors[end_effector].parent_link
+                        self.tf_listener.waitForTransform(control_frame, end_effector_frame, rospy.Time(0), rospy.Duration(5.0))
+                        (trans, rot) = self.tf_listener.lookupTransform(control_frame, end_effector_frame, rospy.Time(0))
+                        T_ee = fromMsg(toPose(trans,rot)).Inverse()
+                        T_hand = T_goal*T_offset*T_fixed_joint_offset.Inverse()
+                        T = T_hand*T_ee
+                        pt.pose = getPoseFromFrame(T)
+                        waypoints.append(pt)
+                        
+                        ps_list[ee_name].append(pt)
+                   
+                    if not self.waypoint_pose_map[trajectory][next_path_str] == None :
+                        rospy.logdebug(str("AffordanceTemplate::get_pose_goals() -- getting pose of end_effector: " + ee_name))
+
+                        id = self.waypoint_pose_map[trajectory][next_path_str]
+                        pn = self.robot_interface.end_effector_id_map[ee_name][id]
+                        rospy.logdebug("AffordanceTemplate::get_pose_goals() -- ee[" + str(ee_name) + "] pose called: " + pn)
+                        ee_list[ee_name].append(pn)
+                    else :
+                        ee_list[ee_name].append("")
+
+
+            except :
+                rospy.logerr(str("AffordanceTemplate::get_pose_goals() -- Error in calculating waypoint pose goals from id path"))
+
+            manipulator_names.append(manipulator_name)
+            waypoints_list.append(waypoints)
+            ee_ids.append(ee_id)
+
+        # print "-----------------------------"
+        # print "manipulator_names: "
+        # print manipulator_names
+
+        # print "waypoints_list: "
+        # print waypoints_list
+
+        # print "ps_list: "
+        # print ps_list
+
+        # print "ee_list: "
+        # print ee_list
+        # print "-----------------------------"
+        
+        return ps_list, ee_list, cf_list
 
     def plan_path_to_waypoints(self, end_effectors, steps=1, direct=False, backwards=False) :
     
@@ -1557,7 +1681,7 @@ class AffordanceTemplate(threading.Thread) :
 
 
         # first execute for the manipulator (arm)
-        ret = self.robot_interface.path_planner.execute(plan_names,from_stored=True, wait=False)
+        ret = self.robot_interface.path_planner.execute(plan_names, from_stored=True, wait=True)
         for ee_name in ee_names :
             del ret[ee_name]
 
@@ -1662,5 +1786,5 @@ class AffordanceTemplate(threading.Thread) :
             finally :
                 self.mutex.release()
 
-            rospy.sleep(0.1)
+            rospy.sleep(0.005)
         rospy.logdebug(str("AffordanceTemplate::run() -- Killing frame update thread for AT: " + self.name))
