@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <vector>
+#include <json.h>
 
 std::string base_frame;
 std::string target_frame;
@@ -22,12 +23,16 @@ struct pose_struct{
 
 std::vector<pose_struct> pose_vector;
 
+std::ofstream op_file_id;
+
 int kbhit(void);
 void record_pose();
 void delete_pose();
 void reset_array();
 void save_to_jason();
 bool process_user_option(char);
+void display_recorded_poses();
+void write_to_file();
 
 int kbhit(void)
 {
@@ -161,7 +166,7 @@ void record_pose()
 
     std::cout << "Array size:" << pose_vector.size() << std::endl;
 
-    save_to_jason();
+    display_recorded_poses();
 
 }
 
@@ -172,7 +177,7 @@ void delete_pose()
 	else
 		std::cout << "No poses stored in the scratch pad" << std::endl;
 
-	save_to_jason();
+	display_recorded_poses();
 }
 
 void reset_array()
@@ -182,10 +187,10 @@ void reset_array()
 	else
 		std::cout << "No poses stored in the scratch pad" << std::endl;
 
-	save_to_jason();
+	display_recorded_poses();
 }
 
-void save_to_jason()
+void display_recorded_poses()
 {
 	if (!pose_vector.empty()){
 		std::cout << "Stored poses are:" << std::endl;
@@ -193,8 +198,68 @@ void save_to_jason()
 			std::cout << "x:" << pose_vector[i].x << ",\t" << "y:" << pose_vector[i].y << ",\t" << "z:" << pose_vector[i].z << ",\t" 
 				<< "roll:" << pose_vector[i].roll << ",\t" << "pitch:" << pose_vector[i].pitch << ",\t" << "yaw:" << pose_vector[i].yaw << "\n";
 	}
-	else
-		std::cout << "No poses stored in the scratch pad" << std::endl;	
+}
+
+void write_to_file()
+{
+
+	op_file_id << "AT:instance/object:instance:" << "\t" 
+		<< base_frame << "hand:" << hand << "target_frame:" << target_frame << std::endl;// << std::endl;
+
+	while (!pose_vector.empty()){
+			op_file_id << "x:" << pose_vector[0].x << ",\t" << "y:" << pose_vector[0].y << ",\t" << "z:" << pose_vector[0].z << ",\t" 
+				<< "roll:" << pose_vector[0].roll << ",\t" << "pitch:" << pose_vector[0].pitch << ",\t" << "yaw:" << pose_vector[0].yaw << std::endl;
+
+			for(int i=0; i<pose_vector.size()-1; i++)
+				pose_vector[i]=pose_vector[i+1];
+			pose_vector.pop_back();
+	}
+
+	std::cout << "No poses stored in the scratch pad. All poses written to file" << std::endl;
+
+}
+
+void save_to_jason()
+{
+	std::string json_example = "{\"array\": \
+                            [\"item1\", \
+                            \"item2\"], \
+                            \"not an array\": \
+                            \"asdf\" \
+                         }";
+
+	// Let's parse it  
+ 	Json::Value root;
+ 	Json::Reader reader;
+ 	bool parsedSuccess = reader.parse(json_example, 
+                                   root, 
+                                   false);
+  
+ 	if(not parsedSuccess)
+ 	{
+   	// Report failures and their locations 
+   	// in the document.
+   	std::cout<<"Failed to parse JSON"<<std::endl 
+       <<reader.getFormatedErrorMessages()
+       <<std::endl;
+   	exit(1);
+ 	}
+  
+ 	// Let's extract the array contained 
+ 	// in the root object
+ 	const Json::Value array = root["array"];
+ 
+ 	// Iterate over sequence elements and 
+ 	// print its values
+ 	for(unsigned int index=0; index<array.size(); ++index)  
+ 	{
+ 		std::cout<<"Element " 
+       <<index 
+       <<" in array: "
+       <<array[index].asString()
+       <<std::endl;
+ 	}
+
 }
 
 bool process_user_option(char user_input)
@@ -215,6 +280,14 @@ bool process_user_option(char user_input)
 
 		case 'S':
 		case 's': save_to_jason();
+				  break;
+
+		case 'V':
+		case 'v': display_recorded_poses();
+				  break;
+
+		case 'W':
+		case 'w': write_to_file();
 				  break;
 
 		case 'Q':
@@ -254,8 +327,7 @@ int main(int argc, char** argv)
   }
   
   bool menu_displayed=false;
-  /*std::ofstream op_file_id;
-  op_file_id.open("op_file.txt");*/
+  op_file_id.open("op_file.txt");
   
   ros::init(argc, argv, "record_traj_point_node");
   ros::NodeHandle node;
@@ -267,10 +339,11 @@ int main(int argc, char** argv)
     if (!menu_displayed)
     {
       std::cout << std::endl;
-      std::cout << "AT keyboard interaction options:" << std::endl;
+      std::cout << "Affordance Template keyboard interaction options:" << std::endl;
       std::cout << "Press 'R' or 'r' to record pose to scratch pad" << std::endl;
       std::cout << "Press 'D' or 'd' to delete previously recorded pose" << std::endl;
       std::cout << "Press 'T' or 't' to reset and start recording again" << std::endl;
+      std::cout << "Press 'W' or 'w' to transfer the recorded to file" << std::endl;
       std::cout << "Press 'S' or 's' to save the recorded poses to the JASON file" << std::endl;
       std::cout << "Press 'Q' or 'q' to quit the program" << std::endl;
 
@@ -279,18 +352,18 @@ int main(int argc, char** argv)
 
   	if (kbhit())
     {
-    	std::cout << "key pressed" << std::endl;
-      menu_displayed=false;
-      char key_pressed = getchar();
-      if(!process_user_option(key_pressed))
-        break;
+    	menu_displayed=false;
+    	char key_pressed = getchar();
+    	std::cout <<std::endl;
+    	if(!process_user_option(key_pressed))
+    		break;
     }
 
     rate.sleep();
 
   }
 
-  //op_file_id.close();
+  op_file_id.close();
   
   return 0;
 
