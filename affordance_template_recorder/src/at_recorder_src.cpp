@@ -12,10 +12,13 @@
 #include <termios.h>
 #include <vector>
 #include <json.h>
+#include <string>
+#include <sstream>
 
 std::string base_frame;
 std::string target_frame;
 std::string hand;
+std::string AT_name="Valve", object_name="Valve", instance="0";
 
 struct pose_struct{
 	float x, y, z, roll, pitch, yaw;
@@ -23,7 +26,7 @@ struct pose_struct{
 
 std::vector<pose_struct> pose_vector;
 
-std::ofstream op_file_id;
+//std::ofstream op_file_id;
 
 int kbhit(void);
 void record_pose();
@@ -202,13 +205,58 @@ void display_recorded_poses()
 
 void write_to_file()
 {
+	std::string fileName, trajName;
+	static std::ofstream op_file_id;
+	static bool first_write=true;
+	int new_file_choice;
 
-	op_file_id << "AT:instance/object:instance:" << "\t" 
-		<< base_frame << "hand:" << hand << "target_frame:" << target_frame << std::endl;// << std::endl;
+	if (!first_write){	//not the first write
+		std::cout << "Do you want to write it to the same file or different file?" << std::endl;
+		std::cout << "Enter 1 for same and 2 for different, and press Enter" << std::endl;
+		std::cin >> new_file_choice;
+
+		if (new_file_choice ==2){	//user chooses a different file name
+			op_file_id.close();
+
+			std::cout << "Enter the filename to record the poses into: " << std::endl;
+			std::cin >> fileName;
+			fileName = fileName + ".txt";
+			op_file_id.open(fileName.c_str());
+
+			std::cout << "Enter the trajectory name: " << std::endl;
+			std::cin >> trajName;
+		}
+		else{	//user chooses same file as last time
+			op_file_id << std::endl;
+			op_file_id << "-------------------------" << std::endl;
+			op_file_id << std::endl;
+
+			std::cout << "Enter the trajectory name: " << std::endl;
+			std::cin >> trajName;
+		}
+	}
+	else{	//first write
+		first_write=!first_write;
+		std::cout << "Enter the filename to record the poses into: " << std::endl;
+		std::cin >> fileName;
+		fileName = fileName + ".txt";
+		op_file_id.open(fileName.c_str());
+
+		std::cout << "Enter the trajectory name: " << std::endl;
+		std::cin >> trajName;
+	}
+
+	op_file_id << "Trajectory name: " << trajName << std::endl;
+	op_file_id << "AT name: " << AT_name << std::endl;
+	op_file_id << "object name: " << object_name << std::endl;
+	op_file_id << "instance: " << instance << std::endl;
+	op_file_id << "hand: " << hand << std::endl;
+	op_file_id << "target_frame:" << target_frame << std::endl;		
 
 	while (!pose_vector.empty()){
-			op_file_id << "x:" << pose_vector[0].x << ",\t" << "y:" << pose_vector[0].y << ",\t" << "z:" << pose_vector[0].z << ",\t" 
-				<< "roll:" << pose_vector[0].roll << ",\t" << "pitch:" << pose_vector[0].pitch << ",\t" << "yaw:" << pose_vector[0].yaw << std::endl;
+			op_file_id << "[x:" << pose_vector[0].x << ",\t" << "y:" << pose_vector[0].y << ",\t" << "z:" << pose_vector[0].z << ",\t" 
+				<< "roll:" << pose_vector[0].roll << ",\t" << "pitch:" << pose_vector[0].pitch << ",\t" << "yaw:" << pose_vector[0].yaw 
+				<< "]" << std::endl;
 
 			for(int i=0; i<pose_vector.size()-1; i++)
 				pose_vector[i]=pose_vector[i+1];
@@ -303,7 +351,31 @@ bool process_user_option(char user_input)
 int main(int argc, char** argv)
 {
   //std::cout << argc << std::endl;
-  if (argc!=3)
+	//std::sstream ss;
+
+	std::cout << "Enter affordance template name: ";
+	std::cin >> AT_name;
+	
+	std::cout << "Enter object name: ";
+	std::cin >> object_name;
+	
+	std::cout << "Enter instance: ";
+	std::cin >> instance;
+	
+	/*ss << instance;
+	std::string str = ss.str();*/
+
+	base_frame = AT_name + ":" + instance + "/" + object_name + ":" + instance;
+
+	//std::cout << base_frame << std::endl;
+
+	std::cout << "Enter hand: ";
+	std::cin >> hand;
+	std::cout << std::endl;
+
+	//std::cout << hand << std::endl;
+
+  /*if (argc!=3)
   {
     std::cout << "Three arguments are needed" << std::endl;
     std::cout << "./at_recorder [obj_frame] [right|left]" << std::endl;
@@ -313,7 +385,7 @@ int main(int argc, char** argv)
   }
   
   base_frame = argv[1];
-  hand = argv[2];
+  hand = argv[2];*/
   target_frame = "";
 
   if(hand=="right") {
@@ -327,7 +399,7 @@ int main(int argc, char** argv)
   }
   
   bool menu_displayed=false;
-  op_file_id.open("op_file.txt");
+  //op_file_id.open("op_file.txt");
   
   ros::init(argc, argv, "record_traj_point_node");
   ros::NodeHandle node;
@@ -363,7 +435,7 @@ int main(int argc, char** argv)
 
   }
 
-  op_file_id.close();
+  //op_file_id.close();
   
   return 0;
 
