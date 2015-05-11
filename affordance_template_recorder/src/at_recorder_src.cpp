@@ -14,6 +14,7 @@
 #include <json.h>
 #include <string>
 #include <sstream>
+#include <streambuf>
 
 std::string base_frame;
 std::string target_frame;
@@ -269,17 +270,27 @@ void write_to_file()
 
 void save_to_jason()
 {
-	std::string json_example = "{\"array\": \
+	/*std::string json_example = "{\"array\": \
                             [\"item1\", \
                             \"item2\"], \
                             \"not an array\": \
                             \"asdf\" \
-                         }";
+                         }";*/
 
-	// Let's parse it  
+    std::ifstream t("valve.json");
+    std::string json_file_string;
+
+    t.seekg(0, std::ios::end);   
+    json_file_string.reserve(t.tellg());
+    t.seekg(0, std::ios::beg);
+
+    json_file_string.assign((std::istreambuf_iterator<char>(t)),
+    	std::istreambuf_iterator<char>());
+
+    // Let's parse it  
  	Json::Value root;
  	Json::Reader reader;
- 	bool parsedSuccess = reader.parse(json_example, 
+ 	bool parsedSuccess = reader.parse(json_file_string, 
                                    root, 
                                    false);
   
@@ -292,8 +303,12 @@ void save_to_jason()
        <<std::endl;
    	exit(1);
  	}
+
+ 	std::string image_name = root.get("image", ":D").asString();
+
+ 	std::cout << "Image file is at: " << image_name << std::endl;
   
- 	// Let's extract the array contained 
+ 	/*// Let's extract the array contained 
  	// in the root object
  	const Json::Value array = root["array"];
  
@@ -307,6 +322,30 @@ void save_to_jason()
        <<array[index].asString()
        <<std::endl;
  	}
+
+       Json::Value fromScratch;
+       Json::Value array;
+       array.append("hello");
+       array.append("world");
+       fromScratch["hello"] = "world";
+       fromScratch["number"] = 2;
+       fromScratch["array"] = array;
+       fromScratch["object"]["hello"] = "world";
+
+       // querying the json object is very simple
+       std::cout << fromScratch["hello"];
+       std::cout << fromScratch["number"];
+       std::cout << fromScratch["array"][0] << fromScratch["array"][1];
+       std::cout << fromScratch["object"]["hello"];
+       std::cout << std::endl <<std::endl;
+
+       // write in a nice readible way
+       Json::StyledWriter styledWriter;
+       std::cout << styledWriter.write(fromScratch);*/
+
+       const Json::Value traj_root = root["end_effector_trajectory"];
+
+       
 
 }
 
