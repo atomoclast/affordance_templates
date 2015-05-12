@@ -6,6 +6,9 @@ string name
 # if the client requests a particular trajectory (blank will return only the current set traj's info)
 string trajectory_name
 
+# if the client requests that the trajectory be transformed to a different frame
+string frame_id
+
 ---
 
 # template status to be returned

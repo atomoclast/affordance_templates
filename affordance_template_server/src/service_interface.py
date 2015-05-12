@@ -1,16 +1,22 @@
 import rospy
 import copy
+import tf
 
 from affordance_template_msgs.msg import *  
 from affordance_template_msgs.srv import *  
 
 class ServiceInterface(object):
 
-    def __init__(self, server):
+    def __init__(self, server, tf_listener=None):
         
         rospy.logdebug("ServiceInterface() starting")
         # the affordance template server
         self.server = server
+
+        if not tf_listener :
+            self.tf_listener = tf.TransformListener(True, rospy.Duration(30.0))
+        else :
+            self.tf_listener = tf_listener
 
         # services
         self.robot_info_service =      rospy.Service('/affordance_template_server/get_robots', GetRobotConfigInfo, self.handle_robot_request)
@@ -344,7 +350,7 @@ class ServiceInterface(object):
         if request.name :
             try:
                 ss = request.name.split(":")
-                ats = self.get_template_status(ss[0], int(ss[1]), request.trajectory_name)
+                ats = self.get_template_status(ss[0], int(ss[1]), request.trajectory_name, request.frame_id)
                 response.affordance_template_status.append(ats)
                 response.current_trajectory = self.server.at_data.class_map[ss[0]][int(ss[1])].current_trajectory
                 for t in self.server.at_data.traj_map[ss[0]] :
@@ -357,7 +363,7 @@ class ServiceInterface(object):
         self.server.status = True       
         return response
 
-    def get_template_status(self, template_name, template_id, trajectory_name) :
+    def get_template_status(self, template_name, template_id, trajectory_name, frame_id="") :
         
         ats = AffordanceTemplateStatus()
 
@@ -407,6 +413,10 @@ class ServiceInterface(object):
                 wp.waypoint_poses = []
                 wp.end_effector_pose_names = []
                 for p in wp_poses[ee] :
+
+                    if frame_id != "" :
+                        self.tf_listener.waitForTransform(frame_id, p.header.frame_id, rospy.Time(0), rospy.Duration(5.0))
+                        p = self.tf_listener.transformPose(frame_id, p)
                     wp.waypoint_poses.append(copy.deepcopy(p))
                 for pn in ee_pose_names[ee] :
                     wp.end_effector_pose_names.append(copy.deepcopy(pn))
