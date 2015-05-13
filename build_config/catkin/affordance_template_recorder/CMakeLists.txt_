@@ -97,12 +97,13 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  include
 )
 
-## Declare a cpp library
-# add_library(affordance_template_recorder
-#   src/${PROJECT_NAME}/affordance_template_recorder.cpp
-# )
+# Declare a cpp library
+ add_library(jsoncpp
+   src/jsoncpp.cpp
+ )
 
 ## Declare a cpp executable
 add_executable(at_recorder src/at_recorder_src.cpp)
@@ -114,6 +115,7 @@ add_executable(at_recorder src/at_recorder_src.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(at_recorder
   ${catkin_LIBRARIES}
+  jsoncpp
 )
 
 #############

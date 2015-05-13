@@ -1,0 +1,113 @@
+{
+   "display_objects" : [
+      {
+         "controls" : {
+            "rpy" : [ true, true, true ],
+            "scale" : 0.29999999999999999,
+            "xyz" : [ true, true, true ]
+         },
+         "name" : "Valve",
+         "origin" : {
+            "rpy" : [ 0, 0, -1.5700000042340219 ],
+            "xyz" : [ 0.30000001192092896, 0, 0 ]
+         },
+         "shape" : {
+            "data" : "package://affordance_template_library/models/Valve.stl",
+            "size" : [ 3, 3, 3 ],
+            "type" : "mesh"
+         }
+      }
+   ],
+   "end_effector_trajectory" : [
+      {
+         "end_effector_group" : [
+            {
+               "end_effector_waypoint" : [
+                  {
+                     "controls" : {
+                        "rpy" : [ false, true, true ],
+                        "scale" : 0.25,
+                        "xyz" : [ true, true, true ]
+                     },
+                     "display_object" : "Valve",
+                     "ee_pose" : 0,
+                     "origin" : {
+                        "rpy" : [ 0.0379178,    -0.0146419,    -0.00562451 ],
+                        "xyz" : [ -0.0971704,    -0.218956,    -0.00219986  ]
+                     }
+                  },
+                  {
+                     "controls" : {
+                        "rpy" : [ false, true, true ],
+                        "scale" : 0.25,
+                        "xyz" : [ true, true, true ]
+                     },
+                     "display_object" : "Valve",
+                     "ee_pose" : 0,
+                     "origin" : {
+                        "rpy" : [ 0.0379178,    -0.0146419,    -0.00562451],
+                        "xyz" : [ -0.0971704,    -0.0974734,    -0.00219986 ]
+                     }
+                  },
+                  {
+                     "controls" : {
+                        "rpy" : [ false, true, true ],
+                        "scale" : 0.25,
+                        "xyz" : [ true, true, true ]
+                     },
+                     "display_object" : "Valve",
+                     "ee_pose" : 2,
+                     "origin" : {
+                        "rpy" : [ 0.0379178,    -0.0146419,    -0.00562451],
+                        "xyz" : [ -0.0971704,    -0.0974734,    -0.00219986  ]
+                     }
+                  },
+                  {
+                     "controls" : {
+                        "rpy" : [ false, true, true ],
+                        "scale" : 0.25,
+                        "xyz" : [ true, true, true ]
+                     },
+                     "display_object" : "Valve",
+                     "ee_pose" : 2,
+                     "origin" : {
+                        "rpy" : [  1.99513,    1.52831,    1.98797],
+                        "xyz" : [ 0.00494304,    -0.101931,    0.099416  ]
+                     }
+                  },
+                  {
+                     "controls" : {
+                        "rpy" : [ false, true, true ],
+                        "scale" : 0.25,
+                        "xyz" : [ true, true, true ]
+                     },
+                     "display_object" : "Valve",
+                     "ee_pose" : 0,
+                     "origin" : {
+                        "rpy" : [  1.99513,    1.52831,    1.98797],
+                        "xyz" : [ 0.00494304,    -0.101931,    0.099416  ]
+                     }
+                  },
+                  {
+                     "controls" : {
+                        "rpy" : [ false, true, true ],
+                        "scale" : 0.25,
+                        "xyz" : [ true, true, true ]
+                     },
+                     "display_object" : "Valve",
+                     "ee_pose" : 0,
+                     "origin" : {
+                        "rpy" : [  1.99513,    1.52831,    1.98797],
+                        "xyz" : [ 0.00494303,    -0.247821,    0.099416 ]
+                     }
+                  }                  
+               ],
+               "id" : 1
+            }
+         ],
+         "name" : "Right Handed Center Clockwise Turn"
+      }
+   ],
+   "image" : "package://affordance_template_library/images/wheel",
+   "name" : "Valve"
+}
