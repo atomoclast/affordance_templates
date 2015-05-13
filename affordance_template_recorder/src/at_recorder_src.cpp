@@ -106,12 +106,9 @@ void record_pose()
     //Populate the rotation elements of T_ee_obj
     T_ee_obj.M = KDL::Rotation::RPY(roll, pitch, yaw);
 
-    std::cout << "hand wrt object" << std::endl;
+    /*std::cout << "hand wrt object" << std::endl;
     std::cout << "position: " << position.x << "\t" << position.y << "\t" << position.z << "\t" << std::endl;
-    std::cout << "rotation: " << roll << "\t" << pitch << "\t" << yaw << "\t" << std::endl << std::endl;
-    
-    /*op_file_id << position.x << "\t" << position.y << "\t" << position.z << "\n";
-    op_file_id << roll << "\t" << pitch << "\t" << yaw << "\n\n";*/
+    std::cout << "rotation: " << roll << "\t" << pitch << "\t" << yaw << "\t" << std::endl << std::endl;*/
 
     //Populate the translation elements of T_ee_abs
     if(hand=="right") {
@@ -125,9 +122,10 @@ void record_pose()
       T_ee_abs.p.data[2] = 0.0;
       T_ee_abs.M = KDL::Rotation::RPY(0.0, 1.57, 3.14);
     }
-    std::cout << "yaml: hand wrt abstract" << std::endl;
+
+    /*std::cout << "yaml: hand wrt abstract" << std::endl;
     std::cout << "position: " << T_ee_abs.p.data[0] << "\t" << T_ee_abs.p.data[1] << "\t" << T_ee_abs.p.data[2] << "\t" << std::endl;
-    std::cout << "rotation: " << 0.0 << "\t" << 1.57 << "\t" << 3.14 << "\t" << std::endl << std::endl;
+    std::cout << "rotation: " << 0.0 << "\t" << 1.57 << "\t" << 3.14 << "\t" << std::endl << std::endl;*/
 
 
     if(hand=="right") {
@@ -154,9 +152,9 @@ void record_pose()
 
     T_abs_obj.M.GetRPY(roll, pitch, yaw);
 
-    std::cout << "abstract wrt object" << std::endl;
+    /*std::cout << "abstract wrt object" << std::endl;
     std::cout << "\"xyz\": [" << T_abs_obj.p.data[0] << ",  " << T_abs_obj.p.data[1] << ",  " << T_abs_obj.p.data[2] << "]," << std::endl;
-    std::cout << "\"rpy\": [" << roll << ",  " << pitch << ",  " << yaw << "]" << std::endl << std::endl;
+    std::cout << "\"rpy\": [" << roll << ",  " << pitch << ",  " << yaw << "]" << std::endl << std::endl;*/
 
     pose_struct_instance.x = T_abs_obj.p.data[0];
     pose_struct_instance.y = T_abs_obj.p.data[1];
@@ -268,26 +266,102 @@ void write_to_file()
 
 }
 
+Json::Value write_end_effector_waypoint_array_object(pose_struct pose)
+{
+	
+	Json::Value waypoint_array_object, origin_object, rpy_array, xyz_array, controls_object, rpy_mask_array, xyz_mask_array;
+
+	rpy_array.append(pose.roll); rpy_array.append(pose.pitch); rpy_array.append(pose.yaw);
+	xyz_array.append(pose.x); xyz_array.append(pose.y); xyz_array.append(pose.z);
+	rpy_mask_array.append(true); rpy_mask_array.append(true); rpy_mask_array.append(true);
+	xyz_mask_array.append(true); xyz_mask_array.append(true); xyz_mask_array.append(true);
+
+	waypoint_array_object["origin"]["rpy"] = rpy_array;
+	waypoint_array_object["origin"]["xyz"] = xyz_array;
+	waypoint_array_object["ee_pose"] = 0;
+	waypoint_array_object["controls"]["rpy"]= rpy_mask_array;
+	waypoint_array_object["controls"]["xyz"]= xyz_mask_array;
+	waypoint_array_object["display_object"] = object_name;
+
+	return (waypoint_array_object);
+}
+
+void write_end_effector_waypoint_root(Json::Value &waypoint_root)
+{
+	
+	Json::Value waypoint_array_object;
+
+	while (!pose_vector.empty())
+	{
+		waypoint_array_object = write_end_effector_waypoint_array_object(pose_vector[0]);
+
+		for(int i=0; i<pose_vector.size()-1; i++)
+			pose_vector[i]=pose_vector[i+1];
+		pose_vector.pop_back();
+
+		waypoint_root.append(waypoint_array_object);
+	}
+}
+
+void write_end_effector_group_root(Json::Value &group_root)
+{
+	
+	Json::Value group_array_object, waypoint_root;
+	int id;
+
+	if (hand.compare("left")==0)
+		id = 0;
+	else
+		id = 1;
+
+	write_end_effector_waypoint_root(waypoint_root);
+
+	group_array_object["id"] = id;
+	group_array_object["end_effector_waypoint"] = waypoint_root;
+
+	group_root.append(group_array_object);
+}
+
+void write_end_effector_trajectory_array_object(Json::Value &traj_root, std::string trajName)
+{
+	
+	Json::Value traj_array_object, group_root;
+
+	write_end_effector_group_root(group_root);
+	
+	traj_array_object["end_effector_group"] = group_root;
+	traj_array_object["name"] = trajName;
+
+	traj_root.append(traj_array_object);
+
+}
+
 void save_to_jason()
 {
-	/*std::string json_example = "{\"array\": \
-                            [\"item1\", \
-                            \"item2\"], \
-                            \"not an array\": \
-                            \"asdf\" \
-                         }";*/
+	std::string fileName, trajName;
+    bool found_traj=false;
+    Json::StyledWriter styledWriter;
+    static std::ofstream op_file_id;
 
-    std::ifstream t("valve.json");
+    //when the user hits 'S', ask the name of the trajectory to save
+    std::cout << "Enter the trajectory name: " << std::endl;
+	std::cin >> trajName;
+
+    //The file to save the new trajectory points was already entered at the beginning of running the program
+    fileName = "/home/karan/DRC/affordance_templates/affordance_template_library/templates/" + AT_name + ".json";
+    //fileName = "valve.json";
+
+    std::ifstream t(fileName.c_str());
     std::string json_file_string;
 
-    t.seekg(0, std::ios::end);   
+    t.seekg(0, std::ios::end);
     json_file_string.reserve(t.tellg());
     t.seekg(0, std::ios::beg);
 
     json_file_string.assign((std::istreambuf_iterator<char>(t)),
     	std::istreambuf_iterator<char>());
 
-    // Let's parse it  
+    // Let's parse it
  	Json::Value root;
  	Json::Reader reader;
  	bool parsedSuccess = reader.parse(json_file_string, 
@@ -296,56 +370,43 @@ void save_to_jason()
   
  	if(not parsedSuccess)
  	{
-   	// Report failures and their locations 
-   	// in the document.
+   	// Report failures and their locations in the document.
    	std::cout<<"Failed to parse JSON"<<std::endl 
        <<reader.getFormatedErrorMessages()
        <<std::endl;
    	exit(1);
  	}
 
- 	std::string image_name = root.get("image", ":D").asString();
+ 	Json::Value traj_root = root["end_effector_trajectory"];
 
- 	std::cout << "Image file is at: " << image_name << std::endl;
-  
- 	/*// Let's extract the array contained 
- 	// in the root object
- 	const Json::Value array = root["array"];
- 
- 	// Iterate over sequence elements and 
- 	// print its values
- 	for(unsigned int index=0; index<array.size(); ++index)  
- 	{
- 		std::cout<<"Element " 
-       <<index 
-       <<" in array: "
-       <<array[index].asString()
-       <<std::endl;
- 	}
+    //check if the user entered trajectory exists
+    for (int index = 0; index < traj_root.size(); ++index) {
+    	
+    	if (trajName.compare(traj_root[index].get("name", "NULL").asString()) == 0) {
+    		found_traj=true;
+    		break;
+    	}
+    }
 
-       Json::Value fromScratch;
-       Json::Value array;
-       array.append("hello");
-       array.append("world");
-       fromScratch["hello"] = "world";
-       fromScratch["number"] = 2;
-       fromScratch["array"] = array;
-       fromScratch["object"]["hello"] = "world";
+    if (!found_traj) {
+    	//if it doesn't, create an object under end_effector_trajectory array of objects
+    	std::cout << "Entered trjectory does not exist" << std::endl;
+    	std::cout << "Creating new trajectory and writing to Json file" << std::endl;
 
-       // querying the json object is very simple
-       std::cout << fromScratch["hello"];
-       std::cout << fromScratch["number"];
-       std::cout << fromScratch["array"][0] << fromScratch["array"][1];
-       std::cout << fromScratch["object"]["hello"];
-       std::cout << std::endl <<std::endl;
+    	op_file_id.open(fileName.c_str());
+    	write_end_effector_trajectory_array_object(traj_root, trajName);
+    	root["end_effector_trajectory"] = traj_root;
+    	op_file_id << styledWriter.write(root);
+    	op_file_id.close();
+    }
+    else {
+    	std::cout << "Entered trjectory exists" << std::endl;
+    	found_traj=false;
+    }
 
-       // write in a nice readible way
-       Json::StyledWriter styledWriter;
-       std::cout << styledWriter.write(fromScratch);*/
-
-       const Json::Value traj_root = root["end_effector_trajectory"];
-
-       
+       	//if it does, check if the end-effector group exists (from hand info entered at the beginning of the program)
+       		//if it doesn't, create a new object under end_effector_group array of objects
+       		//if it does, add an object under end_effector_waypoint array of objects
 
 }
 
