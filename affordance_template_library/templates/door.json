@@ -1,0 +1,192 @@
+{
+  "image": "package://affordance_template_library/images/door.jpg", 
+  "display_objects": [
+    {
+      "name": "im_control",
+      "shape": 
+      {
+        "type": "box",
+        "material": 
+        {
+          "color": "blue",
+          "rgba": [0.0, 0.0, 1.0, 1.0]
+        },
+        "size": [0.01, 0.01, 0.01]
+      },
+      "origin" : 
+      {
+        "xyz": [0.5, 0.0, 0.0],
+        "rpy": [0.0, 0.0, 0.0]
+      },
+      "controls": 
+      {
+        "xyz": [true, true, true],
+        "rpy": [false, false, true],
+        "scale": 0.4
+      }
+    },
+    {
+      "name": "door_closed",
+      "parent": "im_control",
+      "origin": 
+      {
+        "rpy": [0.0, 0.0, 0.0], 
+        "xyz": [0.0, 0.0, -0.98186838472]
+      }, 
+      "shape": 
+      {
+        "type": "mesh", 
+        "data": "package://affordance_template_library/models/door_cut.stl", 
+        "size": [1.0, 1.0, 1.0]
+      }, 
+      "controls": 
+      {
+        "rpy": [false, false, false], 
+        "xyz": [false, false, false], 
+        "scale": 0.5
+      }
+    },
+    {
+      "name": "handle_closed", 
+      "parent": "door_closed",
+      "origin":
+      {
+        "rpy": [0.0, 0.0, 0.0],
+        "xyz": [0.0, 0.3972, 0.98186838472]
+      },
+      "shape":
+      {
+        "type": "mesh",
+        "data": "package://affordance_template_library/models/lever_handle.dae",
+        "size": [ 1, 1, 1]
+      },
+      "controls":
+      {
+        "rpy": [false, false, false],
+        "xyz": [false, false, false],
+        "scale": 0.3
+      }
+    },
+    {
+      "name": "door_half",
+      "parent": "im_control",
+      "origin":
+      {
+        "rpy": [0.0, 0.0, -0.785],
+        "xyz": [0.323289, -0.145, -0.98186838472]
+      },
+      "shape":
+      {
+        "type": "mesh", 
+        "data": "package://affordance_template_library/models/door_cut.stl", 
+        "size": [1.0, 1.0, 1.0]
+      }, 
+      "controls": 
+      {
+        "rpy": [false, false, false], 
+        "xyz": [false, false, false], 
+        "scale": 0.5
+      }
+    },
+    {
+      "name": "handle_half", 
+      "parent": "door_half",
+      "origin":
+      {
+        "rpy": [0.0, 0.0, 0.0],
+        "xyz": [0.0, 0.3972, 0.98186838472]
+      },
+      "shape":
+      {
+        "type": "mesh",
+        "data": "package://affordance_template_library/models/lever_handle.dae",
+        "size": [ 1, 1, 1]
+      },
+      "controls":
+      {
+        "rpy": [false, false, false],
+        "xyz": [false, false, false],
+        "scale": 0.3
+      }
+    }
+  ], 
+  "name": "Door", 
+  
+  "end_effector_trajectory": [
+    {
+      "name": "Grasp Handle",
+      "end_effector_group" : [
+        {
+          "id": 0,
+          "end_effector_waypoint" : [
+            {
+              "ee_pose": 0,
+              "display_object": "handle_closed",
+              "origin": 
+              {
+                "xyz": [-0.3, -0.075, 0.1],
+                "rpy": [-1.57, 1.57, 0.0]
+              },
+              "controls": 
+              {
+                "xyz": [true, true, true],
+                "rpy": [true, true, true],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 0,
+              "display_object": "handle_closed",
+              "origin": 
+              {
+                "xyz": [-0.1, -0.075, 0.1],
+                "rpy": [-1.57, 1.57, 0.0]
+              },
+              "controls": 
+              {
+                "xyz": [true, true, true],
+                "rpy": [true, true, true],
+                "scale": 0.25
+              }
+            }
+          ]
+        },
+        {
+          "id": 1,
+          "end_effector_waypoint" : [
+            {
+              "ee_pose": 2,
+              "display_object": "handle_closed",
+              "origin": 
+              {
+                "xyz": [-0.3, -0.85, 0.1],
+                "rpy": [-1.57, 1.57, 3.14]
+              },
+              "controls": 
+              {
+                "xyz": [true, true, true],
+                "rpy": [true, true, true],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 2,
+              "display_object": "handle_closed",
+              "origin": 
+              {
+                "xyz": [-0.3, -0.85, 0.1],
+                "rpy": [-1.57, 1.57, 3.14]
+              },
+              "controls": 
+              {
+                "xyz": [true, true, true],
+                "rpy": [true, true, true],
+                "scale": 0.25
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

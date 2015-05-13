@@ -4,6 +4,7 @@ import signal
 import yaml
 import json
 import glob
+import tf
 
 from threading import Thread
         
@@ -39,6 +40,8 @@ class AffordanceTemplateServer(Thread):
       
         self.status = False
 
+        self.tf_listener = tf.TransformListener(True, rospy.Duration(30.0))
+
         self.server = InteractiveMarkerServer("affordance_template_server")
 
         # get path to template marker package
@@ -71,7 +74,7 @@ class AffordanceTemplateServer(Thread):
     def configure_server(self):
         """Configure the interface connections for clients."""
         self.interfaces = {}
-        self.interfaces['service'] = ServiceInterface(self)
+        self.interfaces['service'] = ServiceInterface(self, self.tf_listener)
         self.status = True
         
 
@@ -117,7 +120,7 @@ class AffordanceTemplateServer(Thread):
         @returns The Popen object started by the server.
         """
         if class_type in self.at_data.class_map:
-            at = AffordanceTemplate(self.server, instance_id, robot_interface=self.robot_interface)
+            at = AffordanceTemplate(self.server, instance_id, robot_interface=self.robot_interface, tf_listener=self.tf_listener)
             filename = self.at_data.file_map[class_type]
             at.load_from_file(filename)
             self.at_data.class_map[class_type][instance_id] = at  # TODO this is dumb, need to just have a local list of multiple ATs

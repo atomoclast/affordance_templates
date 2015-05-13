@@ -32,7 +32,7 @@ from affordance_template_markers.affordance_template_data import *
 
 class AffordanceTemplate(threading.Thread) :
 
-    def __init__(self, server, id, name="affordance_template", initial_pose=None, robot_interface=None):
+    def __init__(self, server, id, name="affordance_template", initial_pose=None, robot_interface=None, tf_listener=None):
         super(AffordanceTemplate,self).__init__()
         
         self.mutex = threading.Lock()
@@ -58,7 +58,11 @@ class AffordanceTemplate(threading.Thread) :
         self.object_scale_factor = {}
         self.end_effector_scale_factor = {}
 
-        self.tf_listener = tf.TransformListener(True, rospy.Duration(30.0))
+        if not tf_listener :
+            self.tf_listener = tf.TransformListener(True, rospy.Duration(30.0))
+        else :
+            self.tf_listener = tf_listener
+
         self.tf_broadcaster = tf.TransformBroadcaster()
         self.tf_frame = "template:0"
 
@@ -1487,7 +1491,7 @@ class AffordanceTemplate(threading.Thread) :
 
 
             except :
-                rospy.logerr(str("AffordanceTemplate::get_pose_goals() -- Error in calculating waypoint pose goals from id path"))
+                rospy.logdebug(str("AffordanceTemplate::get_pose_goals() -- Error in calculating waypoint pose goals from id path"))
 
             manipulator_names.append(manipulator_name)
             waypoints_list.append(waypoints)
