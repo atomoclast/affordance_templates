@@ -211,7 +211,7 @@ class AffordanceTemplateServer(Thread):
                 rospy.loginfo(str("AffordanceTemplateServer::get_available_templates() -- parsed: " + atfn))
 
             except :
-                rospy.logdebug(str("AffordanceTemplateServer::get_available_templates() -- error parsing " + atfn))
+                rospy.logwarn(str("AffordanceTemplateServer::get_available_templates() -- error parsing " + atfn))
 
         return at_data
 

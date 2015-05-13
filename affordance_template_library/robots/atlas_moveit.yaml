@@ -5,12 +5,12 @@ config_file: config/atlas.srdf
 gripper_action:
   - name: right_robotiq_hand
     action: /right_hand/gripper/server
-  - name: left_sri_hand
+  - name: left_robotiq_hand
     action: /left_hand/gripper/server
 frame_id: pelvis
 root_offset: [0.6,0,0.2,0,0,0]
 end_effector_group_map:
-  - name: left_sri_hand
+  - name: left_robotiq_hand
     id: 0
     pose_offset: [0.1, 0.2, 0, 0, 1.57, 3.14]
   - name: right_robotiq_hand
@@ -30,14 +30,14 @@ end_effector_pose_map:
     group: right_robotiq_hand
     id: 3
   - name: left_hand_position_open
-    group: left_sri_hand
+    group: left_robotiq_hand
     id: 0
   - name: left_hand_position_thumb_open
-    group: left_sri_hand
+    group: left_robotiq_hand
     id: 1
   - name: left_hand_position_close
-    group: left_sri_hand
+    group: left_robotiq_hand
     id: 2
   - name: left_hand_position_point
-    group: left_sri_hand
+    group: left_robotiq_hand
     id: 3
