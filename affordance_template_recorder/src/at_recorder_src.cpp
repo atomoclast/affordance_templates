@@ -280,6 +280,7 @@ Json::Value write_end_effector_waypoint_array_object(pose_struct pose)
 	waypoint_array_object["origin"]["xyz"] = xyz_array;
 	waypoint_array_object["ee_pose"] = 0;
 	waypoint_array_object["controls"]["rpy"]= rpy_mask_array;
+  waypoint_array_object["controls"]["scale"]= 0.25;
 	waypoint_array_object["controls"]["xyz"]= xyz_mask_array;
 	waypoint_array_object["display_object"] = object_name;
 
