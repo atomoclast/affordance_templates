@@ -356,7 +356,7 @@ class ServiceInterface(object):
                 for t in self.server.at_data.traj_map[ss[0]] :
                     response.trajectory_names.append(t)
             except :
-                rospy.logerr("ServiceInterface::handle_template_status_request() -- error getting template status")
+                rospy.logdebug("ServiceInterface::handle_template_status_request() -- error getting template status")
 
         else :           
             rospy.logdebug("ServiceInterface::handle_template_status_request() -- no template name provided")
