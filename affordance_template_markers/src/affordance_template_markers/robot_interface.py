@@ -236,37 +236,40 @@ class RobotInterface(object) :
                 rospy.logerr("RobotInterface::configure() -- group " + str(g) + " not in end effector groups!")
                 return False
             else :
-                if self.path_planner.add_planning_group(g, "endeffector") :
-                    self.path_planner.set_goal_joint_tolerance(g, 0.05)
-                    rospy.loginfo(str("RobotInterface::configure() -- control frame: " + self.path_planner.get_control_frame(g)))
 
-                    # ee_root_frame = self.path_planner.get_srdf_model().get_end_effector_link(g)
-                    ee_root_frame =  self.path_planner.get_control_frame(g)
-                    rospy.logwarn(str("RobotInterface::configure() -- ee_root_frame: " + ee_root_frame))
+                try :
+                    if self.path_planner.add_planning_group(g, "endeffector") :
+                        self.path_planner.set_goal_joint_tolerance(g, 0.05)
+                        rospy.loginfo(str("RobotInterface::configure() -- control frame: " + self.path_planner.get_control_frame(g)))
 
-                    self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
-                    self.end_effector_link_data[g].populate_data(self.path_planner.get_group_links(g), self.path_planner.get_urdf_model(), self.path_planner.get_srdf_model())
-                    rospy.sleep(1)
-                    self.end_effector_markers[g] = self.end_effector_link_data[g].get_current_position_marker_array(scale=1.0,color=(1,1,1,0.5))
-                    pg = self.path_planner.get_srdf_model().get_end_effector_parent_group(g)
-                    if not pg == None :
-                        rospy.loginfo(str("RobotInterface::configure() -- trying to add group: " + pg))
-                        self.path_planner.add_planning_group(pg, group_type="cartesian")
-                        self.path_planner.set_display_mode(pg, "all_points")
-                        self.path_planner.set_goal_position_tolerances(pg, [.01]*3)
-                        self.path_planner.set_goal_orientation_tolerances(pg, [.03]*3)
-                        self.path_planner.set_goal_joint_tolerance(pg, 0.05)
+                        # ee_root_frame = self.path_planner.get_srdf_model().get_end_effector_link(g)
+                        ee_root_frame =  self.path_planner.get_control_frame(g)
+                        rospy.logwarn(str("RobotInterface::configure() -- ee_root_frame: " + ee_root_frame))
 
-                        self.stored_poses[pg] = {}
-                        for state_name in self.path_planner.get_stored_state_list(pg) :
-                            rospy.loginfo(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + pg + "\'"))
-                            self.stored_poses[pg][state_name] = self.path_planner.get_stored_group_state(pg, state_name)
+                        self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
+                        self.end_effector_link_data[g].populate_data(self.path_planner.get_group_links(g), self.path_planner.get_urdf_model(), self.path_planner.get_srdf_model())
+                        rospy.sleep(1)
+                        self.end_effector_markers[g] = self.end_effector_link_data[g].get_current_position_marker_array(scale=1.0,color=(1,1,1,0.5))
+                        pg = self.path_planner.get_srdf_model().get_end_effector_parent_group(g)
+                        if not pg == None :
+                            rospy.loginfo(str("RobotInterface::configure() -- trying to add group: " + pg))
+                            self.path_planner.add_planning_group(pg, group_type="cartesian")
+                            self.path_planner.set_display_mode(pg, "all_points")
+                            self.path_planner.set_goal_position_tolerances(pg, [.01]*3)
+                            self.path_planner.set_goal_orientation_tolerances(pg, [.03]*3)
+                            self.path_planner.set_goal_joint_tolerance(pg, 0.05)
 
+                            self.stored_poses[pg] = {}
+                            for state_name in self.path_planner.get_stored_state_list(pg) :
+                                rospy.loginfo(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + pg + "\'"))
+                                self.stored_poses[pg][state_name] = self.path_planner.get_stored_group_state(pg, state_name)
+
+                        else :
+                            rospy.logerror(str("RobotInterface::configure -- no manipulator group found for end-effector: " + g))
                     else :
-                        rospy.logerror(str("RobotInterface::configure -- no manipulator group found for end-effector: " + g))
-                else :
-                    rospy.logerr(str("RobotInterface::configure() -- problem adding end-effector group[" + g + "] to planner"))
-                    return False
+                        rospy.logerr(str("RobotInterface::configure() -- problem adding end-effector group[" + g + "] to planner"))
+                except :
+                    rospy.logwarn(str("RobotInterface::configure() -- skipping group: " + g))
             self.stored_poses[g] = {}
             for state_name in self.path_planner.get_stored_state_list(g) :
                 rospy.logdebug(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + g + "\'"))
