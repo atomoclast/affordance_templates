@@ -356,17 +356,16 @@ class ServiceInterface(object):
                 for t in self.server.at_data.traj_map[ss[0]] :
                     response.trajectory_names.append(t)
             except :
-                rospy.logdebug("ServiceInterface::handle_template_status_request() -- error getting template status")
+                rospy.logwarn("ServiceInterface::handle_template_status_request() -- error getting template status")
 
         else :           
-            rospy.logdebug("ServiceInterface::handle_template_status_request() -- no template name provided")
+            rospy.logwarn("ServiceInterface::handle_template_status_request() -- no template name provided")
         self.server.status = True       
         return response
 
     def get_template_status(self, template_name, template_id, trajectory_name, frame_id="") :
         
         ats = AffordanceTemplateStatus()
-
         try :
             at = self.server.at_data.class_map[template_name][template_id]
             ats.type = template_name
@@ -393,7 +392,6 @@ class ServiceInterface(object):
         except :
             rospy.logerr("ServiceInterface::get_template_status() -- error generating status message for objects")
         
-
         try :
             wp_poses, ee_pose_names, control_frames = at.get_pose_goals(trajectory_name)
 
@@ -440,8 +438,6 @@ class ServiceInterface(object):
         response = SetAffordanceTemplateTrajectoryResponse()
         response.success = False
 
-        print request.name 
-        print request.trajectory 
         ss = request.name.split(":")
     
         try :
