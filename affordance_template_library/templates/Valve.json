@@ -1,113 +1,229 @@
 {
-   "display_objects" : [
-      {
-         "controls" : {
-            "rpy" : [ true, true, true ],
-            "scale" : 0.29999999999999999,
-            "xyz" : [ true, true, true ]
-         },
-         "name" : "Valve",
-         "origin" : {
-            "rpy" : [ 0, 0, -1.5700000042340219 ],
-            "xyz" : [ 0.30000001192092896, 0, 0 ]
-         },
-         "shape" : {
-            "data" : "package://affordance_template_library/models/Valve.stl",
-            "size" : [ 3, 3, 3 ],
-            "type" : "mesh"
-         }
+  "image": "package://affordance_template_library/images/wheel", 
+  "display_objects": [
+    {
+      "origin": {
+        "rpy": [
+          0.0, 
+          0.0, 
+          -1.5700000042340219
+        ], 
+        "xyz": [
+          0.6466622352600098, 
+          0.004345107823610306, 
+          0.0
+        ]
+      }, 
+      "shape": {
+        "type": "mesh", 
+        "data": "package://affordance_template_library/models/Valve.stl", 
+        "size": [
+          5, 
+          5, 
+          5
+        ]
+      }, 
+      "name": "Valve", 
+      "controls": {
+        "rpy": [
+          true, 
+          true, 
+          true
+        ], 
+        "xyz": [
+          true, 
+          true, 
+          true
+        ], 
+        "scale": 0.3
       }
-   ],
-   "end_effector_trajectory" : [
-      {
-         "end_effector_group" : [
+    }
+  ], 
+  "name": "Valve", 
+  "end_effector_trajectory": [
+    {
+      "end_effector_group": [
+        {
+          "id": 1, 
+          "end_effector_waypoint": [
             {
-               "end_effector_waypoint" : [
-                  {
-                     "controls" : {
-                        "rpy" : [ false, true, true ],
-                        "scale" : 0.25,
-                        "xyz" : [ true, true, true ]
-                     },
-                     "display_object" : "Valve",
-                     "ee_pose" : 0,
-                     "origin" : {
-                        "rpy" : [ 0.0379178,    -0.0146419,    -0.00562451 ],
-                        "xyz" : [ -0.0971704,    -0.218956,    -0.00219986  ]
-                     }
-                  },
-                  {
-                     "controls" : {
-                        "rpy" : [ false, true, true ],
-                        "scale" : 0.25,
-                        "xyz" : [ true, true, true ]
-                     },
-                     "display_object" : "Valve",
-                     "ee_pose" : 0,
-                     "origin" : {
-                        "rpy" : [ 0.0379178,    -0.0146419,    -0.00562451],
-                        "xyz" : [ -0.0971704,    -0.0974734,    -0.00219986 ]
-                     }
-                  },
-                  {
-                     "controls" : {
-                        "rpy" : [ false, true, true ],
-                        "scale" : 0.25,
-                        "xyz" : [ true, true, true ]
-                     },
-                     "display_object" : "Valve",
-                     "ee_pose" : 2,
-                     "origin" : {
-                        "rpy" : [ 0.0379178,    -0.0146419,    -0.00562451],
-                        "xyz" : [ -0.0971704,    -0.0974734,    -0.00219986  ]
-                     }
-                  },
-                  {
-                     "controls" : {
-                        "rpy" : [ false, true, true ],
-                        "scale" : 0.25,
-                        "xyz" : [ true, true, true ]
-                     },
-                     "display_object" : "Valve",
-                     "ee_pose" : 2,
-                     "origin" : {
-                        "rpy" : [  1.99513,    1.52831,    1.98797],
-                        "xyz" : [ 0.00494304,    -0.101931,    0.099416  ]
-                     }
-                  },
-                  {
-                     "controls" : {
-                        "rpy" : [ false, true, true ],
-                        "scale" : 0.25,
-                        "xyz" : [ true, true, true ]
-                     },
-                     "display_object" : "Valve",
-                     "ee_pose" : 0,
-                     "origin" : {
-                        "rpy" : [  1.99513,    1.52831,    1.98797],
-                        "xyz" : [ 0.00494304,    -0.101931,    0.099416  ]
-                     }
-                  },
-                  {
-                     "controls" : {
-                        "rpy" : [ false, true, true ],
-                        "scale" : 0.25,
-                        "xyz" : [ true, true, true ]
-                     },
-                     "display_object" : "Valve",
-                     "ee_pose" : 0,
-                     "origin" : {
-                        "rpy" : [  1.99513,    1.52831,    1.98797],
-                        "xyz" : [ 0.00494303,    -0.247821,    0.099416 ]
-                     }
-                  }                  
-               ],
-               "id" : 1
+              "origin": {
+                "rpy": [
+                  1.2322064565401846e-07, 
+                  0.5244708209443028, 
+                  -5.794167301263204e-09
+                ], 
+                "xyz": [
+                  -0.06476706266403198, 
+                  -0.24599702656269073, 
+                  0.048865389078855515
+                ]
+              }, 
+              "ee_pose": 0, 
+              "controls": {
+                "rpy": [
+                  false, 
+                  true, 
+                  true
+                ], 
+                "xyz": [
+                  true, 
+                  true, 
+                  true
+                ], 
+                "scale": 0.25
+              }, 
+              "display_object": "Valve"
+            }, 
+            {
+              "origin": {
+                "rpy": [
+                  1.2322064565401846e-07, 
+                  0.5244708209443028, 
+                  -5.794167301263204e-09
+                ], 
+                "xyz": [
+                  -0.07631584256887436, 
+                  -0.11357492208480835, 
+                  0.050592437386512756
+                ]
+              }, 
+              "ee_pose": 0, 
+              "controls": {
+                "rpy": [
+                  false, 
+                  true, 
+                  true
+                ], 
+                "xyz": [
+                  true, 
+                  true, 
+                  true
+                ], 
+                "scale": 0.25
+              }, 
+              "display_object": "Valve"
+            }, 
+            {
+              "origin": {
+                "rpy": [
+                  1.2322064565401846e-07, 
+                  0.5244708209443028, 
+                  -5.794167301263204e-09
+                ], 
+                "xyz": [
+                  -0.0722915455698967, 
+                  -0.11121482402086258, 
+                  0.051292575895786285
+                ]
+              }, 
+              "ee_pose": 2, 
+              "controls": {
+                "rpy": [
+                  false, 
+                  true, 
+                  true
+                ], 
+                "xyz": [
+                  true, 
+                  true, 
+                  true
+                ], 
+                "scale": 0.25
+              }, 
+              "display_object": "Valve"
+            }, 
+            {
+              "origin": {
+                "rpy": [
+                  3.141592458504392, 
+                  -0.5727151143232906, 
+                  -3.141592643644683
+                ], 
+                "xyz": [
+                  0.0948040559887886, 
+                  -0.1112259030342102, 
+                  -0.05853527411818504
+                ]
+              }, 
+              "ee_pose": 2, 
+              "controls": {
+                "rpy": [
+                  false, 
+                  true, 
+                  true
+                ], 
+                "xyz": [
+                  true, 
+                  true, 
+                  true
+                ], 
+                "scale": 0.25
+              }, 
+              "display_object": "Valve"
+            },
+            {
+              "origin": {
+                "rpy": [
+                  3.141592458504392, 
+                  -0.5727151143232906, 
+                  -3.141592643644683
+                ], 
+                "xyz": [
+                  0.0948040559887886, 
+                  -0.1112259030342102, 
+                  -0.05853527411818504
+                ]
+              }, 
+              "ee_pose": 0, 
+              "controls": {
+                "rpy": [
+                  false, 
+                  true, 
+                  true
+                ], 
+                "xyz": [
+                  true, 
+                  true, 
+                  true
+                ], 
+                "scale": 0.25
+              }, 
+              "display_object": "Valve"
+            },
+            {
+              "origin": {
+                "rpy": [
+                  3.141592458504392, 
+                  -0.5727151143232906, 
+                  -3.141592643644683
+                ], 
+                "xyz": [
+                   0.0948040559887886, 
+                  -0.2412259030342102, 
+                  -0.05853527411818504
+                ]
+              }, 
+              "ee_pose": 0, 
+              "controls": {
+                "rpy": [
+                  false, 
+                  true, 
+                  true
+                ], 
+                "xyz": [
+                  true, 
+                  true, 
+                  true
+                ], 
+                "scale": 0.25
+              }, 
+              "display_object": "Valve"
             }
-         ],
-         "name" : "Right Handed Center Clockwise Turn"
-      }
-   ],
-   "image" : "package://affordance_template_library/images/wheel",
-   "name" : "Valve"
+          ]
+        }
+      ], 
+      "name": "Right Handed Center Counter Clockwise Turn"
+    }
+  ]
 }

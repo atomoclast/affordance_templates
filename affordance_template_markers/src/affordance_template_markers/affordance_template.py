@@ -83,6 +83,9 @@ class AffordanceTemplate(threading.Thread) :
         self.path_plan_ids = {}             # holds ids for planned end effector movement
         self.waypoint_pose_map = {}
 
+        self.current_waypoint_plan_data = {}
+        self.current_waypoint_execution_data = {}
+
         # menu stuff
         self.marker_menus = {}
         self.menu_handles = {}
@@ -531,7 +534,7 @@ class AffordanceTemplate(threading.Thread) :
         for wp in self.waypoints[self.current_trajectory] :
 
             ee_name = self.robot_interface.end_effector_name_map[int(self.waypoint_end_effectors[trajectory][wp])]
-            
+           
             root_frame = self.name #str(self.name + ":" + str(self.id))
             if (trajectory, wp) in self.parent_map :
                 root_frame = self.parent_map[(trajectory,wp)] #str(self.parent_map[wp] + ":" + str(self.id))
@@ -1529,6 +1532,17 @@ class AffordanceTemplate(threading.Thread) :
         for end_effector in end_effectors:
             ret[end_effector] = False
 
+        self.current_waypoint_plan_data["end_effectors"] = []
+        self.current_waypoint_plan_data["goals"] = []
+        self.current_waypoint_execution_data["end_effectors"] = []
+        self.current_waypoint_execution_data["goals"] = []
+
+        for end_effector in end_effectors:
+            ee_id = self.robot_interface.manipulator_id_map[end_effector]
+            print "AT plan path setting status flags to False"
+            self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
+            self.waypoint_execution_valid[self.current_trajectory][ee_id] = False
+
         for end_effector in end_effectors:
 
             rospy.loginfo(str("AffordanceTemplate::plan_path_to_waypoints() -- configuring plan goal for " + end_effector))
@@ -1539,11 +1553,17 @@ class AffordanceTemplate(threading.Thread) :
             max_idx = self.waypoint_max[self.current_trajectory][ee_id]
             manipulator_name = self.robot_interface.get_manipulator(end_effector)
             ee_name = self.robot_interface.get_end_effector_name(ee_id)
-            self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
-            self.waypoint_execution_valid[self.current_trajectory][ee_id] = False
-               
+        
             path, next_path_idx = self.compute_path_ids(ee_id, steps, backwards)
             self.waypoint_plan_index[self.current_trajectory][ee_id] = next_path_idx
+
+            self.current_waypoint_plan_data["trajectory"] = self.current_trajectory
+            self.current_waypoint_plan_data["end_effectors"].append(end_effector)
+            self.current_waypoint_plan_data["goals"].append(next_path_idx)
+
+            self.current_waypoint_execution_data["trajectory"] = self.current_trajectory
+            self.current_waypoint_execution_data["end_effectors"].append(end_effector)
+            self.current_waypoint_execution_data["goals"].append(next_path_idx)
 
             if(direct) : path = [next_path_idx]
         
@@ -1674,6 +1694,8 @@ class AffordanceTemplate(threading.Thread) :
             manipulator_name = self.robot_interface.get_manipulator(end_effector)
             ret[manipulator_name] = False
             
+            self.waypoint_execution_valid[self.current_trajectory][ee_id] = False
+
             if self.waypoint_plan_valid[self.current_trajectory][ee_id] :
                 
                 manipulator_names.append(manipulator_name)
@@ -1685,7 +1707,7 @@ class AffordanceTemplate(threading.Thread) :
 
 
         # first execute for the manipulator (arm)
-        ret = self.robot_interface.path_planner.execute(plan_names, from_stored=True, wait=True)
+        ret = self.robot_interface.path_planner.execute(plan_names, from_stored=True, wait=False)
         for ee_name in ee_names :
             del ret[ee_name]
 
@@ -1739,6 +1761,8 @@ class AffordanceTemplate(threading.Thread) :
 
         return ret
 
+    # def get_plan_status(self, group) :
+
     def create_origin_from_pose(self, ps) :
         origin = {}
         origin_rpy = (kdl.Rotation.Quaternion(ps.orientation.x,ps.orientation.y,ps.orientation.z,ps.orientation.w)).GetRPY()
@@ -1787,8 +1811,37 @@ class AffordanceTemplate(threading.Thread) :
                                                   rospy.Time.now(), self.frame_store_map[obj].frame_id, self.frame_store_map[obj].root_frame_id)
                 except :
                     rospy.logdebug("AffordanceTemplate::run() -- could not update thread")
+            
+                if "trajectory" in self.current_waypoint_execution_data.keys() : 
+                    traj_name = self.current_waypoint_execution_data["trajectory"]
+
+                    end_effectors = self.current_waypoint_plan_data["end_effectors"]
+                    goals = self.current_waypoint_plan_data["goals"]
+                    n = len(end_effectors)
+
+                    for idx in range(n):
+                        end_effector = end_effectors[idx]
+                        ee_id = self.robot_interface.manipulator_id_map[end_effector]
+                        group = self.robot_interface.get_manipulator(end_effector)
+                        self.waypoint_plan_valid[traj_name][ee_id] = self.robot_interface.path_planner.is_plan_generated(group)
+                        # print "\nwaypoint plan valid: ", self.waypoint_plan_valid[traj_name][ee_id], " to goal: ", goals[idx]
+
+                    end_effectors = self.current_waypoint_execution_data["end_effectors"]
+                    goals = self.current_waypoint_execution_data["goals"]
+                    n = len(end_effectors)
+                    for idx in range(n):
+                        end_effector = end_effectors[idx]
+                        ee_id = self.robot_interface.manipulator_id_map[end_effector]
+                        group = self.robot_interface.get_manipulator(end_effector)
+
+                        self.waypoint_execution_valid[traj_name][ee_id] = self.robot_interface.path_planner.is_execution_complete(group)
+                        # print "waypoint execution valid: ", self.waypoint_execution_valid[traj_name][ee_id], " to goal: ", goals[idx]
+
+                        if self.waypoint_execution_valid[traj_name][ee_id] :
+                            self.waypoint_index[traj_name][ee_id] = goals[idx]
+
             finally :
                 self.mutex.release()
 
-            rospy.sleep(0.005)
+            rospy.sleep(0.01)
         rospy.logdebug(str("AffordanceTemplate::run() -- Killing frame update thread for AT: " + self.name))
