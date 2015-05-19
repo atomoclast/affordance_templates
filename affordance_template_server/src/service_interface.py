@@ -128,7 +128,7 @@ class ServiceInterface(object):
 
     def handle_running(self, request):
         self.server.status = False
-        rospy.loginfo("ServiceInterface::handle_running()")
+        # rospy.loginfo("ServiceInterface::handle_running()")
         response = GetRunningAffordanceTemplatesResponse()
         try:
             for t in self.server.at_data.class_map.keys():
