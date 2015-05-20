@@ -10,7 +10,7 @@
         ], 
         "xyz": [
           0.07074177265167236, 
-          0.26529526710510254, 
+          0.30774736404418945, 
           -0.009330123662948608
         ]
       }, 
@@ -43,7 +43,7 @@
           true, 
           true
         ], 
-        "scale": 0.4
+        "scale": 1.2
       }
     }, 
     {
@@ -60,8 +60,8 @@
         ]
       }, 
       "shape": {
-        "data": "package://affordance_template_library/models/door_cut.stl", 
         "type": "mesh", 
+        "data": "package://affordance_template_library/models/door_cut.stl", 
         "size": [
           1.0, 
           1.0, 
@@ -98,8 +98,8 @@
         ]
       }, 
       "shape": {
-        "data": "package://affordance_template_library/models/lever_handle.dae", 
         "type": "mesh", 
+        "data": "package://affordance_template_library/models/lever_handle.dae", 
         "size": [
           1, 
           1, 
@@ -136,8 +136,8 @@
         ]
       }, 
       "shape": {
-        "data": "package://affordance_template_library/models/door_cut.stl", 
         "type": "mesh", 
+        "data": "package://affordance_template_library/models/door_cut.stl", 
         "size": [
           1.0, 
           1.0, 
@@ -174,8 +174,8 @@
         ]
       }, 
       "shape": {
-        "data": "package://affordance_template_library/models/lever_handle.dae", 
         "type": "mesh", 
+        "data": "package://affordance_template_library/models/lever_handle.dae", 
         "size": [
           1, 
           1, 
@@ -197,6 +197,52 @@
         ], 
         "scale": 0.3
       }
+    }, 
+    {
+      "origin": {
+        "rpy": [
+          0.0, 
+          -0.0, 
+          0.0
+        ], 
+        "xyz": [
+          1.25, 
+          0.0, 
+          -1.04
+        ]
+      }, 
+      "shape": {
+        "material": {
+          "color": "blue", 
+          "rgba": [
+            0.0, 
+            1.0, 
+            1.0, 
+            1.0
+          ]
+        }, 
+        "type": "box", 
+        "size": [
+          0.05, 
+          0.05, 
+          0.05
+        ]
+      }, 
+      "parent": "im_control", 
+      "name": "final_walk_goal", 
+      "controls": {
+        "rpy": [
+          true, 
+          true, 
+          true
+        ], 
+        "xyz": [
+          true, 
+          true, 
+          true
+        ], 
+        "scale": 0.3
+      }
     }
   ], 
   "name": "Door", 
@@ -209,9 +255,9 @@
             {
               "origin": {
                 "rpy": [
-                  -3.06205484574445, 
+                  -3.0620548457444396, 
                   1.560775362450111, 
-                  -1.4920587213506238
+                  -1.4920587213506136
                 ], 
                 "xyz": [
                   -0.300044983625412, 
@@ -238,9 +284,9 @@
             {
               "origin": {
                 "rpy": [
-                  -1.5700239162494898, 
+                  -1.5700239162494896, 
                   1.5700000086714696, 
-                  -2.390758533609976e-05
+                  -2.3907585336101427e-05
                 ], 
                 "xyz": [
                   -0.100042425096035, 
@@ -267,9 +313,9 @@
             {
               "origin": {
                 "rpy": [
-                  -1.5700239162494898, 
+                  -1.5700239162494896, 
                   1.5700000086714696, 
-                  -2.390758533609976e-05
+                  -2.3907585336101427e-05
                 ], 
                 "xyz": [
                   -0.08447802066802979, 
@@ -296,14 +342,14 @@
             {
               "origin": {
                 "rpy": [
-                  -0.8613856313985213, 
-                  1.570000029287697, 
-                  6.086255903649688e-07
+                  -0.44287403268319697, 
+                  1.5700000335984703, 
+                  7.613851239130606e-06
                 ], 
                 "xyz": [
-                  0.16178321838378906, 
-                  -0.3526269495487213, 
-                  0.13293401896953583
+                  0.3581658601760864, 
+                  -0.5577454566955566, 
+                  0.13309042155742645
                 ]
               }, 
               "ee_pose": 0, 
@@ -323,13 +369,9 @@
               "display_object": "handle_closed"
             }
           ]
-        }, 
-        {
-          "id": 1, 
-          "end_effector_waypoint": []
         }
       ], 
-      "name": "Grasp Handle"
+      "name": "Atlas Pogo Open"
     }
   ]
 }

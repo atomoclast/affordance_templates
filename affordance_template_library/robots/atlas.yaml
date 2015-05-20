@@ -7,8 +7,8 @@ gripper_action:
     action: /right_hand/gripper/server
   # - name: left_hand
   #   action: /left_hand/gripper/server
-frame_id: pelvis
-root_offset: [0.6,0,0.2,0,0,0]
+frame_id: global
+root_offset: [0.0,0,1.04,0,0,0]
 end_effector_group_map:
   - name: left_hand
     id: 0

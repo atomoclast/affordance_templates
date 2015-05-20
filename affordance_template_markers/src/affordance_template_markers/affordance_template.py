@@ -1399,7 +1399,7 @@ class AffordanceTemplate(threading.Thread) :
 
         if obj in self.display_objects :
             self.tf_listener.waitForTransform(self.frame_id, obj, rospy.Time(0), rospy.Duration(5.0))
-            (trans, rot) = self.tf_listener.lookupTransform(obj, self.frame_id, rospy.Time(0))
+            (trans, rot) = self.tf_listener.lookupTransform(self.frame_id, obj, rospy.Time(0))
             ps.pose = toPose(trans,rot)
         else :
             rospy.logerr(str("AffordanceTemplate::get_object_in_planning_frame() -- no object names: " + obj))
