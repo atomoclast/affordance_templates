@@ -1016,6 +1016,13 @@ class AffordanceTemplate(threading.Thread) :
     def print_structure(self) :
         print self.structure
         
+    def set_pose(self, pose) :
+
+        if pose.header.frame_id != self.frame_id :
+            self.tf_listener.waitForTransform(pose.header.frame_id, self.frame_id, rospy.Time(0), rospy.Duration(5.0))
+            pt = self.tf_listener.transformPose(self.frame_id, pose)
+        self.frame_store_map[self.root_object].pose = pt.pose
+
     def process_feedback(self, feedback):
 
         if feedback.marker_name in self.display_objects :

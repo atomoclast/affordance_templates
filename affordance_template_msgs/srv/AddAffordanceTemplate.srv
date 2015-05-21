@@ -3,6 +3,9 @@
 # The affordance template to add (by type) 
 string class_type
 
+# an initial pose
+geometry_msgs/PoseStamped pose
+
 ---
 
 # status

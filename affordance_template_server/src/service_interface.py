@@ -120,7 +120,7 @@ class ServiceInterface(object):
         try:
             pid = self.server.get_next_template_id(request.class_type)
             response.id = pid
-            response.status = self.server.add_template(request.class_type, pid)
+            response.status = self.server.add_template(request.class_type, pid, request.pose)
         except:
             rospy.logerr("ServiceInterface::handle_add_template() -- error adding template to server")
         self.server.status = True
