@@ -33,6 +33,7 @@ class ServiceInterface(object):
         self.template_status_service = rospy.Service('/affordance_template_server/get_template_status', GetAffordanceTemplateStatus, self.handle_template_status_request)
         self.server_status_service =   rospy.Service('/affordance_template_server/status', GetAffordanceTemplateServerStatus, self.handle_server_status_request)
         self.set_trajectory_service =  rospy.Service('/affordance_template_server/set_template_trajectory', SetAffordanceTemplateTrajectory, self.handle_set_trajectory)
+        self.set_template_pose =       rospy.Service('/affordance_template_server/set_template_pose', SetAffordanceTemplatePose, self.handle_set_pose)
 
         # subscribers
         self.scale_object_stream =     rospy.Subscriber('/affordance_template_server/scale_object_streamer', ScaleDisplayObjectInfo, self.handle_object_scale_stream)
@@ -439,6 +440,29 @@ class ServiceInterface(object):
 
         except :
             rospy.logerr("ServiceInterface::handle_set_trajectory() -- something wrong")
+
+        return response
+
+
+    def handle_set_pose(self, request) :    
+        response = SetAffordanceTemplatePoseResponse()
+        response.success = False
+
+        try :
+    
+            if not request.class_type in self.server.at_data.class_map :
+                rospy.logerr(str("ServiceInterface::handle_set_pose() -- " + request.class_type + " not in template class map"))
+                return response
+            
+            if not request.id in self.server.at_data.class_map[request.class_type] :
+                rospy.logerr(str("ServiceInterface::handle_set_pose()  -- " + str(request.id) + " not in template class map for template: " + request.class_type))
+                return response
+
+            at = self.server.update_template_pose(request.class_type, request.id, request.pose)
+            response.success = True
+
+        except :
+            rospy.logerr("ServiceInterface::handle_set_pose() -- something wrong")
 
         return response
 

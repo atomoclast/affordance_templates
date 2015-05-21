@@ -292,17 +292,18 @@ class AffordanceTemplate(threading.Thread) :
 
         self.frame_id = self.robot_interface.robot_config.frame_id
 
+        self.name = self.structure['name']
+        self.key = self.name
+
         if pose :
             self.tf_listener.waitForTransform(pose.header.frame_id, self.frame_id, rospy.Time(0), rospy.Duration(5.0))
             pose = self.tf_listener.transformPose(self.frame_id, pose)
             self.robotTroot = getFrameFromPose(pose.pose)
-            self.robot_interface.robot_config.root_offset = pose
+            self.robot_interface.robot_config.root_offset = pose.pose
+
         else :
             self.robotTroot = getFrameFromPose(self.robot_interface.robot_config.root_offset)
-
-        self.name = self.structure['name']
-        self.key = self.name
-
+       
         # parse objects
         ids = 0
         for obj in self.structure['display_objects'] :
@@ -1024,8 +1025,42 @@ class AffordanceTemplate(threading.Thread) :
         if pose.header.frame_id != self.frame_id :
             self.tf_listener.waitForTransform(pose.header.frame_id, self.frame_id, rospy.Time(0), rospy.Duration(2.0))
             pose = self.tf_listener.transformPose(self.frame_id, pose)
-        self.robot_interface.robot_config.root_offset = pose.pose
-        
+        self.robot_interface.robot_config.root_offset = pose.pose  
+        self.robotTroot = getFrameFromPose(pose.pose)
+        self.frame_store_map[self.name].pose = pose.pose
+        print "yes"
+        # self.server.applyChanges()
+
+    def update_template_pose(self, pose_stamped):
+        rospy.loginfo("AffordanceTemplate::update_template_pose()")
+
+        self.set_pose(pose_stamped)
+
+        # #  if frame_id does not match frame_id of marker
+        # if self.frame_id != pose_stamped.header.frame_id:
+        #     # change pose to be in correct frame (this is probably what should happen)
+        #     rospy.logdebug("AffordanceTemplate::update_template_pose -- frames are different: " + self.frame_id + ", " + pose_stamped.header.frame_id)
+        #     self.tf_listener.waitForTransform(pose_stamped.header.frame_id, self.frame_id, rospy.Time(0), rospy.Duration(5.0))
+        #     (trans, rot) = self.tf_listener.lookupTransform(pose_stamped.header.frame_id, self.frame_id, rospy.Time(0))
+
+        #     pose_stamped.pose.position.x = trans[0]
+        #     pose_stamped.pose.position.y = trans[1]
+        #     pose_stamped.pose.position.z = trans[2]
+        #     pose_stamped.pose.orientation.x = rot[0]
+        #     pose_stamped.pose.orientation.y = rot[1]
+        #     pose_stamped.pose.orientation.z = rot[2]
+        #     pose_stamped.pose.orientation.w = rot[3]
+
+        # # get actual name stored in server and assign new position
+        # name = self.display_objects[0]
+        # im = self.server.get(name)
+        # im.pose = pose_stamped.pose
+        # self.server.insert(im)
+        # self.server.applyChanges()
+        # # now need to go through each display object and update its pose
+        # self.frame_store_map[name].pose = pose_stamped.pose
+
+     
     def process_feedback(self, feedback):
 
         if feedback.marker_name in self.display_objects :

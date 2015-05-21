@@ -240,3 +240,33 @@ class AffordanceTemplateServer(Thread):
 
         return robot_map
 
+
+    def update_template_pose(self, class_type, instance_id, pose):
+        """Change pose of template to match pose from object detection algorithm.
+
+        @type class_type string
+        @param class_type The class type e.g. "Wheel", "Car", etc.
+
+        @type instance_id int
+        @param instance_id The ID of this instance.
+
+        @type pose PoseStamped
+        @param pose of object from object detector
+
+        @type frame_id string
+        @param frame_id Frame id of the pose given for the object.
+
+        @rtype int
+        @returns The Popen object started by the server.
+        """
+
+        ret_val = False
+        # get affordance template from server
+        if class_type in self.at_data.class_map.keys():
+            if instance_id in self.at_data.class_map[class_type]:
+                at = self.at_data.class_map[class_type][instance_id]
+                try:
+                    at.update_template_pose(pose)
+                except:
+                    rospy.logerr("AffordanceTemplateServer::change_template_pose() -- error updating template pose")
+                ret_val = True

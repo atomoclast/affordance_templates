@@ -1080,14 +1080,14 @@ void AffordanceTemplateRVizClient::loadConfig() {
     ui_->end_effector_table->resizeColumnsToContents();
     ui_->end_effector_table->resizeRowsToContents();
 
-    if (load_robot_client_.call(srv))
+    /*if (load_robot_client_.call(srv))
     {
         ROS_INFO("Load Robot Config call succesful");
     }
     else
     {
         ROS_ERROR("Failed to call service load_robot_config");
-    }
+    }*/
         
     robot_name_ = key;
     controls_->setRobotName(robot_name_);
