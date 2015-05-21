@@ -108,7 +108,6 @@ class AffordanceTemplate(threading.Thread) :
         self.wpTee = {}
         self.eeTtf = {}
 
-        # not all templates will have a dynamic reconfigure server
         self.dserver = None
         self.initial_pose = initial_pose
 
@@ -268,7 +267,7 @@ class AffordanceTemplate(threading.Thread) :
             rospy.logerr("AffordanceTemplate::pose_from_origin() error")
         return p
 
-    def load_initial_parameters(self) :
+    def load_initial_parameters(self, pose=None) :
 
         rospy.loginfo("AffordanceTemplate::load_initial_parameters()")
         # can we just make a deep copy of the json structure here?
@@ -292,7 +291,14 @@ class AffordanceTemplate(threading.Thread) :
         self.waypoints = {}
 
         self.frame_id = self.robot_interface.robot_config.frame_id
-        self.robotTroot = getFrameFromPose(self.robot_interface.robot_config.root_offset)
+
+        if pose :
+            self.tf_listener.waitForTransform(pose.header.frame_id, self.frame_id, rospy.Time(0), rospy.Duration(5.0))
+            pose = self.tf_listener.transformPose(self.frame_id, pose)
+            self.robotTroot = getFrameFromPose(pose.pose)
+            self.robot_interface.robot_config.root_offset = pose
+        else :
+            self.robotTroot = getFrameFromPose(self.robot_interface.robot_config.root_offset)
 
         self.name = self.structure['name']
         self.key = self.name
@@ -526,7 +532,7 @@ class AffordanceTemplate(threading.Thread) :
     # parse end effector trajectory information
     def create_trajectory_from_parameters(self, trajectory) :
 
-        rospy.loginfo("AffordanceTemplate::create_trajectory_from_parameters()")
+        # rospy.loginfo("AffordanceTemplate::create_trajectory_from_parameters()")
 
         self.current_trajectory = trajectory
 
@@ -618,7 +624,7 @@ class AffordanceTemplate(threading.Thread) :
 
             wp_ids += 1
 
-            rospy.loginfo("AffordanceTemplate::create_trajectory_from_parameters() -- done")
+            # rospy.loginfo("AffordanceTemplate::create_trajectory_from_parameters() -- done")
 
     def update_template_defaults(self, objects=True, waypoints=True) :
 
@@ -982,11 +988,11 @@ class AffordanceTemplate(threading.Thread) :
                 self.menu_handles[(waypoint,m)] = self.marker_menus[waypoint].insert( m, callback=self.process_feedback )
                 if c : self.marker_menus[waypoint].setCheckState( self.menu_handles[(waypoint,m)], MenuHandler.UNCHECKED )
 
-    def load_from_file(self, filename) :
+    def load_from_file(self, filename, pose=None) :
         atf = open(filename).read()
         self.structure = json.loads(atf)
         self.structure = self.append_id_to_structure(self.structure)
-        self.load_initial_parameters()
+        self.load_initial_parameters(pose)
         self.create_from_parameters()
         stuff = filename.split("/")
         self.filename = stuff[len(stuff)-1]
@@ -1009,20 +1015,17 @@ class AffordanceTemplate(threading.Thread) :
             for ee_group in traj['end_effector_group'] :
                 for wp in ee_group['end_effector_waypoint'] :
                     wp['display_object'] = self.append_id(wp['display_object'])
-                    
-                    
         return structure
 
     def print_structure(self) :
         print self.structure
         
     def set_pose(self, pose) :
-
         if pose.header.frame_id != self.frame_id :
-            self.tf_listener.waitForTransform(pose.header.frame_id, self.frame_id, rospy.Time(0), rospy.Duration(5.0))
-            pt = self.tf_listener.transformPose(self.frame_id, pose)
-        self.frame_store_map[self.root_object].pose = pt.pose
-
+            self.tf_listener.waitForTransform(pose.header.frame_id, self.frame_id, rospy.Time(0), rospy.Duration(2.0))
+            pose = self.tf_listener.transformPose(self.frame_id, pose)
+        self.robot_interface.robot_config.root_offset = pose.pose
+        
     def process_feedback(self, feedback):
 
         if feedback.marker_name in self.display_objects :
@@ -1546,7 +1549,6 @@ class AffordanceTemplate(threading.Thread) :
 
         for end_effector in end_effectors:
             ee_id = self.robot_interface.manipulator_id_map[end_effector]
-            print "AT plan path setting status flags to False"
             self.waypoint_plan_valid[self.current_trajectory][ee_id] = False
             self.waypoint_execution_valid[self.current_trajectory][ee_id] = False
 

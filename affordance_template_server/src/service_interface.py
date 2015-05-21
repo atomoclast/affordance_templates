@@ -115,6 +115,9 @@ class ServiceInterface(object):
     def handle_add_template(self, request):
         self.server.status = False
         rospy.loginfo(str("ServiceInterface::handle_add_template() -- adding template " + request.class_type))
+        if request.pose.header.frame_id == "" :
+            request.pose = None
+
         response = AddAffordanceTemplateResponse()
         response.status = False
         try:

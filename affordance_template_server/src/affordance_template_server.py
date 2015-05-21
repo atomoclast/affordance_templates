@@ -122,9 +122,7 @@ class AffordanceTemplateServer(Thread):
         if class_type in self.at_data.class_map:
             at = AffordanceTemplate(self.server, instance_id, robot_interface=self.robot_interface, tf_listener=self.tf_listener)
             filename = self.at_data.file_map[class_type]
-            at.load_from_file(filename)
-            if not pose == None:
-                at.set_pose(pose)
+            at.load_from_file(filename, pose)
             self.at_data.class_map[class_type][instance_id] = at  # TODO this is dumb, need to just have a local list of multiple ATs
             rospy.loginfo(str("AffordanceTemplateServer::add_template() -- adding template " + str(class_type) + " with id: " + str(instance_id)))
             return True
