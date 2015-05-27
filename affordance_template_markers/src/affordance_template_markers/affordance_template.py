@@ -22,8 +22,8 @@ import visualization_msgs.msg
 from interactive_markers.interactive_marker_server import *
 from interactive_markers.menu_handler import *
 
-from nasa_robot_teleop.path_planner import *
-from nasa_robot_teleop.models.urdf_helper import *
+from robot_interaction_tools.path_planner import *
+from robot_interaction_tools.models.urdf_helper import *
 
 from affordance_template_markers.robot_interface import *
 from affordance_template_markers.frame_store import *
@@ -155,6 +155,7 @@ class AffordanceTemplate(threading.Thread) :
 
         # start the frame update thread
         self.running = True
+        self.setDaemon(True)
         self.start()
 
         rospy.loginfo("AffordanceTemplate::init() -- Done Creating new Empty AffordanceTemplate")
@@ -415,7 +416,7 @@ class AffordanceTemplate(threading.Thread) :
 
             int_marker = InteractiveMarker()
             control = InteractiveMarkerControl()
-
+            control.always_visible = True
             self.setup_object_menu(obj)
 
             root_frame = self.name
@@ -434,6 +435,7 @@ class AffordanceTemplate(threading.Thread) :
 
             control = InteractiveMarkerControl()
             control.interaction_mode = InteractiveMarkerControl.BUTTON
+            control.always_visible = True
 
             marker = Marker()
             marker.ns = obj
@@ -562,6 +564,7 @@ class AffordanceTemplate(threading.Thread) :
 
             int_marker = InteractiveMarker()
             control = InteractiveMarkerControl()
+            control.always_visible = True
 
             int_marker.header.frame_id = str("/" + root_frame)
             int_marker.pose = display_pose
@@ -607,6 +610,7 @@ class AffordanceTemplate(threading.Thread) :
                     ee_m.ns = self.name
                     ee_m.pose = getPoseFromFrame(self.wpTee[wp]*self.eeTtf[wp]*getFrameFromPose(m.pose))
                     menu_control.markers.append( ee_m )
+                    menu_control.always_visible = True
                 except :
                     rospy.logdebug("passing on marker")
 

@@ -7,15 +7,15 @@ import PyKDL as kdl
 
 import sensor_msgs.msg
 
-import roslib; roslib.load_manifest("nasa_robot_teleop"); roslib.load_manifest("affordance_template_msgs")
+import roslib; roslib.load_manifest("robot_interaction_tools"); roslib.load_manifest("affordance_template_msgs")
 
 from geometry_msgs.msg import Pose, PoseArray
 from affordance_template_msgs.msg import *
 
-from nasa_robot_teleop.path_planner import *
-from nasa_robot_teleop.util.kinematics_util import *
-from nasa_robot_teleop.pose_update_thread import *
-from nasa_robot_teleop.end_effector_helper import *
+from robot_interaction_tools.path_planner import *
+from robot_interaction_tools.util.kinematics_util import *
+from robot_interaction_tools.pose_update_thread import *
+from robot_interaction_tools.end_effector_helper import *
 
 class RobotInterface(object) :
     
@@ -208,13 +208,13 @@ class RobotInterface(object) :
     def configure_path_planner(self) :
         # planner instantiatation
         if self.robot_config.planner_type == "moveit" :
-            from nasa_robot_teleop.planners.moveit_path_planner import MoveItPathPlanner
+            from robot_interaction_tools.planners.moveit_path_planner import MoveItPathPlanner
             self.path_planner = MoveItPathPlanner(self.robot_config.name, self.config_file)
         elif self.robot_config.planner_type == "atlas" :
-            from nasa_robot_teleop.planners.atlas_path_planner import AtlasPathPlanner
+            from robot_interaction_tools.planners.atlas_path_planner import AtlasPathPlanner
             self.path_planner = AtlasPathPlanner(self.robot_config.name, self.config_file)
         elif self.robot_config.planner_type == "hybrid" :
-            from nasa_robot_teleop.planners.atlas_hybrid_path_planner import AtlasHybridPathPlanner
+            from robot_interaction_tools.planners.atlas_hybrid_path_planner import AtlasHybridPathPlanner
             self.path_planner = AtlasHybridPathPlanner(self.robot_config.name, self.config_file)
         else :
             rospy.logerr("InteractiveControl() unrecognized planner type!!")

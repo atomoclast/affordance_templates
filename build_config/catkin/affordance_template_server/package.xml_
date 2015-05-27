@@ -17,7 +17,7 @@
   <run_depend>rospy</run_depend>
   <run_depend>affordance_template_markers</run_depend>
   <run_depend>visualization_msgs</run_depend>
-  <run_depend>nasa_robot_teleop</run_depend>
+  <run_depend>robot_interaction_tools</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

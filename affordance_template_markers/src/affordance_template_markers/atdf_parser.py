@@ -1,5 +1,5 @@
-from nasa_robot_teleop.xml_reflection.basics import *
-import nasa_robot_teleop.xml_reflection.core as xmlr
+from robot_interaction_tools.xml_reflection.basics import *
+import robot_interaction_tools.xml_reflection.core as xmlr
 
 xmlr.start_namespace('atdf')
 

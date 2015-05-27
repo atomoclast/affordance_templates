@@ -7,7 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   affordance_template_markers
   visualization_msgs
-  nasa_robot_teleop
+  robot_interaction_tools
 )
 
 catkin_python_setup()
