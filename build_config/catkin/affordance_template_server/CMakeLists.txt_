@@ -7,7 +7,6 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   affordance_template_markers
   visualization_msgs
-  robot_interaction_tools
 )
 
 catkin_python_setup()
