@@ -1032,7 +1032,6 @@ class AffordanceTemplate(threading.Thread) :
         self.robot_interface.robot_config.root_offset = pose.pose  
         self.robotTroot = getFrameFromPose(pose.pose)
         self.frame_store_map[self.name].pose = pose.pose
-        print "yes"
         # self.server.applyChanges()
 
     def update_template_pose(self, pose_stamped):
