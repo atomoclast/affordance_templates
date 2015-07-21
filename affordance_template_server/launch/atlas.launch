@@ -1,6 +1,0 @@
-<?xml version="1.0" ?>
-<launch>
-    <node pkg="affordance_template_server" type="server.py" name="affordance_template_server" output="screen"> 
-		<param name="robot_config" value="atlas.yaml"/>
-    </node>
-</launch>
