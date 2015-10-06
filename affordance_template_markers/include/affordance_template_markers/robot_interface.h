@@ -1,8 +1,8 @@
 #ifndef _ROBOT_INTERFACE_H_
 #define _ROBOT_INTERFACE_H_
 
-#include <algorithm>
-
+// #include <algorithm>
+#include <iostream>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
