@@ -4,10 +4,13 @@
 #include <fstream>
 #include "yaml-cpp/yaml.h"
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <tf/transform_listener.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
 #include <affordance_template_msgs/RobotConfig.h>
+#include <affordance_template_msgs/EndEffectorConfig.h>
+#include <affordance_template_msgs/EndEffectorPoseData.h>
 #include <planner_interface/planner_interface.h>
 #include <moveit_planner/moveit_planner.h>
 
@@ -23,6 +26,7 @@ namespace affordance_template_markers
     planner_interface::PlannerInterface *robot_planner_; 
     
     bool configured_;
+    bool reload_attempted_;
     std::string config_file_;
     std::string root_frame_;
     
