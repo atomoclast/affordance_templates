@@ -6,7 +6,6 @@ RobotInterface::RobotInterface(const std::string &_joint_states_topic)
 {
   reset();
   ros::NodeHandle nh;
-  //todo TF listener
   nh.subscribe(_joint_states_topic, 10, &RobotInterface::jointStateCallback, this);
 }
 
@@ -21,15 +20,115 @@ bool RobotInterface::load(const std::string &yaml)
 
   ROS_INFO("[RobotInterface::load] loading with input yaml %s", yaml.c_str());
   
-  // try
-  // {
-  // TODO read from file io here...
-  // }
-  // except(...)
-  // {
-  //   ROS_FATAL("[RobotInterface::load] error opening config file!!");
-  //   return false;
-  // }
+  try
+  {
+    std::vector<std::string> tokens;
+    boost::split(tokens, yaml, boost::is_any_of("/"));
+    std::string yaml_base = tokens.back();
+    ROS_WARN_STREAM("yaml base is "<<yaml_base);
+
+    ros::NodeHandle nh;
+    nh.setParam("/affordance_templates/robot_yaml", yaml_base);
+   
+    YAML::Node yaml_doc = YAML::LoadFile(yaml);
+
+    robot_config_.filename = yaml;
+    robot_config_.name = yaml_doc["robot_name"].as<std::string>();
+    robot_config_.config_package = yaml_doc["config_package"].as<std::string>();
+    robot_config_.config_file = yaml_doc["config_file"].as<std::string>();
+    robot_config_.planner_type = yaml_doc["planner_type"].as<std::string>();
+    robot_config_.frame_id = yaml_doc["frame_id"].as<std::string>();
+
+    tf::Quaternion q;
+    q.setRPY(yaml_doc["root_offset"][3].as<double>(), yaml_doc["root_offset"][4].as<double>(), yaml_doc["root_offset"][5].as<double>());
+    geometry_msgs::Pose p;
+    p.position.x = yaml_doc["root_offset"][0].as<double>();
+    p.position.y = yaml_doc["root_offset"][1].as<double>();
+    p.position.z = yaml_doc["root_offset"][2].as<double>();
+    p.orientation.x = q[0];
+    p.orientation.y = q[1];
+    p.orientation.z = q[2];
+    p.orientation.w = q[3];
+    robot_config_.root_offset = p;
+
+    // TODO
+    // more python to convert to C++ once we get EEConfig() class up
+    // for ee in self.yaml_config['end_effector_group_map']:
+    //     ee_config = EndEffectorConfig()
+    //     ee_config.name = ee['name']
+    //     ee_config.id = ee['id']
+    //     ee_config.pose_offset = Pose()
+
+    //     try :
+    //         q = (kdl.Rotation.RPY(ee['pose_offset'][3],ee['pose_offset'][4],ee['pose_offset'][5])).GetQuaternion()
+    //         ee_config.pose_offset.position.x = float(ee['pose_offset'][0])
+    //         ee_config.pose_offset.position.y = float(ee['pose_offset'][1])
+    //         ee_config.pose_offset.position.z = float(ee['pose_offset'][2])
+    //         ee_config.pose_offset.orientation.x = q[0]
+    //         ee_config.pose_offset.orientation.y = q[1]
+    //         ee_config.pose_offset.orientation.z = q[2]
+    //         ee_config.pose_offset.orientation.w = q[3]
+    //     except :
+    //         ee_config.pose_offset.orientation.w = 1.0
+    //     self.manipulator_pose_map[ee['name']] = ee_config.pose_offset
+        
+    //     ee_config.tool_offset = Pose()
+    //     try :
+    //         q = (kdl.Rotation.RPY(ee['tool_offset'][3],ee['tool_offset'][4],ee['tool_offset'][5])).GetQuaternion()
+    //         ee_config.tool_offset.position.x = float(ee['tool_offset'][0])
+    //         ee_config.tool_offset.position.y = float(ee['tool_offset'][1])
+    //         ee_config.tool_offset.position.z = float(ee['tool_offset'][2])
+    //         ee_config.tool_offset.orientation.x = q[0]
+    //         ee_config.tool_offset.orientation.y = q[1]
+    //         ee_config.tool_offset.orientation.z = q[2]
+    //         ee_config.tool_offset.orientation.w = q[3]
+    //     except :
+    //         ee_config.tool_offset.orientation.w = 1.0
+    //     self.tool_offset_map[ee['name']] = ee_config.tool_offset
+
+    //     self.end_effector_names.append(ee['name'])
+    //     self.end_effector_name_map[ee['id']] = ee['name']
+    //     self.manipulator_id_map[ee['name']] = ee['id']
+        
+    //     self.robot_config.end_effectors.append(ee_config)
+
+        // # if there is a tool offset
+        // # t = geometry_msgs.msg.Pose()
+        // # try :
+        // #     q = (kdl.Rotation.RPY(ee['tool_offset'][3],ee['tool_offset'][4],ee['tool_offset'][5])).GetQuaternion()
+        // #     t.position.x = float(ee['tool_offset'][0])
+        // #     t.position.y = float(ee['tool_offset'][1])
+        // #     t.position.z = float(ee['tool_offset'][2])
+        // #     t.orientation.x = q[0]
+        // #     t.orientation.y = q[1]
+        // #     t.orientation.z = q[2]
+        // #     t.orientation.w = q[3]
+        // # except :
+        // #     t.orientation.w = 1.0
+        // # self.tool_offset_map[ee['name']] = t
+
+    // for ee in self.yaml_config['end_effector_pose_map']:
+
+    //     ee_pose_config = EndEffectorPoseData()
+
+    //     ee_pose_config.group = ee['group']
+    //     ee_pose_config.name = ee['name']
+    //     ee_pose_config.id = ee['id']
+        
+    //     self.robot_config.end_effector_pose_data.append(ee_pose_config)
+
+    //     if not ee['group'] in self.end_effector_pose_map:
+    //         self.end_effector_pose_map[ee['group']] = {}
+    //         self.end_effector_id_map[ee['group']] = {}
+    //     self.end_effector_pose_map[ee['group']][ee['name']] = int(ee['id'])
+    //     self.end_effector_id_map[ee['group']][int(ee['id'])] = ee['name']
+    
+  }
+  catch(...)
+  {
+    ROS_FATAL("[RobotInterface::load] error opening config file!!");
+    return false;
+  }
 
   ROS_INFO("[RobotInterface::load] successfully loaded from yaml file");
   return true;
@@ -43,7 +142,7 @@ bool RobotInterface::load(const affordance_template_msgs::RobotConfig &config)
   robot_config_ = config;
 
   ros::NodeHandle nh;
-  nh.setParam("affordance_templates/robot_yaml", "");
+  nh.setParam("/affordance_templates/robot_yaml", "");
 
   for (auto config : robot_config_.end_effectors)
   {
@@ -119,6 +218,15 @@ bool RobotInterface::configure() // TODO
         // robot_planner_->setGoalJointTolerance(g, 0.05);
         std::string ee_root_frame = robot_planner_->getControlFrame(g);
         ROS_INFO("[RobotInterface::configure] control frame: %s", ee_root_frame.c_str());
+
+        // try{
+        //   listener.lookupTransform("/turtle2", "/turtle1",  
+        //                            ros::Time(0), transform);
+        // }
+        // catch (tf::TransformException ex){
+        //   ROS_ERROR("%s",ex.what());
+        //   ros::Duration(1.0).sleep();
+        // }
 
         // @seth -- still todo with python-->cpp
         // self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
@@ -229,4 +337,12 @@ std::string RobotInterface::getManipulator(const std::string &ee)
 std::string RobotInterface::getPkgPath(const std::string &pkg)
 {
   return ""; //TODO
+//   #include <ros/package.h>
+
+// ...
+
+//   std::string path = ros::package::getPath("roslib");
+//   using package::V_string;
+//   V_string packages;
+//   ros::package::getAll(packages);
 }

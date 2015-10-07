@@ -1,9 +1,10 @@
 #ifndef _ROBOT_INTERFACE_H_
 #define _ROBOT_INTERFACE_H_
 
-// #include <algorithm>
-#include <iostream>
+#include <fstream>
+#include "yaml-cpp/yaml.h"
 #include <ros/ros.h>
+#include <tf/transform_listener.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
 #include <affordance_template_msgs/RobotConfig.h>
@@ -18,7 +19,7 @@ namespace affordance_template_markers
 
     sensor_msgs::JointState joint_data_;
     affordance_template_msgs::RobotConfig robot_config_;
-
+    tf::TransformListener listener_;
     planner_interface::PlannerInterface *robot_planner_; 
     
     bool configured_;
