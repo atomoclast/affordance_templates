@@ -158,7 +158,7 @@ bool RobotInterface::load(const std::string &yaml)
     {
       std::string path = ros::package::getPath("affordance_template_library");
       path += "/robots/" + yaml;
-      ROS_ERROR_STREAM("[RobotInterface::load] couldn't open file!! retrying with full path"<<path);
+      ROS_ERROR_STREAM("[RobotInterface::load] couldn't open file!! retrying with full path "<<path);
 
       reload_attempted_ = true;
       bool loaded = load(path);
@@ -380,12 +380,7 @@ std::string RobotInterface::getManipulator(const std::string &ee)
 
 std::string RobotInterface::getPkgPath(const std::string &pkg)
 {
-  return ""; //TODO
-
-//   std::string path = ros::package::getPath("roslib");
-//   using package::V_string;
-//   V_string packages;
-//   ros::package::getAll(packages);
+  return ros::package::getPath(pkg);
 }
 
 // tester main
