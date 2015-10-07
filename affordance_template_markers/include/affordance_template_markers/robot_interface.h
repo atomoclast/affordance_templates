@@ -27,6 +27,7 @@ namespace affordance_template_markers
     
     bool configured_;
     bool reload_attempted_;
+    bool planner_created_;
     std::string config_file_;
     std::string root_frame_;
     

@@ -12,7 +12,8 @@ RobotInterface::RobotInterface(const std::string &_joint_states_topic)
 
 RobotInterface::~RobotInterface() 
 {
-    // delete robot_planner_;
+  if (planner_created_)
+    delete robot_planner_;
 }
 
 bool RobotInterface::load(const std::string &yaml)
@@ -227,11 +228,13 @@ bool RobotInterface::configure() // TODO
   }
   else if (robot_config_.planner_type == "atlas")
   {
+    ROS_WARN("[RobotInterface::configure] nothing for atlas planner yet...");
     return false;
     // robot_planner_ = AtlasPathPlanner(robot_config_.name, config_file_);
   }
   else if (robot_config_.planner_type == "hybrid")
   {
+    ROS_WARN("[RobotInterface::configure] nothing for hybrid planner yet...");
     return false;
     // robot_planner_ = AtlasHybridPathPlanner(robot_config_.name, config_file_);
   }
@@ -262,15 +265,6 @@ bool RobotInterface::configure() // TODO
         // robot_planner_->setGoalJointTolerance(g, 0.05);
         std::string ee_root_frame = robot_planner_->getControlFrame(g);
         ROS_INFO("[RobotInterface::configure] control frame: %s", ee_root_frame.c_str());
-
-        // try{
-        //   listener.lookupTransform("/turtle2", "/turtle1",  
-        //                            ros::Time(0), transform);
-        // }
-        // catch (tf::TransformException ex){
-        //   ROS_ERROR("%s",ex.what());
-        //   ros::Duration(1.0).sleep();
-        // }
 
         // @seth -- still todo with python-->cpp
         // self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
@@ -318,7 +312,7 @@ bool RobotInterface::configure() // TODO
 
   // todo -- @seth figure out what the hell a gripper_action looks like
   // I am confused because this is a python list but other places (other classes) is referenced as a dictionary
-  // this is the grossest gross c++ container ever
+  // this is the grossest gross c++ container ever; I hate you Steve
   // if (robot_config_.gripper_action)
   // {
   //   std::vector<std::map<std::pair<std::string, std::string>, std::pair<std::string, int> action;
@@ -336,6 +330,7 @@ bool RobotInterface::configure() // TODO
 
 void RobotInterface::reset()
 {
+  planner_created_ = false;
   configured_ = false;
   ee_names_.clear();
   ee_groups_.clear();
