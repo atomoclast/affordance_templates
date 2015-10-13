@@ -1,9 +1,5 @@
 *.pyc
 *~
-CMakeLists.txt
-package.xml
-Makefile
-manifest.xml
 affordance_template_server_protobuf/proto_gen/*
 *.orig
 *.bak
@@ -15,13 +11,9 @@ qtcreator-build/*
 */*.cmake
 */cmake/*
 build-*
-stack.xml
 */build
 */lib
 */bin
 */msg_gen
 */srv_gen
-*/CMakeLists.txt
-*/package.xml
 */Makefile
-*/manifest.xml
