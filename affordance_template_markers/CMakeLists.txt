@@ -1,40 +1,38 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(affordance_template_markers)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
+if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+endif()
+
 find_package(catkin REQUIRED COMPONENTS
-  dynamic_reconfigure
-  geometry_msgs
-  interactive_markers
-  nav_msgs
-  rospy
-  std_msgs
+    affordance_template_msgs
+    interactive_markers
+    planner_interface
+    moveit_planner
+    geometry_msgs
+    nav_msgs
+    std_msgs
+    roscpp
 )
 
-catkin_python_setup()
+catkin_package(
+    INCLUDE_DIRS include
+	CATKIN_DEPENDS affordance_template_msgs geometry_msgs interactive_markers nav_msgs roscpp std_msgs planner_interface moveit_planner
+    LIBRARIES yaml-cpp
+    DEPENDS system_lib yaml-cpp
+)
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(CATKIN_DEPENDS dynamic_reconfigure geometry_msgs interactive_markers nav_msgs rospy std_msgs)
-
-
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-# include_directories(include)
 include_directories(
-  ${catkin_INCLUDE_DIRS}
+    include
+    yaml-cpp
+    ${catkin_INCLUDE_DIRS}
 )
 
+add_library(robot_interface src/robot_interface.cpp)
+
+# !!!!!
+# use to test various .yaml files, take out when running as lib
+add_executable(ri_test_main src/robot_interface.cpp)
+target_link_libraries(ri_test_main ${catkin_LIBRARIES} yaml-cpp)
+# !!!!!
