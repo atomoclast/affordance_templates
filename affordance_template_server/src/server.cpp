@@ -23,11 +23,11 @@ std::string AffordanceTemplateServer::getPackagePath(const std::string &pkg_name
     return path;
 }
 
-std::map<std::string, affordance_template_markers::RobotInterface&> AffordanceTemplateServer::getAvailableRobots(const std::string &path)
+std::map<std::string, affordance_template_markers::RobotInterface*> AffordanceTemplateServer::getAvailableRobots(const std::string &path)
 {
     ROS_INFO("[AffordanceTemplateServer::getAvailableRobots] loading all robots from path %s", path.c_str());
 
-    std::map<std::string, affordance_template_markers::RobotInterface&> robots;
+    std::map<std::string, affordance_template_markers::RobotInterface*> robots;
 
     std::string root = ros::package::getPath(path);
     if (!root.empty())
@@ -55,8 +55,8 @@ std::map<std::string, affordance_template_markers::RobotInterface&> AffordanceTe
         // make robot instances with the .yamls we just found
         for (auto r : robot_paths_vec)
         {
-            affordance_template_markers::RobotInterface ri;
-            bool loaded = ri.load(r);
+            affordance_template_markers::RobotInterface *ri = new affordance_template_markers::RobotInterface();
+            bool loaded = ri->load(r);
 
             if (!loaded)
             {
@@ -64,7 +64,7 @@ std::map<std::string, affordance_template_markers::RobotInterface&> AffordanceTe
                 continue;
             }
 
-            affordance_template_msgs::RobotConfig rconf = ri.getRobotConfig();
+            affordance_template_msgs::RobotConfig rconf = ri->getRobotConfig();
             if (getPackagePath(rconf.config_package).empty())
             {
                 ROS_WARN("[AffordanceTemplateServer::getAvailableRobots] config package %s NOT found, ignoring.", r.c_str());
@@ -72,7 +72,7 @@ std::map<std::string, affordance_template_markers::RobotInterface&> AffordanceTe
             else
             {
                 ROS_INFO("[AffordanceTemplateServer::getAvailableRobots] config package %s found", r.c_str());
-                // robots[r] = ri;
+                robots[r] = ri;
             }
         }
     }

@@ -21,7 +21,7 @@ namespace affordance_template_server
   class AffordanceTemplateServer
   {
     void run();
-    std::map<std::string, affordance_template_markers::RobotInterface&> getAvailableRobots(const std::string&);
+    std::map<std::string, affordance_template_markers::RobotInterface*> getAvailableRobots(const std::string&);
     inline bool getStatus() { return status_; }
 
     tf::TransformListener listener_;
