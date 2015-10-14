@@ -6,6 +6,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 find_package(catkin REQUIRED COMPONENTS
+    tf
     roscpp
     affordance_template_msgs
     affordance_template_markers
@@ -13,7 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_package(
     INCLUDE_DIRS include
-    CATKIN_DEPENDS roscpp affordance_template_msgs affordance_template_markers
+    CATKIN_DEPENDS roscpp affordance_template_msgs affordance_template_markers tf
+    #LIBRARIES ${PROJECT_NAME}
     DEPENDS system_lib
 )
 
@@ -27,5 +29,5 @@ include_directories(
 # !!!!!
 # use to test various .yaml files, take out when running as lib
 add_executable(at_test_main src/server.cpp)
-target_link_libraries(at_test_main ${catkin_LIBRARIES})
+target_link_libraries(at_test_main ${catkin_LIBRARIES} robot_interface)
 # !!!!!
