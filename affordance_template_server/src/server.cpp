@@ -32,6 +32,9 @@ void AffordanceTemplateServer::getAvailableTemplates()
     std::string root = getPackagePath(pkg_name_);
     if (!root.empty())
     {
+        // clear what we have, start over
+        at_collection_.clear();
+
         root += "/templates";
         if (!boost::filesystem::exists(root) || !boost::filesystem::is_directory(root))
         {
@@ -67,15 +70,30 @@ void AffordanceTemplateServer::getAvailableTemplates()
         // make robot instances with the .yamls we just found
         for (auto& t : template_paths)
         {
-            ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] parsing template: %s", t.first.c_str());
-            
+            FILE* f_pnt = std::fopen(t.second.c_str(), "r");
+            char json_buff[65536];
+            rapidjson::FileReadStream json(f_pnt, json_buff, sizeof(json_buff));
+
             rapidjson::Document d;
-            if (!d.Parse(t.second.c_str()).HasParseError())
+            if (d.ParseStream(json).HasParseError())
             {
-                
+                ROS_WARN("[AffordanceTemplateServer::getAvailableTemplates] couldn't properly parse template; ignoring.");
             }
             else
-                ROS_WARN("[AffordanceTemplateServer::getAvailableTemplates] couldn't properly parse template; ignoring.");
+            {
+                ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] parsing template: %s", t.first.c_str());
+
+                affordance_template_object::AffordanceTemplateStructure at;
+                at.name = d["name"].GetString();
+                ROS_WARN_STREAM("name is "<<at.name);
+                at.image = d["image"].GetString();
+                ROS_WARN_STREAM("img is "<<at.image);
+                at.filename = t.second;
+                ROS_WARN_STREAM("filename is "<<at.filename);
+
+                at_collection_[at.name] = at;
+            }
+            std::fclose(f_pnt);
         }
     }
     else

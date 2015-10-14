@@ -5,8 +5,7 @@
 #include <boost/filesystem.hpp>
 
 #include <rapidjson/document.h>
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
+#include <rapidjson/filereadstream.h>
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -14,7 +13,8 @@
 #include <affordance_template_msgs/RobotConfig.h>
 #include <affordance_template_markers/robot_interface.h>
 // #include <affordance_template_server/service_interface.h>
-#include <affordance_template_library/affordance_template_collection.h>
+#include <affordance_template_library/affordance_template_structure.h>
+#include <affordance_template_library/affordance_template_marker.h>
 
 using namespace rapidjson;
 
@@ -24,11 +24,13 @@ namespace affordance_template_server
   {
     void configureServer();
     std::map<std::string, affordance_template_markers::RobotInterface*> getAvailableRobots();
-    void getAvailableTemplates(); //std::map<std::string, affordance_template_object::AffordanceTemplateCollection>
+    void getAvailableTemplates();
     inline bool getStatus() { return status_; }
 
     // affordance_template_server::ServiceInterface srv_interface; TODO
     tf::TransformListener listener_;
+
+    std::map<std::string, affordance_template_object::AffordanceTemplateStructure> at_collection_;
 
     bool status_;
 
