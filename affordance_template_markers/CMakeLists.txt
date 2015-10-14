@@ -19,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
     INCLUDE_DIRS include
 	CATKIN_DEPENDS affordance_template_msgs geometry_msgs interactive_markers nav_msgs roscpp std_msgs planner_interface moveit_planner
-    LIBRARIES yaml-cpp
+    LIBRARIES robot_interface
     DEPENDS system_lib yaml-cpp
 )
 
@@ -30,6 +30,7 @@ include_directories(
 )
 
 add_library(robot_interface src/robot_interface.cpp)
+target_link_libraries(robot_interface ${catkin_LIBRARIES} yaml-cpp)
 
 # !!!!!
 # use to test various .yaml files, take out when running as lib
