@@ -101,22 +101,22 @@ include_directories(
 )
 
 # Declare a cpp library
- add_library(jsoncpp
-   src/jsoncpp.cpp
- )
+ #add_library(jsoncpp
+ #  src/jsoncpp.cpp
+ #)
 
 ## Declare a cpp executable
-add_executable(at_recorder src/at_recorder_src.cpp)
+#add_executable(at_recorder src/at_recorder_src.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(at_recorder tf orocos_kdl)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(at_recorder
-  ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES}
-  jsoncpp
-)
+#target_link_libraries(at_recorder
+#  ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES}
+#  jsoncpp
+#)
 
 #############
 ## Install ##
