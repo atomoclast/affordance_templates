@@ -47,6 +47,7 @@ namespace affordance_template_markers
 
 
   public:
+    RobotInterface();
     RobotInterface(const std::string &_joint_states_topic); 
     ~RobotInterface();
 
@@ -54,6 +55,7 @@ namespace affordance_template_markers
     bool load(const affordance_template_msgs::RobotConfig&);
     bool configure();
 
+    inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
     std::string getEEName(const int);
     int getEEId(const std::string&);
     std::string getManipulator(const std::string&); // is this right??

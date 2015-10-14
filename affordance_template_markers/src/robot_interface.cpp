@@ -2,7 +2,15 @@
 
 using namespace affordance_template_markers;
 
-RobotInterface::RobotInterface(const std::string &_joint_states_topic)
+RobotInterface::RobotInterface()
+{
+  reset();
+  ros::NodeHandle nh;
+  nh.subscribe("joint_states", 10, &RobotInterface::jointStateCallback, this);
+  reload_attempted_ = false; 
+}
+
+RobotInterface::RobotInterface(const std::string &_joint_states_topic="joint_states")
 {
   reset();
   ros::NodeHandle nh;
