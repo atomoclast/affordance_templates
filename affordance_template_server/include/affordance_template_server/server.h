@@ -1,5 +1,5 @@
-#ifndef AT_PARSER_H_
-#define AT_PARSER_H_
+#ifndef AT_SERVER_H_
+#define AT_SERVER_H_
 
 #include <iostream>
 
@@ -13,11 +13,11 @@ using namespace rapidjson;
 
 namespace affordance_template_server
 {
-  class ATParser
+  class AffordanceTemplateServer
   {
   public:
-    ATParser();
-    ~ATParser();
+    AffordanceTemplateServer();
+    ~AffordanceTemplateServer();
   };
 }
 
