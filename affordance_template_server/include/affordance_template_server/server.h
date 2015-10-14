@@ -13,6 +13,8 @@
 #include <tf/transform_listener.h>
 #include <affordance_template_msgs/RobotConfig.h>
 #include <affordance_template_markers/robot_interface.h>
+// #include <affordance_template_server/service_interface.h>
+#include <affordance_template_library/affordance_template_collection.h>
 
 using namespace rapidjson;
 
@@ -20,24 +22,27 @@ namespace affordance_template_server
 {
   class AffordanceTemplateServer
   {
-    void run();
-    std::map<std::string, affordance_template_markers::RobotInterface*> getAvailableRobots(const std::string&);
+    void configureServer();
+    std::map<std::string, affordance_template_markers::RobotInterface*> getAvailableRobots();
+    void getAvailableTemplates(); //std::map<std::string, affordance_template_object::AffordanceTemplateCollection>
     inline bool getStatus() { return status_; }
 
+    // affordance_template_server::ServiceInterface srv_interface; TODO
     tf::TransformListener listener_;
 
     bool status_;
-  
+
+    std::string pkg_name_;
+    
   public:
-    AffordanceTemplateServer();
+    AffordanceTemplateServer(); //TODO
     ~AffordanceTemplateServer();
     
-    // void configureServer();
+    void run();
     // bool addTemplate();
     // bool removeTemplate();
     // int getNextTemplateId();
     std::string getPackagePath(const std::string&);
-    // ?? getAvailableTemplates(); TODO
     // bool loadFromFile(const std::string&);
     // bool updateTemplatePose();
   };
