@@ -19,7 +19,7 @@ find_package(Boost REQUIRED COMPONENTS thread)
 catkin_package(
     INCLUDE_DIRS include
     CATKIN_DEPENDS roscpp affordance_template_msgs affordance_template_markers tf affordance_template_library interactive_markers
-    #LIBRARIES ${PROJECT_NAME}
+    LIBRARIES ${PROJECT_NAME}
     DEPENDS system_lib Boost
 )
 
@@ -28,10 +28,7 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-#add_library(${PROJECT_NAME} src/server.cpp)
+add_library(${PROJECT_NAME} src/server.cpp)
 
-# !!!!!
-# use to test various .yaml files, take out when running as lib
-add_executable(at_test_main src/server.cpp)
-target_link_libraries(at_test_main ${catkin_LIBRARIES} robot_interface)
-# !!!!!
+add_executable(server src/server.cpp)
+target_link_libraries(server ${catkin_LIBRARIES})

@@ -337,11 +337,15 @@ std::string AffordanceTemplateServer::getPackagePath(const std::string &pkg_name
     return path;
 }
 
-// tester main
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "at_json_parser_test_main");
-  AffordanceTemplateServer atp;
+  ros::init(argc, argv, "affordance_template_server");
+
+  ros::NodeHandle nh;
+  std::string robot_name = "";
+  nh.getParam("robot_config", robot_name);
+
+  affordance_template_server::AffordanceTemplateServer atp(robot_name);
 
   return 0;
 }
