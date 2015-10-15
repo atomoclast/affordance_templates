@@ -2,16 +2,48 @@
 
 using namespace affordance_template_server;
 
-AffordanceTemplateServer::AffordanceTemplateServer()
+AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yaml="")
 {
+    boost::thread at_server_thread(boost::bind(&AffordanceTemplateServer::run, this));
+
+    if (_robot_yaml.empty())
+        ROS_WARN("[AffordanceTemplateServer] no robot yaml provided - BE SURE TO LOAD ROBOT FROM SERVICE!!");
+
     pkg_name_ = "affordance_template_library";
+
+    im_server_.reset( new interactive_markers::InteractiveMarkerServer(std::string("affordance_template_interactive_marker_server"), "", false));
     
-    if (!getAvailableRobots())
-        ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot .yamls!!");
-    if (!getAvailableTemplates())
+    // load up robots if yaml provided
+    if (!_robot_yaml.empty())
+        if (!loadRobots())
+            ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot .yamls!!");
+    else 
+    {
+        affordance_template_markers::RobotInterface *ri = new affordance_template_markers::RobotInterface();
+        bool loaded = ri->load(_robot_yaml);
+
+        if (!loaded)        
+            ROS_WARN("[AffordanceTemplateServer] robot %s NOT loaded", _robot_yaml.c_str());
+
+        affordance_template_msgs::RobotConfig rconf = ri->getRobotConfig();
+        if (getPackagePath(rconf.config_package).empty())
+        {
+            ROS_WARN("[AffordanceTemplateServer::loadRobots] config package %s NOT found, ignoring.", _robot_yaml.c_str());
+        }
+        else
+        {
+            ROS_INFO("[AffordanceTemplateServer::loadRobots] config package %s found", _robot_yaml.c_str());
+            robot_interface_map_[_robot_yaml] = ri;
+        }
+    }
+
+    if (!loadTemplates())
         ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot JSONs!!");
 
     status_ = false;
+
+    ROS_INFO("[AffordanceTemplateServer] server configured. spinning...");
+    at_server_thread.join();
 }
 
 AffordanceTemplateServer::~AffordanceTemplateServer() {}
@@ -25,8 +57,7 @@ void AffordanceTemplateServer::configureServer()
 void AffordanceTemplateServer::run()
 {
     configureServer();
-    while (ros::ok())
-        ros::Duration(1).sleep();
+    ros::spin();
 }
 
 /**
@@ -36,9 +67,9 @@ void AffordanceTemplateServer::run()
  * 
  * @return false if can't find or load the directory, true otherwise
  */
-bool AffordanceTemplateServer::getAvailableTemplates()
+bool AffordanceTemplateServer::loadTemplates()
 {
-    ROS_INFO("[AffordanceTemplateServer:getAvailableTemplates] searching for JSON templates in package: %s", pkg_name_.c_str());
+    ROS_INFO("[AffordanceTemplateServer:loadTemplates] searching for JSON templates in package: %s", pkg_name_.c_str());
 
     std::string root = getPackagePath(pkg_name_);
     if (root.empty())
@@ -50,7 +81,7 @@ bool AffordanceTemplateServer::getAvailableTemplates()
     root += "/templates";
     if (!boost::filesystem::exists(root) || !boost::filesystem::is_directory(root))
     {
-        ROS_WARN("[AffordanceTemplateServer::getAvailableTemplates] cannot find templates in path %s!!", root.c_str());
+        ROS_WARN("[AffordanceTemplateServer::loadTemplates] cannot find templates in path %s!!", root.c_str());
         return false;
     }
 
@@ -71,7 +102,7 @@ bool AffordanceTemplateServer::getAvailableTemplates()
                 str = std::strtok(NULL, "/");
 
             std::string name(str);
-            ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] found template name: %s", name.c_str());
+            ROS_INFO("[AffordanceTemplateServer::loadTemplates] found template name: %s", name.c_str());
             template_paths[name] = dir_it->path().string();
             
             delete [] cstr;
@@ -89,19 +120,19 @@ bool AffordanceTemplateServer::getAvailableTemplates()
         rapidjson::Document jdoc;
         if (jdoc.ParseStream(json).HasParseError())
         {
-            ROS_WARN("[AffordanceTemplateServer::getAvailableTemplates] couldn't properly parse template; ignoring.");
+            ROS_WARN("[AffordanceTemplateServer::loadTemplates] couldn't properly parse template; ignoring.");
         }
         else
         {
-            ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] parsing template: %s", t.first.c_str());
+            ROS_INFO("[AffordanceTemplateServer::loadTemplates] parsing template: %s", t.first.c_str());
 
             affordance_template_object::AffordanceTemplateStructure at;
             at.name = jdoc["name"].GetString();
-            ROS_INFO_STREAM("[AffordanceTemplateServer::getAvailableTemplates] name is "<<at.name);
+            ROS_INFO_STREAM("[AffordanceTemplateServer::loadTemplates] name is "<<at.name);
             at.image = jdoc["image"].GetString();
-            ROS_INFO_STREAM("[AffordanceTemplateServer::getAvailableTemplates] img is "<<at.image);
+            ROS_INFO_STREAM("[AffordanceTemplateServer::loadTemplates] img is "<<at.image);
             at.filename = t.second;
-            ROS_INFO_STREAM("[AffordanceTemplateServer::getAvailableTemplates] filename is "<<at.filename);
+            ROS_INFO_STREAM("[AffordanceTemplateServer::loadTemplates] filename is "<<at.filename);
 
             const rapidjson::Value& traj = jdoc["end_effector_trajectory"];
             for (rapidjson::SizeType t = 0; t < traj.Size(); ++t)
@@ -110,7 +141,7 @@ bool AffordanceTemplateServer::getAvailableTemplates()
                 ee.name = traj[t]["name"].GetString();
                 const rapidjson::Value& ee_group = traj[t]["end_effector_group"];
                 ee.id = ee_group[0]["id"].GetInt();
-                ROS_INFO_STREAM("[AffordanceTemplateServer::getAvailableTemplates] found EE trajectory with name: "<<ee.name<<" and id: "<<ee.id);
+                ROS_INFO_STREAM("[AffordanceTemplateServer::loadTemplates] found EE trajectory with name: "<<ee.name<<" and id: "<<ee.id);
 
                 const rapidjson::Value& waypoints = ee_group[0]["end_effector_waypoint"];
                 for (rapidjson::SizeType w = 0; w < waypoints.Size(); ++w)
@@ -149,10 +180,10 @@ bool AffordanceTemplateServer::getAvailableTemplates()
 
                     ee.waypoints.push_back(wp);
                     
-                    ROS_INFO_STREAM("[AffordanceTemplateServer::getAvailableTemplates]     waypoint "<<w+1<<" has ee_pose: "<<wp.ee_pose<<" and display_object: "<<wp.display_object);
-                    ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] \tat origin XYZ: %g %g %g and RPY: %g %g %g", org.position[0], org.position[1], org.position[2], org.orientation[0], org.orientation[1], org.orientation[2]);
-                    ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] \tcontrol for axes set to: XYZ: %s %s %s", ctrl.toBoolString(ctrl.translation[0]).c_str(), ctrl.toBoolString(ctrl.translation[1]).c_str(), ctrl.toBoolString(ctrl.translation[2]).c_str());
-                    ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] \tcontrol for axes set to: RPY: %s %s %s", ctrl.toBoolString(ctrl.rotation[0]).c_str(), ctrl.toBoolString(ctrl.rotation[1]).c_str(), ctrl.toBoolString(ctrl.rotation[2]).c_str());
+                    ROS_INFO_STREAM("[AffordanceTemplateServer::loadTemplates]     waypoint "<<w+1<<" has ee_pose: "<<wp.ee_pose<<" and display_object: "<<wp.display_object);
+                    ROS_INFO("[AffordanceTemplateServer::loadTemplates] \tat origin XYZ: %g %g %g and RPY: %g %g %g", org.position[0], org.position[1], org.position[2], org.orientation[0], org.orientation[1], org.orientation[2]);
+                    ROS_INFO("[AffordanceTemplateServer::loadTemplates] \tcontrol for axes set to: XYZ: %s %s %s", ctrl.toBoolString(ctrl.translation[0]).c_str(), ctrl.toBoolString(ctrl.translation[1]).c_str(), ctrl.toBoolString(ctrl.translation[2]).c_str());
+                    ROS_INFO("[AffordanceTemplateServer::loadTemplates] \tcontrol for axes set to: RPY: %s %s %s", ctrl.toBoolString(ctrl.rotation[0]).c_str(), ctrl.toBoolString(ctrl.rotation[1]).c_str(), ctrl.toBoolString(ctrl.rotation[2]).c_str());
                 }
 
                 at.ee_trajectories.push_back(ee);
@@ -218,11 +249,11 @@ bool AffordanceTemplateServer::getAvailableTemplates()
                 marker.shape = shp;
                 marker.controls = ctrl;
 
-                ROS_INFO_STREAM("[AffordanceTemplateServer::getAvailableTemplates] display object "<<i+1<<" has name: "<<marker.name);
-                ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] \tat origin XYZ: %g %g %g and RPY: %g %g %g", orig.position[0], orig.position[1], orig.position[2], orig.orientation[0], orig.orientation[1], orig.orientation[2]);
-                ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] \tcontrol for axes set to: XYZ: %s %s %s", ctrl.toBoolString(ctrl.translation[0]).c_str(), ctrl.toBoolString(ctrl.translation[1]).c_str(), ctrl.toBoolString(ctrl.translation[2]).c_str());
-                ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] \tcontrol for axes set to: RPY: %s %s %s", ctrl.toBoolString(ctrl.rotation[0]).c_str(), ctrl.toBoolString(ctrl.rotation[1]).c_str(), ctrl.toBoolString(ctrl.rotation[2]).c_str());
-                ROS_INFO("[AffordanceTemplateServer::getAvailableTemplates] \t%s", shape_str.c_str());
+                ROS_INFO_STREAM("[AffordanceTemplateServer::loadTemplates] display object "<<i+1<<" has name: "<<marker.name);
+                ROS_INFO("[AffordanceTemplateServer::loadTemplates] \tat origin XYZ: %g %g %g and RPY: %g %g %g", orig.position[0], orig.position[1], orig.position[2], orig.orientation[0], orig.orientation[1], orig.orientation[2]);
+                ROS_INFO("[AffordanceTemplateServer::loadTemplates] \tcontrol for axes set to: XYZ: %s %s %s", ctrl.toBoolString(ctrl.translation[0]).c_str(), ctrl.toBoolString(ctrl.translation[1]).c_str(), ctrl.toBoolString(ctrl.translation[2]).c_str());
+                ROS_INFO("[AffordanceTemplateServer::loadTemplates] \tcontrol for axes set to: RPY: %s %s %s", ctrl.toBoolString(ctrl.rotation[0]).c_str(), ctrl.toBoolString(ctrl.rotation[1]).c_str(), ctrl.toBoolString(ctrl.rotation[2]).c_str());
+                ROS_INFO("[AffordanceTemplateServer::loadTemplates] \t%s", shape_str.c_str());
 
                 at.display_objects.push_back(marker);
             }
@@ -237,16 +268,16 @@ bool AffordanceTemplateServer::getAvailableTemplates()
     return true;
 }
 
-bool AffordanceTemplateServer::getAvailableRobots()
+bool AffordanceTemplateServer::loadRobots()
 {
-    ROS_INFO("[AffordanceTemplateServer::getAvailableRobots] loading all robots from path: %s", pkg_name_.c_str());
+    ROS_INFO("[AffordanceTemplateServer::loadRobots] loading all robots from path: %s", pkg_name_.c_str());
 
     std::string root = getPackagePath(pkg_name_);
     if (!root.empty())
     {
         if (!boost::filesystem::exists(root) || !boost::filesystem::is_directory(root))
         {
-            ROS_WARN("[AffordanceTemplateServer::getAvailableRobots] cannot find robots in path: %s!!", root.c_str());
+            ROS_WARN("[AffordanceTemplateServer::loadRobots] cannot find robots in path: %s!!", root.c_str());
             return false;
         }
 
@@ -258,7 +289,7 @@ bool AffordanceTemplateServer::getAvailableRobots()
         {
             if (boost::filesystem::is_regular_file(*dir_it) && dir_it->path().extension() == ".yaml")
             {
-                ROS_INFO("[AffordanceTemplateServer::getAvailableRobots] found robot yaml at path: %s", dir_it->path().string().c_str());
+                ROS_INFO("[AffordanceTemplateServer::loadRobots] found robot yaml at path: %s", dir_it->path().string().c_str());
                 robot_paths_vec.push_back(dir_it->path().string());
             }
             ++dir_it;
@@ -273,24 +304,24 @@ bool AffordanceTemplateServer::getAvailableRobots()
 
             if (!loaded)
             {
-                ROS_WARN("[AffordanceTemplateServer::getAvailableRobots] robot %s NOT loaded, ignoring.", r.c_str());
+                ROS_WARN("[AffordanceTemplateServer::loadRobots] robot %s NOT loaded, ignoring.", r.c_str());
                 continue;
             }
 
             affordance_template_msgs::RobotConfig rconf = ri->getRobotConfig();
             if (getPackagePath(rconf.config_package).empty())
             {
-                ROS_WARN("[AffordanceTemplateServer::getAvailableRobots] config package %s NOT found, ignoring.", r.c_str());
+                ROS_WARN("[AffordanceTemplateServer::loadRobots] config package %s NOT found, ignoring.", r.c_str());
             }
             else
             {
-                ROS_INFO("[AffordanceTemplateServer::getAvailableRobots] config package %s found", r.c_str());
+                ROS_INFO("[AffordanceTemplateServer::loadRobots] config package %s found", r.c_str());
                 robot_interface_map_[r] = ri;
             }
         }
     }
     else
-        ROS_WARN("[AffordanceTemplateServer::getAvailableRobots] cannot find robots path!!");
+        ROS_WARN("[AffordanceTemplateServer::loadRobots] cannot find robots path!!");
 
     return true;
 }
