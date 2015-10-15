@@ -18,11 +18,14 @@ namespace affordance_template_object
         double size[3];
     };
 
-    struct Control
+    class Control
     {
+    public:
         bool translation[3]; // xyz
         bool rotation[3]; // rpy
         double scale;
+
+        inline std::string toBoolString(bool b) { return (b ? "true" : "false"); }
     };
 }
 
