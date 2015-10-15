@@ -23,13 +23,13 @@ namespace affordance_template_server
   class AffordanceTemplateServer
   {
     void configureServer();
-    std::map<std::string, affordance_template_markers::RobotInterface*> getAvailableRobots();
-    void getAvailableTemplates();
-    inline bool getStatus() { return status_; }
+    bool getAvailableRobots();
+    bool getAvailableTemplates();
+    std::string getPackagePath(const std::string&);
 
     // affordance_template_server::ServiceInterface srv_interface; TODO
     tf::TransformListener listener_;
-
+    std::map<std::string, affordance_template_markers::RobotInterface*> robot_interface_map_;
     std::map<std::string, affordance_template_object::AffordanceTemplateStructure> at_collection_;
 
     bool status_;
@@ -41,10 +41,10 @@ namespace affordance_template_server
     ~AffordanceTemplateServer();
     
     void run();
+    inline bool getStatus() { return status_; }
     // bool addTemplate();
     // bool removeTemplate();
     // int getNextTemplateId();
-    std::string getPackagePath(const std::string&);
     // bool loadFromFile(const std::string&);
     // bool updateTemplatePose();
   };
