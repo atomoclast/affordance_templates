@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <boost/filesystem.hpp>
+#include <boost/thread.hpp>
 
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
@@ -15,6 +16,7 @@
 // #include <affordance_template_server/service_interface.h>
 #include <affordance_template_library/affordance_template_structure.h>
 #include <affordance_template_library/affordance_template_marker.h>
+#include <interactive_markers/interactive_marker_server.h>
 
 using namespace rapidjson;
 
@@ -23,13 +25,15 @@ namespace affordance_template_server
   class AffordanceTemplateServer
   {
     void configureServer();
-    std::map<std::string, affordance_template_markers::RobotInterface*> getAvailableRobots();
-    void getAvailableTemplates();
-    inline bool getStatus() { return status_; }
+    bool loadRobots();
+    bool loadTemplates();
+    std::string getPackagePath(const std::string&);
 
     // affordance_template_server::ServiceInterface srv_interface; TODO
     tf::TransformListener listener_;
+    boost::shared_ptr<interactive_markers::InteractiveMarkerServer> im_server_;
 
+    std::map<std::string, affordance_template_markers::RobotInterface*> robot_interface_map_;
     std::map<std::string, affordance_template_object::AffordanceTemplateStructure> at_collection_;
 
     bool status_;
@@ -37,14 +41,14 @@ namespace affordance_template_server
     std::string pkg_name_;
     
   public:
-    AffordanceTemplateServer(); //TODO
+    AffordanceTemplateServer(const std::string&);
     ~AffordanceTemplateServer();
     
     void run();
-    // bool addTemplate();
-    // bool removeTemplate();
+    inline bool getStatus() { return status_; }
+    // bool addTemplate(const std::string&);
+    // bool removeTemplate(const std::string&);
     // int getNextTemplateId();
-    std::string getPackagePath(const std::string&);
     // bool loadFromFile(const std::string&);
     // bool updateTemplatePose();
   };
