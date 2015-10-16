@@ -191,16 +191,3 @@ std::string AffordanceTemplateServer::getPackagePath(const std::string &pkg_name
         ROS_INFO("[AffordanceTemplateServer::getPackagePath] found path: %s", path.c_str());
     return path;
 }
-
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "affordance_template_server");
-
-  ros::NodeHandle nh;
-  std::string robot_name = "";
-  nh.getParam("robot_config", robot_name);
-
-  affordance_template_server::AffordanceTemplateServer ats(robot_name);
-
-  return 0;
-}
