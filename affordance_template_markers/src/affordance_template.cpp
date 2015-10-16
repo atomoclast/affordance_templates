@@ -35,7 +35,6 @@ void AffordanceTemplate::spin()
   ros::AsyncSpinner spinner(1.0/loop_rate_);
   spinner.start();
 
-  ROS_INFO("%s started.", nh_.getNamespace().c_str());  
   ROS_INFO("%s spinning.", nh_.getNamespace().c_str());
   ros::Rate loop_rate(loop_rate_);
   while(ros::ok())
@@ -77,7 +76,7 @@ bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose 
 {
 
   at_parser_.loadFromFile(filename, structure);
-  // self.structure = self.append_id_to_structure(self.structure)
+  appendIDToStructure(structure);
   // self.load_initial_parameters(pose)
   // self.create_from_parameters()
   // stuff = filename.split("/")
@@ -122,17 +121,33 @@ int main(int argc, char **argv)
   ros::NodeHandle nh("~");
  
   std::string robot_name, template_type;
-  nh.getParam("robot_name", robot_name); 
-  nh.getParam("template_type", template_type); 
+  
+  if (nh.hasParam("robot_name")) {
+    nh.getParam("robot_name", robot_name); 
+  } else {
+    robot_name = "r2_upperbody";
+  }
+
+  if (nh.hasParam("template_type")) {
+    nh.getParam("template_type", template_type); 
+  } else {
+    template_type = "wheel";
+  }
 
   boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface;
-  robot_interface->load("/home/swhart/ros/catkin_workspace/src/affordance_templates/affordance_template_library/robots/r2.yaml");
+  robot_interface.reset(new affordance_template_markers::RobotInterface());
+  robot_interface->load("r2_upperbody.yaml");
 
   boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server;
   server.reset( new interactive_markers::InteractiveMarkerServer(std::string(robot_name + "_affordance_template_server"),"",false) );
 
   AffordanceTemplate at(nh, server, robot_name, template_type, 0);
   at.setRobotInterface(robot_interface);
+  
+  AffordanceTemplateStructure structure;
+  geometry_msgs::Pose p;
+  at.loadFromFile("/home/swhart/ros/catkin_workspace/src/affordance_templates/affordance_template_library/templates/wheel.json", p, structure);
+
   at.spin();
  
   return 0;

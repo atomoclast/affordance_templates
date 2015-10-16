@@ -26,10 +26,10 @@ RobotInterface::~RobotInterface()
 
 bool RobotInterface::load(const std::string &yaml)
 {
-  reset();
-
   ROS_INFO("[RobotInterface::load] loading with input yaml: %s", yaml.c_str());
-  
+
+  reset();
+ 
   try
   {
     std::vector<std::string> tokens;
@@ -167,7 +167,7 @@ bool RobotInterface::load(const std::string &yaml)
     {
       std::string path = ros::package::getPath("affordance_template_library");
       path += "/robots/" + yaml;
-      ROS_ERROR_STREAM("[RobotInterface::load] couldn't open file!! retrying with full path "<<path);
+      ROS_INFO_STREAM("[RobotInterface::load] couldn't open file!! retrying with full path "<<path);
 
       reload_attempted_ = true;
       bool loaded = load(path);

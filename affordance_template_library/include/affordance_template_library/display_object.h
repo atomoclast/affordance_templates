@@ -8,7 +8,7 @@ namespace affordance_template_object
     struct DisplayObject
     {
         std::string name;
-        std::string parent = "";
+        std::string parent;
         Origin origin;
         Shape shape;
         Control controls;

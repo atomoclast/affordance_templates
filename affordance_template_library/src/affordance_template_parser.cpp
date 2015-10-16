@@ -163,7 +163,7 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
           display_object.shape = shp;
           display_object.controls = ctrl;
 
-          ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] disp  lay object "<<i+1<<" has name: "<<display_object.name);
+          ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] display object "<<i+1<<" has name: "<<display_object.name);
           if(display_object.parent != "") {
             ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tparent object: %s", display_object.parent.c_str());
           }
