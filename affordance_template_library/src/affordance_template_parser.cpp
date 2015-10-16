@@ -9,8 +9,6 @@ AffordanceTemplateParser::~AffordanceTemplateParser() {}
 bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemplateStructure &at)
 {
 
-  ROS_WARN("HELLO");
-
   char *cstr = new char[filename.length() + 1];
   strcpy(cstr, filename.c_str());
   char* str = std::strtok(cstr, "/");
@@ -155,13 +153,20 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
 
           DisplayObject display_object;
           display_object.name = objects[i]["name"].GetString();
-          display_object.parent = objects[i]["parent"].GetString();
+
+          if(objects[i].HasMember("parent")) {  
+            display_object.parent = objects[i]["parent"].GetString();
+          } else {
+            display_object.parent = "";
+          }
           display_object.origin = orig;
           display_object.shape = shp;
           display_object.controls = ctrl;
 
-          ROS_WARN_STREAM("[AffordanceTemplateParser::loadFromFile] disp  lay object "<<i+1<<" has name: "<<display_object.name);
-          ROS_WARN("[AffordanceTemplateParser::loadFromFile] \tparent object: %s", display_object.parent.c_str());
+          ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] disp  lay object "<<i+1<<" has name: "<<display_object.name);
+          if(display_object.parent != "") {
+            ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tparent object: %s", display_object.parent.c_str());
+          }
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", orig.position[0], orig.position[1], orig.position[2], orig.orientation[0], orig.orientation[1], orig.orientation[2]);
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", ctrl.toBoolString(ctrl.translation[0]).c_str(), ctrl.toBoolString(ctrl.translation[1]).c_str(), ctrl.toBoolString(ctrl.translation[2]).c_str());
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", ctrl.toBoolString(ctrl.rotation[0]).c_str(), ctrl.toBoolString(ctrl.rotation[1]).c_str(), ctrl.toBoolString(ctrl.rotation[2]).c_str());
