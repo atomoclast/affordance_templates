@@ -28,5 +28,7 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
+add_library(${PROJECT_NAME} src/server.cpp)
+
 add_executable(server src/server.cpp)
 target_link_libraries(server ${catkin_LIBRARIES})
