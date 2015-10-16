@@ -1,1 +1,0 @@
-#include <affordance_template_server/service_interface.h>
