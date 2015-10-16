@@ -3,6 +3,9 @@
 
 using namespace affordance_template_object;
 
+AffordanceTemplateParser::AffordanceTemplateParser() {}
+AffordanceTemplateParser::~AffordanceTemplateParser() {}
+
 bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemplateStructure &at)
 {
 
