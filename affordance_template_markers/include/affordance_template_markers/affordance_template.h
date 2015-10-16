@@ -33,7 +33,8 @@ namespace affordance_template
     AffordanceTemplate(const ros::NodeHandle nh, 
                        boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server, 
                        std::string robot_name, 
-                       std::string template_type);
+                       std::string template_type,
+                       int id);
     ~AffordanceTemplate();
 
     void spin();
@@ -61,12 +62,18 @@ namespace affordance_template
 
     std::string robot_name_;
     std::string template_type_;
+    int id_;
     double loop_rate_;
 
     std::vector<MenuConfig> object_menu_options_;
     std::vector<MenuConfig> waypoint_menu_options_;
       
     affordance_template_object::AffordanceTemplateParser at_parser_;
+
+
+    std::string appendID(std::string s);
+    bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
+    
 
   };
 }

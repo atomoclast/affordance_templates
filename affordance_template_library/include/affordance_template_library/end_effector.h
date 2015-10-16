@@ -1,5 +1,5 @@
-#ifndef _AT_EE_H_
-#define _AT_EE_H_
+#ifndef _AFFORDANCE_TEMPLATE_END_EFFECTOR_H_
+#define _AFFORDANCE_TEMPLATE_END_EFFECTOR_H_
 
 #include <affordance_template_library/affordance_template_generics.h>
 

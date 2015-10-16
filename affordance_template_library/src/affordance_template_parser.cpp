@@ -9,6 +9,8 @@ AffordanceTemplateParser::~AffordanceTemplateParser() {}
 bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemplateStructure &at)
 {
 
+  ROS_INFO("HELLO");
+
   char *cstr = new char[filename.length() + 1];
   strcpy(cstr, filename.c_str());
   char* str = std::strtok(cstr, "/");
@@ -17,7 +19,7 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
       str = std::strtok(NULL, "/");
 
   std::string template_name(str);
-  ROS_INFO("[AffordanceTemplateParser::loadFromFile] found template name: %s", template_name.c_str());
+  ROS_INFO("[AffordanceTemplateParser::loadFromFile] Found template name: %s", template_name.c_str());
   
   delete [] cstr;
 
@@ -151,19 +153,21 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
           shp.size[1] = sz[1].GetDouble();
           shp.size[2] = sz[2].GetDouble();
 
-          AffordanceTemplateMarker marker;
-          marker.name = objects[i]["name"].GetString();
-          marker.origin = orig;
-          marker.shape = shp;
-          marker.controls = ctrl;
+          DisplayObject display_object;
+          display_object.name = objects[i]["name"].GetString();
+          display_object.parent = objects[i]["parent"].GetString();
+          display_object.origin = orig;
+          display_object.shape = shp;
+          display_object.controls = ctrl;
 
-          ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] display object "<<i+1<<" has name: "<<marker.name);
+          ROS_WARN_STREAM("[AffordanceTemplateParser::loadFromFile] disp  lay object "<<i+1<<" has name: "<<display_object.name);
+          ROS_WARN("[AffordanceTemplateParser::loadFromFile] \tparent object: %s", display_object.parent.c_str());
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", orig.position[0], orig.position[1], orig.position[2], orig.orientation[0], orig.orientation[1], orig.orientation[2]);
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", ctrl.toBoolString(ctrl.translation[0]).c_str(), ctrl.toBoolString(ctrl.translation[1]).c_str(), ctrl.toBoolString(ctrl.translation[2]).c_str());
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", ctrl.toBoolString(ctrl.rotation[0]).c_str(), ctrl.toBoolString(ctrl.rotation[1]).c_str(), ctrl.toBoolString(ctrl.rotation[2]).c_str());
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \t%s", shape_str.c_str());
 
-          at.display_objects.push_back(marker);
+          at.display_objects.push_back(display_object);
       }
 
       std::cout<<std::endl;

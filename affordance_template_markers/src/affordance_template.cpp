@@ -7,11 +7,13 @@ using namespace affordance_template_markers;
 AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh, 
                                         boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server,  
                                         std::string robot_name, 
-                                        std::string template_type) :
+                                        std::string template_type,
+                                        int id) :
   nh_(nh),
   server_(server),
   robot_name_(robot_name),
   template_type_(template_type),
+  id_(id),
   loop_rate_(10.0)
 {
 
@@ -75,9 +77,6 @@ bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose 
 {
 
   at_parser_.loadFromFile(filename, structure);
-
-  // atf = open(filename).read()
-  // self.structure = json.loads(atf)
   // self.structure = self.append_id_to_structure(self.structure)
   // self.load_initial_parameters(pose)
   // self.create_from_parameters()
@@ -87,6 +86,34 @@ bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose 
   return true;
 }
 
+bool AffordanceTemplate::appendIDToStructure(AffordanceTemplateStructure &structure) {
+
+  structure.name = appendID(structure.name);
+  for(auto &obj : structure.display_objects) {
+      obj.name = appendID(obj.name);
+      if(obj.parent != "") {
+        obj.parent = appendID(obj.parent);
+      }
+  }
+
+  //       for obj in structure['display_objects'] :
+  //           obj['name'] = self.append_id(obj['name'])
+  //           try :
+  //               obj['parent'] = self.append_id(obj['parent'])
+  //           except :
+  //               rospy.logwarn(str("AffordanceTemplate::append_id_to_structure() -- no parent for " + obj['name']))
+  //       for traj in structure['end_effector_trajectory'] :
+  //           for ee_group in traj['end_effector_group'] :
+  //               for wp in ee_group['end_effector_waypoint'] :
+  //                   wp['display_object'] = self.append_id(wp['display_object'])
+
+  return true;
+
+}
+ 
+std::string AffordanceTemplate::appendID(std::string s) {
+  return s + ":" + std::to_string(id_);
+} 
 
 int main(int argc, char **argv)
 {
@@ -104,7 +131,7 @@ int main(int argc, char **argv)
   boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server;
   server.reset( new interactive_markers::InteractiveMarkerServer(std::string(robot_name + "_affordance_template_server"),"",false) );
 
-  AffordanceTemplate at(nh, server, robot_name, template_type);
+  AffordanceTemplate at(nh, server, robot_name, template_type, 0);
   at.setRobotInterface(robot_interface);
   at.spin();
  
