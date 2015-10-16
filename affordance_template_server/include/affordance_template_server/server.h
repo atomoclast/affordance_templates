@@ -1,12 +1,12 @@
-#ifndef _AT_SERVER_H_
-#define _AT_SERVER_H_
+#ifndef _AFFORDANCE_TEMPLATE_SERVER_H_
+#define _AFFORDANCE_TEMPLATE_SERVER_H_
 
 #include <iostream>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 
-#include <rapidjson/document.h>
-#include <rapidjson/filereadstream.h>
+// #include <rapidjson/document.h>
+// #include <rapidjson/filereadstream.h>
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -16,9 +16,11 @@
 // #include <affordance_template_server/service_interface.h>
 #include <affordance_template_library/affordance_template_structure.h>
 #include <affordance_template_library/affordance_template_marker.h>
+#include <affordance_template_library/affordance_template_parser.h>
+
 #include <interactive_markers/interactive_marker_server.h>
 
-using namespace rapidjson;
+// using namespace rapidjson;
 
 namespace affordance_template_server
 {

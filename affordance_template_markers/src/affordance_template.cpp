@@ -73,6 +73,9 @@ void AffordanceTemplate::setupMenuOptions()
 
 bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose pose, AffordanceTemplateStructure &structure)
 {
+
+  at_parser_.loadFromFile(filename, structure);
+
   // atf = open(filename).read()
   // self.structure = json.loads(atf)
   // self.structure = self.append_id_to_structure(self.structure)

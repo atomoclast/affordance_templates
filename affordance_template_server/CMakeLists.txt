@@ -18,7 +18,7 @@ find_package(Boost REQUIRED COMPONENTS thread)
 
 catkin_package(
     INCLUDE_DIRS include
-    CATKIN_DEPENDS roscpp affordance_template_msgs affordance_template_markers tf affordance_template_library interactive_markers
+    CATKIN_DEPENDS roscpp affordance_template_msgs affordance_template_markers tf affordance_template_library interactive_markers 
     LIBRARIES ${PROJECT_NAME}
     DEPENDS system_lib Boost
 )

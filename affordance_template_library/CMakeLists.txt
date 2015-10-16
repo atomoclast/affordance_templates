@@ -12,9 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
     INCLUDE_DIRS include
     CATKIN_DEPENDS roscpp
+    LIBRARIES ${PROJECT_NAME}
+    DEPENDS system_lib 
 )
 
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
 )
+
+add_library(${PROJECT_NAME} src/affordance_template_parser.cpp)

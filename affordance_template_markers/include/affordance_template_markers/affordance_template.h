@@ -17,6 +17,7 @@
 #include <affordance_template_markers/robot_interface.h>
 
 #include <affordance_template_library/affordance_template_structure.h>
+#include <affordance_template_library/affordance_template_parser.h>
 
 // #include <affordance_template_msgs/RobotConfig.h>
 // #include <affordance_template_msgs/EndEffectorConfig.h>
@@ -65,6 +66,7 @@ namespace affordance_template
     std::vector<MenuConfig> object_menu_options_;
     std::vector<MenuConfig> waypoint_menu_options_;
       
+    affordance_template_object::AffordanceTemplateParser at_parser_;
 
   };
 }
