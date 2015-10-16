@@ -9,7 +9,7 @@ AffordanceTemplateParser::~AffordanceTemplateParser() {}
 bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemplateStructure &at)
 {
 
-  ROS_INFO("HELLO");
+  ROS_WARN("HELLO");
 
   char *cstr = new char[filename.length() + 1];
   strcpy(cstr, filename.c_str());

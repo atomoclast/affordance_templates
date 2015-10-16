@@ -20,7 +20,7 @@ catkin_package(
     INCLUDE_DIRS include
     CATKIN_DEPENDS roscpp affordance_template_msgs affordance_template_markers tf affordance_template_library interactive_markers 
     LIBRARIES ${PROJECT_NAME} 
-    DEPENDS system_lib Boost affordance_template_library affordance_template_parser
+    DEPENDS system_lib Boost affordance_template_library
 )
 
 include_directories(
@@ -31,4 +31,4 @@ include_directories(
 add_library(${PROJECT_NAME} src/server.cpp)
 
 add_executable(server src/server.cpp)
-target_link_libraries(server ${catkin_LIBRARIES} affordance_template_parser)
+target_link_libraries(server ${catkin_LIBRARIES} affordance_template_library)

@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
     INCLUDE_DIRS include
     CATKIN_DEPENDS roscpp
-    LIBRARIES ${PROJECT_NAME} affordance_template_parser
+    LIBRARIES ${PROJECT_NAME}
     DEPENDS system_lib 
 )
 
@@ -21,7 +21,7 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-add_library(affordance_template_parser src/affordance_template_parser.cpp)
-target_link_libraries(affordance_template_parser ${catkin_LIBRARIES})
+add_library(${PROJECT_NAME} src/affordance_template_parser.cpp)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 
