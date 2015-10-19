@@ -43,7 +43,7 @@ namespace affordance_template_server
         bool handleSetTrajectory(SetAffordanceTemplateTrajectory::Request&, SetAffordanceTemplateTrajectory::Response&);
         bool handleSetPose(SetAffordanceTemplatePose::Request&, SetAffordanceTemplatePose::Response&);
         
-        bool handleObjectScaleCallback(const ScaleDisplayObjectInfo&);
+        void handleObjectScaleCallback(const ScaleDisplayObjectInfo&);
         bool getTemplateStatus(AffordanceTemplateStatus&, std::string, int, std::string, std::string);
 
         AffordanceTemplateServer* at_server_;
@@ -52,7 +52,7 @@ namespace affordance_template_server
 
     public:
         AffordanceTemplateInterface(const std::string&);
-        ~AffordanceTemplateInterface() {}
+        ~AffordanceTemplateInterface();
     };
         
 }
