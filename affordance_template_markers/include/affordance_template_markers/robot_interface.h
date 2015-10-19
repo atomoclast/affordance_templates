@@ -63,6 +63,7 @@ namespace affordance_template_markers
     
     void tearDown();
     void reset();
+
   };
 }
 

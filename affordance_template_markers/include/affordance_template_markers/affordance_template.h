@@ -4,6 +4,8 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 
+#include <boost/thread.hpp>
+
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -37,7 +39,7 @@ namespace affordance_template
                        int id);
     ~AffordanceTemplate();
 
-    void spin();
+    void run();
 
     void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
     void setupMenuOptions();
@@ -53,27 +55,61 @@ namespace affordance_template
     // this will handle menus. first item is group name, vector list is nested menu text(s)
     typedef std::map<std::string, std::vector<std::string> > MenuHandleKey;
 
+    // this is a storage DS to store "named" pose info. i.e., frame 'first' in pose.header.frame_id frame 
+    typedef std::pair<std::string, geometry_msgs::PoseStamped> FrameInfo;
+
     ros::NodeHandle nh_;
     tf::TransformListener tf_listener_;
     tf::TransformBroadcaster tf_broadcaster_;
 
+    // bookkeeping and IDs
+    std::string robot_name_;
+    std::string template_type_;
+    std::string name_;
+    std::string key_;
+    std::string root_object_;
+    int id_;
+    double loop_rate_;
+
+    // stored frames and poses
+    tf::Transform robotTroot_;
+    geometry_msgs::Pose markerPoseOffset_;
+
     boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
     boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface_;
 
-    std::string robot_name_;
-    std::string template_type_;
-    int id_;
-    double loop_rate_;
+    std::map<std::string, visualization_msgs::InteractiveMarker> int_markers_;
+    std::map<std::string, AffordanceTemplate::FrameInfo> frame_store_;
+
 
     std::vector<MenuConfig> object_menu_options_;
     std::vector<MenuConfig> waypoint_menu_options_;
       
     affordance_template_object::AffordanceTemplateParser at_parser_;
+    affordance_template_object::AffordanceTemplateStructure initial_structure_;
 
+    std::string current_trajectory_;
+
+    std::map<std::string, double> object_scale_factor_;
+
+    std::string getRootObject() { return root_object_; }
+    void setRootObject(std::string root_object) { root_object_ = root_object; }
 
     std::string appendID(std::string s);
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
-    
+    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses=false, std::string traj="");
+
+    void addInteractiveMarker(visualization_msgs::InteractiveMarker m);
+    void setupObjectMenu(affordance_template_object::DisplayObject obj);
+    void setupWaypointMenu(affordance_template_object::EndEffector ee);
+
+    bool hasObjectFrame(std::string obj);
+
+    geometry_msgs::Pose originToPose(affordance_template_object::Origin origin);
+
+
+    void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
 
   };
 }

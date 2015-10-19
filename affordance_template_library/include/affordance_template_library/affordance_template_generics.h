@@ -1,6 +1,9 @@
 #ifndef _AT_GENERICS_H_
 #define _AT_GENERICS_H_
 
+#include <geometry_msgs/Pose.h>
+#include <tf/transform_datatypes.h>
+
 namespace affordance_template_object
 {
     struct Origin
@@ -9,13 +12,25 @@ namespace affordance_template_object
         double orientation[3]; // rpy
     };
 
+    geometry_msgs::Pose originToPoseMsg(Origin origin) 
+    { 
+      geometry_msgs::Pose p;
+      p.position.x = origin.position[0];
+      p.position.y = origin.position[1];
+      p.position.z = origin.position[2];
+      p.orientation = tf::createQuaternionMsgFromRollPitchYaw(origin.orientation[0],origin.orientation[1],origin.orientation[2]);
+      return p;
+    }
+
     struct Shape
     {
         std::string color;
         double rgba[4];
         std::string type;
         std::string mesh; // if type == "mesh" then we need to fill the file name in here
-        double size[3];
+        double size[3]; // for cubes and meshes
+        double length; // for cylinders
+        double radius; // for spherse and cylinders
     };
 
     class Control

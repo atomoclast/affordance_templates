@@ -176,6 +176,7 @@ bool RobotInterface::load(const std::string &yaml)
     }
     else
     {
+      ROS_WARN("[RobotInterface::load] did not successfully load from yaml file");
       reload_attempted_ = false;
       return false;
     }
