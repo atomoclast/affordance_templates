@@ -18,6 +18,8 @@ namespace affordance_template_server
 {
   class AffordanceTemplateServer
   {
+    AffordanceTemplateServer(){} // default constructor 
+    void run();
     void configureServer();
     bool loadRobots();
     bool loadTemplates();
@@ -26,20 +28,22 @@ namespace affordance_template_server
     tf::TransformListener listener_;
     boost::shared_ptr<interactive_markers::InteractiveMarkerServer> im_server_;
 
+    std::map<std::string, affordance_template_msgs::RobotConfig> robot_config_map_;
     std::map<std::string, affordance_template_markers::RobotInterface*> robot_interface_map_;
-    std::map<std::string, affordance_template_object::AffordanceTemplateStructure> at_collection_;
+    std::map<std::string, affordance_template_object::AffordanceTemplateStructure> at_structure_map_;
 
     bool status_;
 
     std::string pkg_name_;
     
   public:
-    AffordanceTemplateServer(){} // default constructor 
     AffordanceTemplateServer(const std::string&);
     ~AffordanceTemplateServer();
-    
-    void run();
+     
     inline bool getStatus() { return status_; }
+    inline void setStatus(bool status) { status_ = status; }
+    inline std::map<std::string, affordance_template_msgs::RobotConfig> getRobotConfigs() { return robot_config_map_; }
+
     // bool addTemplate(const std::string&);
     // bool removeTemplate(const std::string&);
     // int getNextTemplateId();

@@ -33,6 +33,7 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
         else
         {
             ROS_INFO("[AffordanceTemplateServer::loadRobots] config package %s found", _robot_yaml.c_str());
+            robot_config_map_[rconf.name] = rconf;
             robot_interface_map_[_robot_yaml] = ri;
         }
     }
@@ -46,24 +47,23 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
     at_server_thread.join();
 }
 
-AffordanceTemplateServer::~AffordanceTemplateServer() {}
-
-void AffordanceTemplateServer::configureServer()
+AffordanceTemplateServer::~AffordanceTemplateServer() 
 {
-    //srv_interface_ = affordance_template_server::ServiceInterface(this, listener_); // TODO service interface calss
-    status_ = true;
+    for (auto ri : robot_interface_map_)
+        delete ri.second;
+    robot_interface_map_.clear();
 }
 
 void AffordanceTemplateServer::run()
 {
-    configureServer();
+    status_ = true;
     ros::spin();
 }
 
 /**
  * @brief parse robot JSONs
  * @details finds any and all JSON files in the AT Library 'templates' directory 
- *  and parses into the map at_collection_ 
+ *  and parses into the map at_structure_map_ 
  * 
  * @return false if can't find or load the directory, true otherwise
  */
@@ -78,7 +78,7 @@ bool AffordanceTemplateServer::loadTemplates()
         return false;
     
     // clear what we have, start over
-    at_collection_.clear();
+    at_structure_map_.clear();
 
     root += "/templates";
     if (!boost::filesystem::exists(root) || !boost::filesystem::is_directory(root))
@@ -117,7 +117,7 @@ bool AffordanceTemplateServer::loadTemplates()
     {
         affordance_template_object::AffordanceTemplateStructure at;
         atp.loadFromFile(t.second, at);
-        at_collection_[at.name] = at;
+        at_structure_map_[at.name] = at;
     }
 
     return true;
@@ -151,6 +151,8 @@ bool AffordanceTemplateServer::loadRobots()
         }
 
         // make robot instances with the .yamls we just found
+        for (auto ri : robot_interface_map_)
+            delete ri.second;
         robot_interface_map_.clear();
         for (auto r : robot_paths_vec)
         {
@@ -171,6 +173,7 @@ bool AffordanceTemplateServer::loadRobots()
             else
             {
                 ROS_INFO("[AffordanceTemplateServer::loadRobots] config package %s found", r.c_str());
+                robot_config_map_[rconf.name] = rconf;
                 robot_interface_map_[r] = ri;
             }
         }
