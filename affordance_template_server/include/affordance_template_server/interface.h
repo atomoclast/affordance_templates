@@ -31,15 +31,15 @@ namespace affordance_template_server
         bool handleTemplateRequest(GetAffordanceTemplateConfigInfo::Request&, GetAffordanceTemplateConfigInfo::Response&);
         bool handleLoadRobot(LoadRobotConfig::Request&, LoadRobotConfig::Response&);
         bool handleAddTemplate(AddAffordanceTemplate::Request&, AddAffordanceTemplate::Response&);
+        bool handleDeleteTemplate(DeleteAffordanceTemplate::Request&, DeleteAffordanceTemplate::Response&);
         bool handleRunning(GetRunningAffordanceTemplates::Request&, GetRunningAffordanceTemplates::Response&);
-        bool handleTemplateKill(DeleteAffordanceTemplate::Request&, DeleteAffordanceTemplate::Response&);
         bool handlePlanCommand(AffordanceTemplatePlanCommand::Request&, AffordanceTemplatePlanCommand::Response&);
         bool handleExecuteCommand(AffordanceTemplateExecuteCommand::Request&, AffordanceTemplateExecuteCommand::Response&);
         bool handleSaveTemplate(SaveAffordanceTemplate::Request&, SaveAffordanceTemplate::Response&);
         bool handleAddTrajectory(AddAffordanceTemplateTrajectory::Request&, AddAffordanceTemplateTrajectory::Response&);
         bool handleObjectScale(ScaleDisplayObject::Request&, ScaleDisplayObject::Response&);
-        bool handleTemplateStatusRequest(GetAffordanceTemplateStatus::Request&, GetAffordanceTemplateStatus::Response&);
-        bool handleServerStatusRequest(GetAffordanceTemplateServerStatus::Request&, GetAffordanceTemplateServerStatus::Response&);
+        bool handleTemplateStatus(GetAffordanceTemplateStatus::Request&, GetAffordanceTemplateStatus::Response&);
+        bool handleServerStatus(GetAffordanceTemplateServerStatus::Request&, GetAffordanceTemplateServerStatus::Response&);
         bool handleSetTrajectory(SetAffordanceTemplateTrajectory::Request&, SetAffordanceTemplateTrajectory::Response&);
         bool handleSetPose(SetAffordanceTemplatePose::Request&, SetAffordanceTemplatePose::Response&);
         
