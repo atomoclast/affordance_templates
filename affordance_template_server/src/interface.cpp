@@ -3,9 +3,14 @@
 using namespace affordance_template_server;
 using namespace affordance_template_msgs;
 
-AffordanceTemplateInterface::AffordanceTemplateInterface()
+AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_robot_name)
 {
+    ROS_INFO("[AffordanceTemplateInterface] starting...");
+
     ros::NodeHandle nh;
+
+    ROS_INFO("[AffordanceTemplateInterface] creating server using robot %s", _robot_name.c_str());
+    at_server_ = new AffordanceTemplateServer(_robot_name);
 
     const std::string base_srv = "/affordance_template_server/";
     at_srv_map_["get_robots"]              = nh.advertiseService("get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
@@ -23,9 +28,10 @@ AffordanceTemplateInterface::AffordanceTemplateInterface()
     at_srv_map_["get_status"]              = nh.advertiseService("get_status", &AffordanceTemplateInterface::handleServerStatus, this);
     at_srv_map_["set_template_trajectory"] = nh.advertiseService("set_template_trajectory", &AffordanceTemplateInterface::handleSetTrajectory, this);
     at_srv_map_["set_template_pose"]       = nh.advertiseService("set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
-}
+    ROS_INFO("[AffordanceTemplateInterface] services set up...");
 
-AffordanceTemplateInterface::~AffordanceTemplateInterface(){}
+    ROS_INFO("[AffordanceTemplateInterface] robot ready!!");
+}
 
 bool AffordanceTemplateInterface::handleRobotRequest(GetRobotConfigInfo::Request &req, GetRobotConfigInfo::Response &res)
 {

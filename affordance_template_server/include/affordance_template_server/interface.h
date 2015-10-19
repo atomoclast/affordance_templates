@@ -46,13 +46,13 @@ namespace affordance_template_server
         bool handleObjectScaleCallback(const ScaleDisplayObjectInfo&);
         bool getTemplateStatus(AffordanceTemplateStatus&, std::string, int, std::string, std::string);
 
-        AffordanceTemplateServer at_server_;
+        AffordanceTemplateServer* at_server_;
         tf::TransformListener listener_;
         std::map<std::string, ros::ServiceServer> at_srv_map_;
 
     public:
-        AffordanceTemplateInterface();
-        ~AffordanceTemplateInterface();
+        AffordanceTemplateInterface(const std::string&);
+        ~AffordanceTemplateInterface() {}
     };
         
 }
