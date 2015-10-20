@@ -56,6 +56,8 @@ namespace affordance_template_markers
     bool configure();
 
     inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
+    inline std::map<int, std::string> getEENameMap() { return ee_name_map_; }
+    
     std::string getEEName(const int);
     int getEEId(const std::string&);
     std::string getManipulator(const std::string&); // is this right??

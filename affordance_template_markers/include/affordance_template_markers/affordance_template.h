@@ -72,8 +72,8 @@ namespace affordance_template
     bool object_controls_display_on_;
 
     // stored frames and poses
-    tf::Transform robotTroot_;
-    geometry_msgs::Pose markerPoseOffset_;
+    // tf::Transform robotTroot_;
+    // geometry_msgs::Pose markerPoseOffset_;
 
     boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
     boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface_;
@@ -96,6 +96,8 @@ namespace affordance_template
 
     std::string getRootObject() { return root_object_; }
     void setRootObject(std::string root_object) { root_object_ = root_object; }
+
+    bool isValidTrajectory(affordance_template_object::Trajectory traj);
 
     std::string appendID(std::string s);
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);

@@ -113,16 +113,17 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
     ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
     frame_store_[key_] = FrameInfo(key_, ps);
   }
-//   if not current_trajectory :
-//       for traj in self.structure['end_effector_trajectory'] :
-//           if self.is_valid_trajectory(traj) :
-//               self.current_trajectory = str(traj['name'])
-//               rospy.loginfo("AffordanceTemplate::create_from_parameters() -- setting current trajectory to: " + str(traj['name']))
-//               break
 
-//   # parse objects
-//   ids = 0
-//   debug_id = 0
+  // set the default traj as the first valid one found
+  if(current_trajectory_=="") {
+    for (auto &t: structure.ee_trajectories) {
+      if(isValidTrajectory(t)) {
+        current_trajectory_ = t.name;
+        ROS_INFO("AffordanceTemplate::createFromStructure() -- setting current trajectory to: %s", current_trajectory_.c_str());
+        break;
+      }
+    }
+  }
 
   int idx = 0;
 
@@ -261,6 +262,23 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
 }
 
 
+bool AffordanceTemplate::isValidTrajectory(Trajectory traj)  
+{
+  bool valid_trajectory = true;
+  for(auto &g: traj.end_effector_waypoint_list) {
+    for(auto &wp: g.waypoints) {
+      if(robot_interface_->getEENameMap().find(g.id) == std::end(robot_interface_->getEENameMap())) {
+        valid_trajectory = false;
+        ROS_DEBUG("AffordanceTemplate::is_valid_trajectory() -- can't find ee ID: %d", g.id);
+        return valid_trajectory;
+      }
+   }
+ }
+ return valid_trajectory;
+} 
+  
+
+
 void AffordanceTemplate::setupObjectMenu(AffordanceTemplateStructure structure, DisplayObject obj)
 {
 
@@ -307,9 +325,6 @@ void AffordanceTemplate::setupTrajectoryMenu(AffordanceTemplateStructure structu
     MenuHandleKey key;
     key[name] = {menu_text, traj.name};
     group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, traj.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );   
-    if(current_trajectory_ == "") {
-      current_trajectory_ = traj.name;
-    }
     if(traj.name == current_trajectory_) {
       marker_menus_[name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
     } else {
