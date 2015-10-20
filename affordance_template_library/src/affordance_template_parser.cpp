@@ -42,16 +42,23 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
       at.filename = filename;
       ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] filename is "<<at.filename);
 
-      const rapidjson::Value& traj = jdoc["end_effector_trajectory"];
+      const rapidjson::Value& traj = jdoc["end_effector_trajectory"];     
       for (rapidjson::SizeType t = 0; t < traj.Size(); ++t)
       {
-          EndEffector ee;
-          ee.name = traj[t]["name"].GetString();
-          const rapidjson::Value& ee_group = traj[t]["end_effector_group"];
-          ee.id = ee_group[0]["id"].GetInt();
-          ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] found EE trajectory with name: "<<ee.name<<" and id: "<<ee.id);
+        Trajectory ee_trajectory;
+        ee_trajectory.name = traj[t]["name"].GetString();
+        ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] found trajectory with name: "<<ee_trajectory.name);
+        
+        const rapidjson::Value& ee_group = traj[t]["end_effector_group"];
+        for (rapidjson::SizeType g = 0; g < ee_group.Size(); ++g)
+        {
 
-          const rapidjson::Value& waypoints = ee_group[0]["end_effector_waypoint"];
+          EndEffectorWaypointList ee;
+          ee.id = ee_group[g]["id"].GetInt();
+
+          ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile]    found EE group for ID: "<<ee.id);
+
+          const rapidjson::Value& waypoints = ee_group[g]["end_effector_waypoint"];
           for (rapidjson::SizeType w = 0; w < waypoints.Size(); ++w)
           {
               // find the origin
@@ -80,7 +87,7 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
               ctrl.scale = waypoints[w]["controls"]["scale"].GetDouble();
 
               // fill out the waypoint
-              Waypoint wp;
+              EndEffectorWaypoint wp;
               wp.ee_pose = waypoints[w]["ee_pose"].GetInt();
               wp.display_object = waypoints[w]["display_object"].GetString();
               wp.origin = org;
@@ -93,8 +100,9 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", ctrl.toBoolString(ctrl.translation[0]).c_str(), ctrl.toBoolString(ctrl.translation[1]).c_str(), ctrl.toBoolString(ctrl.translation[2]).c_str());
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", ctrl.toBoolString(ctrl.rotation[0]).c_str(), ctrl.toBoolString(ctrl.rotation[1]).c_str(), ctrl.toBoolString(ctrl.rotation[2]).c_str());
           }
-
-          at.ee_trajectories.push_back(ee);
+          ee_trajectory.end_effector_waypoint_list.push_back(ee);
+        }
+        at.ee_trajectories.push_back(ee_trajectory);
       }
 
       const rapidjson::Value& objects = jdoc["display_objects"];

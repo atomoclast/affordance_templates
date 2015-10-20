@@ -12,8 +12,9 @@ namespace affordance_template_object
         std::string name;
         std::string image;
         std::string filename;
-        std::vector<affordance_template_object::EndEffector> ee_trajectories;
-        std::vector<affordance_template_object::DisplayObject> display_objects;
+        std::vector<affordance_template_object::Trajectory> ee_trajectories;
+      	std::vector<affordance_template_object::DisplayObject> display_objects;
+          
     };
 }
 

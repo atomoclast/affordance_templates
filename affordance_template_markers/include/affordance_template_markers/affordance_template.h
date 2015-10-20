@@ -4,14 +4,13 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 
-#include <boost/thread.hpp>
-
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
 #include <interactive_markers/interactive_marker_server.h>
 #include <interactive_markers/menu_handler.h>
+#include <utils/marker_helper.h>
 
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
@@ -70,6 +69,7 @@ namespace affordance_template
     std::string root_object_;
     int id_;
     double loop_rate_;
+    bool object_controls_display_on_;
 
     // stored frames and poses
     tf::Transform robotTroot_;
@@ -79,14 +79,16 @@ namespace affordance_template
     boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface_;
 
     std::map<std::string, visualization_msgs::InteractiveMarker> int_markers_;
+    std::map<std::string, interactive_markers::MenuHandler> marker_menus_;
+    std::map<MenuHandleKey, interactive_markers::MenuHandler::EntryHandle> group_menu_handles_;
     std::map<std::string, AffordanceTemplate::FrameInfo> frame_store_;
-
 
     std::vector<MenuConfig> object_menu_options_;
     std::vector<MenuConfig> waypoint_menu_options_;
       
     affordance_template_object::AffordanceTemplateParser at_parser_;
     affordance_template_object::AffordanceTemplateStructure initial_structure_;
+    // affordance_template_object::AffordanceTemplateStructure structure_;
 
     std::string current_trajectory_;
 
@@ -100,8 +102,11 @@ namespace affordance_template
     bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses=false, std::string traj="");
 
     void addInteractiveMarker(visualization_msgs::InteractiveMarker m);
-    void setupObjectMenu(affordance_template_object::DisplayObject obj);
-    void setupWaypointMenu(affordance_template_object::EndEffector ee);
+    
+    void setupObjectMenu(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::DisplayObject obj);
+    void setupWaypointMenu(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::EndEffectorWaypointList ee);
+    void setupSimpleMenuItem(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name, const std::string& menu_text, bool has_check_box);
+    void setupTrajectoryMenu(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name);
 
     bool hasObjectFrame(std::string obj);
 
