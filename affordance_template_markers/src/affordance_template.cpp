@@ -64,15 +64,13 @@ bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose 
 
   at_parser_.loadFromFile(filename, structure);
 
+  // store copies in class, one as backup to reset/restore later
   initial_structure_ = structure;
+  structure_ = structure;
 
-  appendIDToStructure(structure);
-  // self.load_initial_parameters(pose)
-  createFromStructure(structure);
+  appendIDToStructure(structure_);
+  createFromStructure(structure_);
 
-  // stuff = filename.split("/")
-  // self.filename = stuff[len(stuff)-1]
-  // return self.structure
   return true;
 }
 
@@ -114,7 +112,6 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
     ps.pose = robot_interface_->getRobotConfig().root_offset;
     ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
     frame_store_[key_] = FrameInfo(key_, ps);
-    std::cout << "adding frame info for " << robot_interface_->getRobotConfig().frame_id << std::endl;
   }
 //   if not current_trajectory :
 //       for traj in self.structure['end_effector_trajectory'] :
@@ -134,14 +131,6 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
     setupObjectMenu(structure, obj);
     std::string root_frame = template_type_;
 
-    // if(getRootObject() == obj.name) {
-    //   root_frame = key_;
-    // } else {
-    //   if(obj.parent != "") {
-    //     root_frame = obj.parent;
-    //   }
-    // }
-
     if(obj.parent != "") {
       root_frame = obj.parent;
     } else {
@@ -154,7 +143,7 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
     }
 
     visualization_msgs::InteractiveMarker int_marker;
-    int_marker.header.frame_id = "/" + root_frame;
+    int_marker.header.frame_id = root_frame;
     int_marker.header.stamp = ros::Time::now();
     int_marker.name = obj.name;
     int_marker.description = obj.name;
@@ -247,25 +236,19 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
       for (auto &c: dof_controls) {
         int_marker.controls.push_back(c);
       }
-    }
-    //     int_marker.controls.extend(CreateCustomDOFControls("",
-    //         self.object_controls[obj]['xyz'][0], self.object_controls[obj]['xyz'][1], self.object_controls[obj]['xyz'][2],
-    //         self.object_controls[obj]['rpy'][0], self.object_controls[obj]['rpy'][1], self.object_controls[obj]['rpy'][2]))
-    
+    }   
 
-    //int_markers_[obj.name] = control.markers[0];// i think this is wrong
     //self.marker_pose_offset[obj] = self.pose_from_origin(self.object_origin[obj])
-
-    // if self.object_controls_display_on :
-    //     self.marker_menus[obj].setCheckState( self.menu_handles[(obj,"Hide Controls")], MenuHandler.UNCHECKED )
-    // else :
-    //     self.marker_menus[obj].setCheckState( self.menu_handles[(obj,"Hide Controls")], MenuHandler.CHECKED )
 
     addInteractiveMarker(int_marker);
 
     MenuHandleKey key;
     key[obj.name] = {"Hide Controls"};
-    marker_menus_[obj.name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
+    if(object_controls_display_on_) {
+      marker_menus_[obj.name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
+    } else {
+      marker_menus_[obj.name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
+    }
 
     marker_menus_[obj.name].apply( *server_, obj.name );
     server_->applyChanges();
@@ -288,6 +271,7 @@ void AffordanceTemplate::setupObjectMenu(AffordanceTemplateStructure structure, 
       setupSimpleMenuItem(structure, obj.name, o.first, o.second);
     }
   }
+
 
   // for m,c in self.object_menu_options :
   //     if m == "Add Waypoint Before" or m == "Add Waypoint After":
@@ -337,16 +321,111 @@ void AffordanceTemplate::setupTrajectoryMenu(AffordanceTemplateStructure structu
 void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMarker m)
 {
   std::string name = m.name;
-  ROS_INFO("AffordanceTemplate::addInteractiveMarker() -- %s", m.name.c_str());
+  ROS_INFO("AffordanceTemplate::addInteractiveMarker() -- %s with frame: %s", m.name.c_str(), m.header.frame_id.c_str());
   int_markers_[m.name] = m;
   server_->insert(m);
   server_->setCallback(m.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ));
 }
 
+void AffordanceTemplate::removeInteractiveMarker(std::string marker_name) 
+{
+  server_->erase(marker_name);
+  server_->applyChanges();
+}
+
+void AffordanceTemplate::removeAllMarkers() {
+  for(auto &m: int_markers_) {
+    removeInteractiveMarker(m.first);
+  }
+  group_menu_handles_.clear();
+  int_markers_.clear();
+  marker_menus_.clear();
+  server_->applyChanges();
+}
 
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
+
   ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
+
+  interactive_markers::MenuHandler::CheckState state;
+
+  // set up key maps for easy comparison to menu handler ID
+  MenuHandleKey reset_key;
+  MenuHandleKey save_key;
+  MenuHandleKey hide_controls_key;
+  
+  reset_key[feedback->marker_name] = {"Reset"};
+  save_key[feedback->marker_name] = {"Save"};
+  hide_controls_key[feedback->marker_name] = {"Hide Controls"};
+
+  if(hasObjectFrame(feedback->marker_name)) {
+    geometry_msgs::Pose p = feedback->pose;
+    if(feedback->header.frame_id != frame_store_[feedback->marker_name].second.header.frame_id) {
+      geometry_msgs::PoseStamped ps;
+      ps.pose = feedback->pose;
+      ps.header = feedback->header;
+      tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
+      p = ps.pose;
+    }
+    frame_store_[feedback->marker_name].second.pose = p;
+  }
+  
+  switch ( feedback->event_type ) {
+
+    ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
+
+    case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :      
+      ROS_DEBUG("AffordanceTemplate::processFeedback() --   MOUSE_UP");
+      break;
+
+    case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT :
+
+      ROS_DEBUG("AffordanceTemplate::processFeedback() --   MENU_SELECT");
+      ROS_DEBUG("AffordanceTemplate::processFeedback() --   menu id: %d", feedback->menu_entry_id);
+      ROS_DEBUG("AffordanceTemplate::processFeedback() --   pose: (%.3f, %.3f, %.3f), (%.3f, %.3f, %.3f, %.3f), frame_id: %s", 
+                                                                  feedback->pose.position.x, feedback->pose.position.y, feedback->pose.position.z, 
+                                                                  feedback->pose.orientation.x, feedback->pose.orientation.y, feedback->pose.orientation.z, feedback->pose.orientation.w,
+                                                                  feedback->header.frame_id.c_str());
+
+      if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) {
+        if(group_menu_handles_[reset_key] == feedback->menu_entry_id) {
+          ROS_DEBUG("AffordanceTemplate::processFeedback() --   RESET");
+          structure_ = initial_structure_;      
+          appendIDToStructure(structure_);
+          removeAllMarkers();
+          createFromStructure(structure_, false, current_trajectory_); //FIXME:: make sure current_traj is i ORIGINAL list of traj
+        }
+      }
+
+      if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) {
+        if(group_menu_handles_[save_key] == feedback->menu_entry_id) {
+        }
+      }
+
+      if(group_menu_handles_.find(hide_controls_key) != std::end(group_menu_handles_)) {
+        if(group_menu_handles_[hide_controls_key] == feedback->menu_entry_id) {
+          if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) {
+            if(state == interactive_markers::MenuHandler::CHECKED) {
+              marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );
+              object_controls_display_on_ = true;
+            } else {
+              marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
+              object_controls_display_on_ = false;
+            }
+          }
+          removeAllMarkers();
+          createFromStructure(structure_, true, current_trajectory_);
+        }
+      }
+      
+      break;
+
+    default :
+      break;
+  }
+  server_->applyChanges();
+
 }
 
 
@@ -357,30 +436,27 @@ bool AffordanceTemplate::hasObjectFrame(std::string obj) {
 
 void AffordanceTemplate::run()
 {
+ 
+  ros::Rate loop_rate(loop_rate_);
+  tf::Transform transform;
+  FrameInfo fi;
 
   ros::AsyncSpinner spinner(1.0/loop_rate_);
   spinner.start();
 
   ROS_INFO("%s spinning.", nh_.getNamespace().c_str());
-  ros::Rate loop_rate(loop_rate_);
   while(ros::ok())
   {
-    loop_rate.sleep();
-    // ROS_INFO("%s spinning.", nh_.getNamespace().c_str());
-
-    //self.mutex.acquire()
     for(auto &f: frame_store_) {
-      FrameInfo fi = f.second;
-      tf::Transform transform;
+      fi = f.second;
       tf::poseMsgToTF(fi.second.pose, transform);
-      tf_broadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/" + fi.second.header.frame_id, "/" + fi.first));
-
-      // std::cout << "root frame: " << fi.second.header.frame_id << std::endl;
-      // std::cout << "obj frame:  " << fi.first << std::endl;
-      // std::cout << "pose: " << fi.second.pose << std::endl;
+      tf_broadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), fi.second.header.frame_id, fi.first));
     }
+    loop_rate.sleep();
   }
+
 }
+
 
 int main(int argc, char **argv)
 {

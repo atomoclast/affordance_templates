@@ -88,7 +88,7 @@ namespace affordance_template
       
     affordance_template_object::AffordanceTemplateParser at_parser_;
     affordance_template_object::AffordanceTemplateStructure initial_structure_;
-    // affordance_template_object::AffordanceTemplateStructure structure_;
+    affordance_template_object::AffordanceTemplateStructure structure_;
 
     std::string current_trajectory_;
 
@@ -102,7 +102,9 @@ namespace affordance_template
     bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses=false, std::string traj="");
 
     void addInteractiveMarker(visualization_msgs::InteractiveMarker m);
-    
+    void removeInteractiveMarker(std::string marker_name);
+    void removeAllMarkers();
+
     void setupObjectMenu(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::DisplayObject obj);
     void setupWaypointMenu(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::EndEffectorWaypointList ee);
     void setupSimpleMenuItem(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name, const std::string& menu_text, bool has_check_box);
