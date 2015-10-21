@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
     interactive_markers
     planner_interface
     moveit_planner
+    end_effector_helper
     geometry_msgs
     nav_msgs
     std_msgs
@@ -19,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_package(
     INCLUDE_DIRS include
-	CATKIN_DEPENDS affordance_template_msgs affordance_template_library geometry_msgs interactive_markers nav_msgs roscpp std_msgs planner_interface moveit_planner
+	CATKIN_DEPENDS affordance_template_msgs affordance_template_library end_effector_helper geometry_msgs interactive_markers nav_msgs roscpp std_msgs planner_interface moveit_planner
     LIBRARIES robot_interface affordance_template
     DEPENDS system_lib yaml-cpp
 )
@@ -31,7 +32,7 @@ include_directories(
 )
 
 add_library(robot_interface src/robot_interface.cpp)
-target_link_libraries(robot_interface ${catkin_LIBRARIES} yaml-cpp)
+target_link_libraries(robot_interface ${catkin_LIBRARIES} yaml-cpp end_effector_helper)
 
 add_library(affordance_template src/affordance_template.cpp)
 target_link_libraries(affordance_template ${catkin_LIBRARIES} yaml-cpp robot_interface affordance_template_library)

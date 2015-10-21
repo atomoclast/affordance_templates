@@ -3,16 +3,23 @@
 
 #include <fstream>
 #include "yaml-cpp/yaml.h"
+
 #include <ros/ros.h>
 #include <ros/package.h>
+
 #include <tf/transform_listener.h>
+
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
+
+#include <planner_interface/planner_interface.h>
+#include <moveit_planner/moveit_planner.h>
+
+#include <end_effector_helper/end_effector_helper.h>
+
 #include <affordance_template_msgs/RobotConfig.h>
 #include <affordance_template_msgs/EndEffectorConfig.h>
 #include <affordance_template_msgs/EndEffectorPoseData.h>
-#include <planner_interface/planner_interface.h>
-#include <moveit_planner/moveit_planner.h>
 
 namespace affordance_template_markers 
 {
@@ -34,7 +41,7 @@ namespace affordance_template_markers
     std::vector<std::string> ee_names_;
     std::vector<std::string> ee_groups_;
     
-    // std::map<std::string, robot_interaction_tools::EndEffectorHelper> ee_link_data_; //TODO
+    std::map<std::string, end_effector_helper::EndEffectorHelperConstPtr> ee_link_data_; 
     std::map<int, std::string> ee_name_map_;
     // std::map<std::string, > ee_markers_;
     std::map<std::string, geometry_msgs::Pose> tool_offset_map_;
@@ -58,12 +65,16 @@ namespace affordance_template_markers
     inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
     inline std::map<int, std::string> getEENameMap() { return ee_name_map_; }
 
+    bool getEELinkData(std::string group_name, end_effector_helper::EndEffectorHelperConstPtr &link_data); 
     std::string getEEName(const int);
     int getEEId(const std::string&);
     std::string getManipulator(const std::string&); // is this right??
     std::string getPkgPath(const std::string&);
     std::map<std::string, int> getEEPoseIDMap(std::string name);
     std::map<int, std::string> getEEPoseNameMap(std::string name);
+
+    geometry_msgs::Pose getManipulatorOffsetPose(std::string name) { return manipulator_pose_map_[name]; }
+    geometry_msgs::Pose getToolOffsetPose(std::string name) { return tool_offset_map_[name]; }
 
     void tearDown();
     void reset();

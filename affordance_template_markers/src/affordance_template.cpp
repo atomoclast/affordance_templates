@@ -248,7 +248,13 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     if(object_scale_factor_.find(obj.name) == std::end(object_scale_factor_)) {
       object_scale_factor_[obj.name] = 1.0;
       ee_scale_factor_[obj.name] = 1.0;
+      ROS_WARN("Setting scale factor for %s", obj.name.c_str());
+    } else {
+      ROS_WARN("huh %s", obj.name.c_str());
     }
+
+    //   object_scale_factor_[obj.name] = 1.0;
+    //   ee_scale_factor_[obj.name] = 1.0;
 
     visualization_msgs::InteractiveMarker int_marker;
     int_marker.header.frame_id = root_frame_;
@@ -402,9 +408,10 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
       setupWaypointMenu(structure, wp_name);
       geometry_msgs::Pose display_pose = originToPoseMsg(wp.origin);  
-      std::string parent_obj = wp.display_object;
 
+      std::string parent_obj = appendID(wp.display_object);
       double parent_scale = object_scale_factor_[parent_obj]*ee_scale_factor_[parent_obj];  
+
       display_pose.position.x *= parent_scale;
       display_pose.position.y *= parent_scale;
       display_pose.position.z *= parent_scale;
@@ -419,7 +426,8 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
       visualization_msgs::InteractiveMarkerControl menu_control;
       menu_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;    
-    
+      menu_control.always_visible = true;
+      
       MenuHandleKey key;
       if(waypoint_flags_[current_trajectory_].run_backwards) {
         key[wp_name] = {"Compute Backwards Path"};
@@ -449,41 +457,81 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       }
       ROS_INFO("AffordanceTemplate::createWaypointsFromStructure()   ee_pose_name: %s", ee_pose_name.c_str());
                
-            // markers = self.robot_interface.end_effector_link_data[ee_name].get_markers_for_pose(pn)
+      visualization_msgs::MarkerArray markers;
+      end_effector_helper::EndEffectorHelperConstPtr ee_link_data;
+      if(robot_interface_->getEELinkData(ee_name, ee_link_data)) { 
+        if(!ee_link_data->getMarkersForPose(ee_pose_name, markers)) {
+          ROS_ERROR("AffordanceTemplate::createWaypointsFromStructure() -- problem getting pose markers for EE %s, pose: %s", ee_name.c_str(), ee_pose_name.c_str());
+          return false;
+        } 
+      } else {
+        ROS_ERROR("AffordanceTemplate::createWaypointsFromStructure() -- no link data for EE %s", ee_name.c_str());
+        return false;        
+      }
 
-            // for m in markers.markers :
+      tf::Transform wpTee;
+      tf::Transform eeTtf;
+      tf::Transform tfTm;
+      tf::Transform wpTm;
 
-            //     try :
-            //         ee_m = copy.deepcopy(m)                   
-            //         ee_m.header.frame_id = ""
-            //         ee_m.ns = self.name
-            //         ee_m.pose = getPoseFromFrame(self.wpTee[wp]*self.eeTtf[wp]*getFrameFromPose(m.pose))
-            //         menu_control.markers.append( ee_m )
-            //         menu_control.always_visible = True
-            //     except :
-            //         rospy.logdebug("passing on marker")
+      std::cout << "getManipulatorOffsetPose() =" << std::endl;       
+      std::cout << robot_interface_->getManipulatorOffsetPose(ee_name) << std::endl;
+      std::cout << "getToolOffsetPose() =" << std::endl;       
+      std::cout << robot_interface_->getToolOffsetPose(ee_name) << std::endl;
 
+      try {
+        tf::poseMsgToTF(robot_interface_->getManipulatorOffsetPose(ee_name),wpTee);
+        tf::poseMsgToTF(robot_interface_->getToolOffsetPose(ee_name),eeTtf);
+      } catch(...) {
+        ROS_ERROR("AffordanceTemplate::createWaypointsFromStructure() -- error getting transforms for %s", ee_name.c_str());
+      }
+
+      //wpTee.setIdentity();
+
+      for(auto &m: markers.markers) {
+        visualization_msgs::Marker ee_m = m;
+        ee_m.header.frame_id = "";
+        ee_m.ns = name_;
+
+        // std::cout << robot_interface_->getToolOffsetPose(ee_name) << std::endl;
+
+        tf::poseMsgToTF(m.pose, tfTm);
+        wpTm = wpTee*eeTtf*tfTm;
+        tf::poseTFToMsg(wpTm,ee_m.pose);
+        // ee_m.pose = getPoseFromFrame(self.wpTee[wp]*self.eeTtf[wp]*getFrameFromPose(m.pose))
+
+        // std::cout << ee_m.pose << std::endl;
+        menu_control.markers.push_back( ee_m );
+      }
             // scale = 1.0
             // if wp in self.waypoint_controls[trajectory] :
             //     scale = self.waypoint_controls[trajectory][wp]['scale']
-            // int_marker.controls.append(menu_control)
-            // if(self.waypoint_controls_display_on[trajectory][wp]) :
-            //     int_marker.controls.extend(CreateCustomDOFControls("",
-            //         self.waypoint_controls[trajectory][wp]['xyz'][0], self.waypoint_controls[trajectory][wp]['xyz'][1], self.waypoint_controls[trajectory][wp]['xyz'][2],
-            //         self.waypoint_controls[trajectory][wp]['rpy'][0], self.waypoint_controls[trajectory][wp]['rpy'][1], self.waypoint_controls[trajectory][wp]['rpy'][2]))
 
-            // self.add_interactive_marker(int_marker)
-            // self.marker_menus[wp].apply( self.server, wp )
-            // self.server.applyChanges()
 
-            // wp_ids += 1
+      int_marker.controls.push_back(menu_control);
+      if(waypoint_flags_[current_trajectory_].controls_on[wp_name]) {
+        std::vector<visualization_msgs::InteractiveMarkerControl> dof_controls;
+        dof_controls = utils::MarkerHelper::makeCustomDOFControls(wp.controls.translation[0], 
+                                                                  wp.controls.translation[1], 
+                                                                  wp.controls.translation[2],
+                                                                  wp.controls.rotation[0],
+                                                                  wp.controls.rotation[1],
+                                                                  wp.controls.rotation[2]);
 
-            // # rospy.loginfo("AffordanceTemplate::create_trajectory_from_parameters() -- done")
+        for (auto &c: dof_controls) {
+          int_marker.controls.push_back(c);
+        }
+      }
+      addInteractiveMarker(int_marker);
 
+      marker_menus_[wp_name].apply( *server_, wp_name );
+      server_->applyChanges();          
+ 
       wp_id++;
     }
   }
-  
+  ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- done");
+ 
   return true;
 }
 
@@ -708,6 +756,7 @@ int main(int argc, char **argv)
   boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface;
   robot_interface.reset(new affordance_template_markers::RobotInterface());
   robot_interface->load("r2_upperbody.yaml");
+  robot_interface->configure();
 
   boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server;
   server.reset( new interactive_markers::InteractiveMarkerServer(std::string(robot_name + "_affordance_template_server"),"",false) );
