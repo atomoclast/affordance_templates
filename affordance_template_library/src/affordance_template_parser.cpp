@@ -100,7 +100,7 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", ctrl.toBoolString(ctrl.translation[0]).c_str(), ctrl.toBoolString(ctrl.translation[1]).c_str(), ctrl.toBoolString(ctrl.translation[2]).c_str());
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", ctrl.toBoolString(ctrl.rotation[0]).c_str(), ctrl.toBoolString(ctrl.rotation[1]).c_str(), ctrl.toBoolString(ctrl.rotation[2]).c_str());
           }
-          ee_trajectory.end_effector_waypoint_list.push_back(ee);
+          ee_trajectory.ee_waypoint_list.push_back(ee);
         }
         at.ee_trajectories.push_back(ee_trajectory);
       }

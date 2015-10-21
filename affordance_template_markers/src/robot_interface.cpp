@@ -397,3 +397,27 @@ int main(int argc, char** argv)
 
   return 0;
 }
+
+std::map<std::string, int> RobotInterface::getEEPoseIDMap(std::string name) 
+{
+  std::map<std::string, int> pose_id_map;
+  for(auto key : ee_pose_map_) {
+    if(key.first.first == name) {
+      std::string pose_name = key.first.second;
+      pose_id_map[pose_name] = ee_pose_map_[key.first];
+    }
+  }
+  return pose_id_map;
+}
+
+std::map<int, std::string> RobotInterface::getEEPoseNameMap(std::string name) 
+{
+  std::map<int, std::string> pose_name_map;
+  for(auto key : ee_id_map_) {
+    if(key.first.first == name) {
+      int pose_id = key.first.second;
+      pose_name_map[pose_id] = ee_id_map_[key.first];
+    }
+  }
+  return pose_name_map;
+}

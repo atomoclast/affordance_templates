@@ -57,12 +57,14 @@ namespace affordance_template_markers
 
     inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
     inline std::map<int, std::string> getEENameMap() { return ee_name_map_; }
-    
+
     std::string getEEName(const int);
     int getEEId(const std::string&);
     std::string getManipulator(const std::string&); // is this right??
     std::string getPkgPath(const std::string&);
-    
+    std::map<std::string, int> getEEPoseIDMap(std::string name);
+    std::map<int, std::string> getEEPoseNameMap(std::string name);
+
     void tearDown();
     void reset();
 

@@ -22,7 +22,7 @@ namespace affordance_template_object
     struct Trajectory
     {
       std::string name;
-      std::vector<affordance_template_object::EndEffectorWaypointList> end_effector_waypoint_list;
+      std::vector<affordance_template_object::EndEffectorWaypointList> ee_waypoint_list;
     };
 
 }

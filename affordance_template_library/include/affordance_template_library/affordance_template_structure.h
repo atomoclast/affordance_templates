@@ -7,13 +7,16 @@
 
 namespace affordance_template_object
 {
+	typedef std::vector<affordance_template_object::Trajectory> TrajectoryList;
+	typedef std::vector<affordance_template_object::DisplayObject> DisplayObjectList;
+
     struct AffordanceTemplateStructure
     {
         std::string name;
         std::string image;
         std::string filename;
-        std::vector<affordance_template_object::Trajectory> ee_trajectories;
-      	std::vector<affordance_template_object::DisplayObject> display_objects;
+        TrajectoryList ee_trajectories;
+      	DisplayObjectList display_objects;
           
     };
 }
