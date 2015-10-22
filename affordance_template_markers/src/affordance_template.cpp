@@ -403,13 +403,13 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
     for(auto &wp: wp_list.waypoints) {
 
       std::string wp_name = createWaypointID(ee_id, wp_id);
-
       ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Waypoint: %s", wp_name.c_str());
 
       setupWaypointMenu(structure, wp_name);
       geometry_msgs::Pose display_pose = originToPoseMsg(wp.origin);  
 
       std::string parent_obj = appendID(wp.display_object);
+      std::cout << "Display Pose in frame: " << parent_obj << ":\n" << display_pose << std::endl;
       double parent_scale = object_scale_factor_[parent_obj]*ee_scale_factor_[parent_obj];  
 
       display_pose.position.x *= parent_scale;
@@ -418,12 +418,12 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
       //store base WP pose to publish by TF
       geometry_msgs::PoseStamped ps;
-      ps.header.frame_id = root_frame_;
+      ps.header.frame_id = parent_obj;
       ps.pose = display_pose;
       frame_store_[wp_name] = FrameInfo(wp_name, ps);
 
       visualization_msgs::InteractiveMarker int_marker;
-      int_marker.header.frame_id = root_frame_;
+      int_marker.header.frame_id = parent_obj;
       int_marker.header.stamp = ros::Time::now();
       int_marker.name = wp_name;
       int_marker.description = wp_name;
@@ -480,10 +480,23 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       tf::Transform tfTm;
       tf::Transform wpTm;
 
-      std::cout << "getManipulatorOffsetPose() =" << std::endl;       
-      std::cout << robot_interface_->getManipulatorOffsetPose(ee_name) << std::endl;
-      std::cout << "getToolOffsetPose() =" << std::endl;       
-      std::cout << robot_interface_->getToolOffsetPose(ee_name) << std::endl;
+      // std::cout << "getManipulatorOffsetPose() =" << std::endl;       
+      // std::cout << robot_interface_->getManipulatorOffsetPose(ee_name) << std::endl;
+      // std::cout << "getToolOffsetPose() =" << std::endl;       
+      // std::cout << robot_interface_->getToolOffsetPose(ee_name) << std::endl;
+
+      {
+        geometry_msgs::PoseStamped ps;
+        ps.header.frame_id = wp_name;
+        ps.pose = robot_interface_->getManipulatorOffsetPose(ee_name);
+        std::string ee_frame_name = wp_name + "/ee";
+        frame_store_[ee_frame_name] = FrameInfo(ee_frame_name, ps);
+
+        ps.header.frame_id = ee_frame_name;
+        ps.pose = robot_interface_->getToolOffsetPose(ee_name);
+        std::string tf_frame_name = wp_name + "/tf";
+        frame_store_[tf_frame_name] = FrameInfo(tf_frame_name, ps);
+      }
 
       try {
         tf::poseMsgToTF(robot_interface_->getManipulatorOffsetPose(ee_name),wpTee);
@@ -492,21 +505,13 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         ROS_ERROR("AffordanceTemplate::createWaypointsFromStructure() -- error getting transforms for %s", ee_name.c_str());
       }
 
-      //wpTee.setIdentity();
-
       for(auto &m: markers.markers) {
         visualization_msgs::Marker ee_m = m;
         ee_m.header.frame_id = "";
         ee_m.ns = name_;
-
-        // std::cout << robot_interface_->getToolOffsetPose(ee_name) << std::endl;
-
         tf::poseMsgToTF(m.pose, tfTm);
         wpTm = wpTee*eeTtf*tfTm;
         tf::poseTFToMsg(wpTm,ee_m.pose);
-        // ee_m.pose = getPoseFromFrame(self.wpTee[wp]*self.eeTtf[wp]*getFrameFromPose(m.pose))
-
-        // std::cout << ee_m.pose << std::endl;
         menu_control.markers.push_back( ee_m );
       }
             // scale = 1.0
