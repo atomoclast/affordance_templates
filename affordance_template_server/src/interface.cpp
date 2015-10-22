@@ -14,14 +14,6 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_rob
         ROS_INFO("[AffordanceTemplateInterface] creating server using robot %s", _robot_name.c_str());
     at_server_ = new AffordanceTemplateServer(_robot_name);
 
-    server_robot_config_map_ = at_server_->getRobotConfigs();
-    if (server_robot_config_map_.size() == 0)
-        ROS_WARN("[AffordanceTemplateInterface] no robot config files were loaded into the server!!");
-
-    server_template_map_ = at_server_->getTemplates();
-    if (server_template_map_.size() == 0)
-        ROS_WARN("[AffordanceTemplateInterface] no templates were loaded into the server!!");
-
     const std::string base_srv = "/affordance_template_server/";
     at_srv_map_["get_robots"]              = nh.advertiseService(base_srv + "get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
     at_srv_map_["get_templates"]           = nh.advertiseService(base_srv + "get_templates", &AffordanceTemplateInterface::handleTemplateRequest, this);
@@ -52,16 +44,24 @@ bool AffordanceTemplateInterface::handleRobotRequest(GetRobotConfigInfo::Request
 {
     at_server_->setStatus(false);
     
-    if (!req.name.empty() && server_robot_config_map_.find(req.name) != server_robot_config_map_.end())
+    std::vector<RobotConfig> configs;
+    if (!req.name.empty() && at_server_->findConfig(req.name))
     {
-        ROS_INFO("[AffordanceTemplateInterface::handleRobotRequest] requested robot info for %s", req.name.c_str());
-        res.robots.push_back(server_robot_config_map_[req.name]);
+        ROS_INFO("[AffordanceTemplateInterface::handleRobotRequest] requesting robot info for %s", req.name.c_str());
+        configs = at_server_->getRobotConfig(req.name);
+        if (configs.size())
+            res.robots.push_back(configs.front());
+        else
+            ROS_WARN("[AffordanceTemplateInterface::handleRobotRequest] couldn't find config matching robot name: %s on server!!", req.name.c_str());
     }
     else
     {
-        ROS_INFO("[AffordanceTemplateInterface::handleRobotRequest] requested robot info for all available robots");
-        for (auto c : server_robot_config_map_)
-            res.robots.push_back(c.second);
+        ROS_INFO("[AffordanceTemplateInterface::handleRobotRequest] requesting robot info for all available robots");
+        configs = at_server_->getRobotConfig();
+        if (configs.size())
+            res.robots = configs;
+        else
+            ROS_WARN("[AffordanceTemplateInterface::handleRobotRequest] couldn't find any robot configs on server!!");
     }
 
     at_server_->setStatus(true);
@@ -72,57 +72,24 @@ bool AffordanceTemplateInterface::handleTemplateRequest(GetAffordanceTemplateCon
 {
     at_server_->setStatus(false);
     
-    if (!req.name.empty() && server_template_map_.find(req.name) != server_template_map_.end())
+    std::vector<AffordanceTemplateConfig> templates;
+    if (!req.name.empty() && at_server_->findTemplate(req.name))
     {
-        ROS_INFO("[AffordanceTemplateInterface::handleTemplateRequest] requested %s template info", req.name.c_str());
-        AffordanceTemplateConfig atc;
-        atc.filename = server_template_map_[req.name].filename;
-        atc.type = server_template_map_[req.name].name;
-        atc.image_path = server_template_map_[req.name].image;
-        for (auto ee : server_template_map_[req.name].ee_trajectories)
-        {
-            WaypointTrajectory wp;
-            wp.name = ee.name;
-            for (int w = 0; w < ee.ee_waypoint_list.size(); ++w)
-            {
-                WaypointInfo wi;
-                wi.id = ee.ee_waypoint_list[w].id;
-                wi.num_waypoints = ee.ee_waypoint_list[w].waypoints.size();
-                wp.waypoint_info.push_back(wi);
-            }
-            atc.trajectory_info.push_back(wp);
-        }
-        for (auto d : server_template_map_[req.name].display_objects)
-            atc.display_objects.push_back(d.name);
-        res.templates.push_back(atc);
+        ROS_INFO("[AffordanceTemplateInterface::handleTemplateRequest] requesting %s template info", req.name.c_str());
+        templates = at_server_->getTemplate(req.name);
+        if (templates.size())
+            res.templates.push_back(templates.front());
+        else
+            ROS_WARN("[AffordanceTemplateInterface::handleTemplateRequest] couldn't find template on server matching template name: %s on server!!", req.name.c_str());
     }
     else
     {
-        ROS_INFO("[AffordanceTemplateInterface::handleTemplateRequest] requested infor for all loaded templates");
-        for (auto t : server_template_map_)
-        {
-            ROS_INFO("[AffordanceTemplateInterface::handleTemplateRequest] getting %s template info", t.first.c_str());
-            AffordanceTemplateConfig atc;
-            atc.filename = t.second.filename;
-            atc.type = t.second.name;
-            atc.image_path = t.second.image;
-            for (auto ee : t.second.ee_trajectories)
-            {
-                WaypointTrajectory wp;
-                wp.name = ee.name;
-                for (int w = 0; w < ee.ee_waypoint_list.size(); ++w)
-                {
-                    WaypointInfo wi;
-                    wi.id = ee.ee_waypoint_list[w].id;
-                    wi.num_waypoints = ee.ee_waypoint_list[w].waypoints.size();
-                    wp.waypoint_info.push_back(wi);
-                }
-                atc.trajectory_info.push_back(wp);
-            }
-            for (auto d : t.second.display_objects)
-                atc.display_objects.push_back(d.name);
-            res.templates.push_back(atc);
-        }
+        ROS_INFO("[AffordanceTemplateInterface::handleTemplateRequest] requesting infor for all loaded templates");
+        templates = at_server_->getTemplate();
+        if (templates.size())
+            res.templates = templates;
+        else
+            ROS_WARN("[AffordanceTemplateInterface::handleTemplateRequest] couldn't find any templates on server!!");
     }
     
     at_server_->setStatus(true);

@@ -51,8 +51,6 @@ namespace affordance_template_server
         AffordanceTemplateServer* at_server_;
         tf::TransformListener listener_;
         std::map<std::string, ros::ServiceServer> at_srv_map_;
-        std::map<std::string, affordance_template_msgs::RobotConfig> server_robot_config_map_;
-        std::map<std::string, affordance_template_object::AffordanceTemplateStructure> server_template_map_;
 
     public:
         AffordanceTemplateInterface(const std::string&);

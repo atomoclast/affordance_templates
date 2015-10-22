@@ -194,3 +194,92 @@ std::string AffordanceTemplateServer::getPackagePath(const std::string &pkg_name
         ROS_INFO("[AffordanceTemplateServer::getPackagePath] found path: %s", path.c_str());
     return path;
 }
+
+//################
+// public getters
+//################
+
+std::vector<affordance_template_msgs::RobotConfig> AffordanceTemplateServer::getRobotConfig(const std::string &name)
+{
+    std::vector<affordance_template_msgs::RobotConfig> configs;
+    if (!name.empty())
+    {
+        configs.push_back(robot_config_map_[name]);
+    }
+    else
+    {
+        for (auto c : robot_config_map_)
+            configs.push_back(c.second);
+    }
+    return configs;
+}
+
+std::vector<affordance_template_msgs::AffordanceTemplateConfig> AffordanceTemplateServer::getTemplate(const std::string &name)
+{
+    std::vector<affordance_template_msgs::AffordanceTemplateConfig> templates;
+    if (!name.empty())
+    {
+        affordance_template_msgs::AffordanceTemplateConfig atc;
+        atc.filename = at_structure_map_[name].filename;
+        atc.type = at_structure_map_[name].name;
+        atc.image_path = at_structure_map_[name].image;
+        for (auto ee : at_structure_map_[name].ee_trajectories)
+        {
+            affordance_template_msgs::WaypointTrajectory wp;
+            wp.name = ee.name;
+            for (int w = 0; w < ee.ee_waypoint_list.size(); ++w)
+            {
+                affordance_template_msgs::WaypointInfo wi;
+                wi.id = ee.ee_waypoint_list[w].id;
+                wi.num_waypoints = ee.ee_waypoint_list[w].waypoints.size();
+                wp.waypoint_info.push_back(wi);
+            }
+            atc.trajectory_info.push_back(wp);
+        }
+        for (auto d : at_structure_map_[name].display_objects)
+            atc.display_objects.push_back(d.name);        
+        templates.push_back(atc);
+    }
+    else
+    {   
+        for (auto t : at_structure_map_)
+        {
+            affordance_template_msgs::AffordanceTemplateConfig atc;
+            atc.filename = t.second.filename;
+            atc.type = t.second.name;
+            atc.image_path = t.second.image;
+            for (auto ee : t.second.ee_trajectories)
+            {
+                affordance_template_msgs::WaypointTrajectory wp;
+                wp.name = ee.name;
+                for (int w = 0; w < ee.ee_waypoint_list.size(); ++w)
+                {
+                    affordance_template_msgs::WaypointInfo wi;
+                    wi.id = ee.ee_waypoint_list[w].id;
+                    wi.num_waypoints = ee.ee_waypoint_list[w].waypoints.size();
+                    wp.waypoint_info.push_back(wi);
+                }
+                atc.trajectory_info.push_back(wp);
+            }
+            for (auto d : t.second.display_objects)
+                atc.display_objects.push_back(d.name);
+            templates.push_back(atc);
+        }
+    }
+    return templates;
+}
+
+// from file
+bool AffordanceTemplateServer::loadRobot(const std::string &name="")
+{
+    if (!name.empty())
+    {
+
+    }
+} 
+
+// from msg
+bool AffordanceTemplateServer::loadRobot(const affordance_template_msgs::RobotConfig&)
+{
+
+}

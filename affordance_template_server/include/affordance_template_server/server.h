@@ -7,11 +7,13 @@
 #include <boost/filesystem.hpp>
 #include <ros/package.h>
 #include <tf/transform_listener.h>
-#include <affordance_template_msgs/RobotConfig.h>
 #include <affordance_template_markers/robot_interface.h>
 #include <affordance_template_library/affordance_template_structure.h>
 #include <affordance_template_library/affordance_template_parser.h>
 #include <interactive_markers/interactive_marker_server.h>
+
+#include <affordance_template_msgs/RobotConfig.h>
+#include <affordance_template_msgs/AffordanceTemplateConfig.h>
 
 namespace affordance_template_server
 {
@@ -41,12 +43,18 @@ namespace affordance_template_server
      
     inline bool getStatus() { return status_; }
     inline void setStatus(bool status) { status_ = status; }
-    inline std::map<std::string, affordance_template_msgs::RobotConfig> getRobotConfigs() { return robot_config_map_; }
-    inline std::map<std::string, affordance_template_object::AffordanceTemplateStructure> getTemplates() { return at_structure_map_; }
+
+    inline bool findConfig(const std::string &name) { robot_config_map_.find(name) == robot_config_map_.end() ? false : true; }
+    inline bool findTemplate(const std::string &name) { at_structure_map_.find(name) == at_structure_map_.end() ? false : true; }
+    inline bool findInterface(const std::string &name) { robot_interface_map_.find(name) == robot_interface_map_.end() ? false : true; }
+
+    std::vector<affordance_template_msgs::RobotConfig> getRobotConfig(const std::string &name="");
+    std::vector<affordance_template_msgs::AffordanceTemplateConfig> getTemplate(const std::string &name="");
+    bool loadRobot(const std::string&); // from file
+    bool loadRobot(const affordance_template_msgs::RobotConfig&); // from msg
 
     // bool addTemplate(const std::string&);
     // bool removeTemplate(const std::string&);
-    // int getNextTemplateId();
     // bool loadFromFile(const std::string&);
     // bool updateTemplatePose();
   };
