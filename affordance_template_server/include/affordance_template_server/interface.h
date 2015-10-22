@@ -2,6 +2,7 @@
 #define _AFFORDANCE_TEMPLATE_INTERFACE_H_
 
 #include <affordance_template_server/server.h>
+#include <affordance_template_library/affordance_template_structure.h>
 
 #include <affordance_template_msgs/GetRobotConfigInfo.h>
 #include <affordance_template_msgs/GetAffordanceTemplateConfigInfo.h>
@@ -19,6 +20,7 @@
 #include <affordance_template_msgs/GetAffordanceTemplateServerStatus.h>
 #include <affordance_template_msgs/SetAffordanceTemplateTrajectory.h>
 #include <affordance_template_msgs/SetAffordanceTemplatePose.h>
+
 
 using namespace affordance_template_msgs;
 
@@ -49,6 +51,8 @@ namespace affordance_template_server
         AffordanceTemplateServer* at_server_;
         tf::TransformListener listener_;
         std::map<std::string, ros::ServiceServer> at_srv_map_;
+        std::map<std::string, affordance_template_msgs::RobotConfig> server_robot_config_map_;
+        std::map<std::string, affordance_template_object::AffordanceTemplateStructure> server_template_map_;
 
     public:
         AffordanceTemplateInterface(const std::string&);
