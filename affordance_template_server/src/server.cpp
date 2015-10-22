@@ -34,7 +34,7 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
         {
             ROS_INFO("[AffordanceTemplateServer::loadRobots] config package %s found", _robot_yaml.c_str());
             robot_config_map_[rconf.name] = rconf;
-            robot_interface_map_[_robot_yaml] = ri;
+            robot_interface_map_[ri->getRobotConfig().name] = ri;
         }
     }
 
@@ -177,7 +177,7 @@ bool AffordanceTemplateServer::loadRobots()
             {
                 ROS_INFO("[AffordanceTemplateServer::loadRobots] config package %s found", r.c_str());
                 robot_config_map_[rconf.name] = rconf;
-                robot_interface_map_[r] = ri;
+                robot_interface_map_[ri->getRobotConfig().name] = ri;
             }
         }
     }
@@ -196,6 +196,27 @@ std::string AffordanceTemplateServer::getPackagePath(const std::string &pkg_name
     else
         ROS_INFO("[AffordanceTemplateServer::getPackagePath] found path: %s", path.c_str());
     return path;
+}
+
+int AffordanceTemplateServer::getNextID(const std::string &type)
+{
+    std::vector<int> ids;
+    for (auto at : at_map_)
+    {
+        if (at.second->getType() == type)
+            ids.push_back(at.second->getID());
+    }
+
+    int next = 0;
+    while(1)
+    {
+        if (std::find(ids.begin(), ids.end(), next) == ids.end())
+            return next;
+        else 
+            ++next;
+    }
+
+    return next;
 }
 
 //################
@@ -272,7 +293,6 @@ std::vector<affordance_template_msgs::AffordanceTemplateConfig> AffordanceTempla
     return templates;
 }
 
-// from file
 bool AffordanceTemplateServer::loadRobot(const std::string &name="")
 {
     if (!name.empty())
@@ -282,7 +302,6 @@ bool AffordanceTemplateServer::loadRobot(const std::string &name="")
     return robot_interface_map_[name]->load(name);
 } 
 
-// from msg
 bool AffordanceTemplateServer::loadRobot(const affordance_template_msgs::RobotConfig &msg)
 {
     std::string name = msg.name;
@@ -290,16 +309,39 @@ bool AffordanceTemplateServer::loadRobot(const affordance_template_msgs::RobotCo
     return robot_interface_map_[name]->load(msg);
 }
 
-// TODO when we have ATS creating ATs
-bool AffordanceTemplateServer::addTemplate(const std::string &name, uint8_t& id, geometry_msgs::PoseStamped &pose)
+bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id, geometry_msgs::PoseStamped &pose)
 {
-    if (name.empty())
+    if (type.empty())
         return false;
 
-    id = 0;
+    id = getNextID(type);
+    std::string key = type + ":" + std::to_string(id);
+    ROS_INFO("[AffordanceTemplateServer::addTemplate] creating new affordance template with ID: %d and key: %s", id, key.c_str());
+
+    // at_map_[key] = new affordance_template::AffordanceTemplate(ros::NodeHandle, im_server_, robot_interface_map_[""], "some_goddammed_robot", type, id); // WTF is the robot name??
+
     return true;
+}
 
-    // id = 
+bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uint8_t id)
+{
+    std::string key = type + ":" + std::to_string(id);
+    if (at_map_.find(key) == at_map_.end())
+        return false;
 
-    // if (pose.header.frame_id.empty())
+    delete at_map_[key];
+    at_map_.erase(key);
+
+    return true;
+}
+
+bool AffordanceTemplateServer::getTemplateInstance(const std::string &type, const uint8_t id, affordance_template::AffordanceTemplate* ati)
+{
+   std::string key = type + ":" + std::to_string(id);
+    if (at_map_.find(key) == at_map_.end())
+        return false;
+
+    ati = at_map_[key];
+
+    return true;
 }

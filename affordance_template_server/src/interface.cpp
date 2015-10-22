@@ -131,7 +131,13 @@ bool AffordanceTemplateInterface::handleAddTemplate(AddAffordanceTemplate::Reque
 bool AffordanceTemplateInterface::handleDeleteTemplate(DeleteAffordanceTemplate::Request &req, DeleteAffordanceTemplate::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleDeleteTemplate]");
+    ROS_INFO("[AffordanceTemplateInterface::handleDeleteTemplate] removing template: %s", req.class_type.c_str());
+
+    res.status = at_server_->removeTemplate(req.class_type, req.id);
+
+    if (!res.status)
+        ROS_ERROR("[AffordanceTemplateInterface::handleDeleteTemplate] error removing template!!");
+
     at_server_->setStatus(true);
     return true;
 }
@@ -155,7 +161,38 @@ bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::R
 bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanCommand::Request &req, AffordanceTemplatePlanCommand::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand]");
+    ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] new plan request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
+
+
+    affordance_template::AffordanceTemplate* at;
+    if (!at_server_->getTemplateInstance(req.type, req.id, at))
+        ROS_ERROR("[AffordanceTemplateInterface::handlePlanCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
+    else
+    {
+        // check if specific trajectory was given
+        if (req.trajectory_name.empty())
+            req.trajectory_name = at->getCurrentTrajectory();
+
+        // go through all the EE waypoints in the request
+        int id = 0; 
+        int steps = 0;
+
+        std::vector<std::string> ee_names;
+        std::map<std::string, bool> req_map;
+        for (auto ee : req.end_effectors)
+        {
+
+            steps = req.steps[id];
+            // TODO
+            // make sure EE is in trajectory
+            // if not at->trajectory_has_ee(request.trajectory_name, ee): 
+            //         rospy.logwarn(str("ServiceInterface::handle_plan_command() -- " + ee + " not in trajectory, can't plan"))
+            //         continue
+            ee_names.push_back(ee);
+            ++id;
+        }
+    }
+
     at_server_->setStatus(true);
     return true;
 }
@@ -203,7 +240,8 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
 bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServerStatus::Request &req, GetAffordanceTemplateServerStatus::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleServerStatus]");
+    ROS_INFO("[AffordanceTemplateInterface::handleServerStatus] getting server status...");
+    res.ready = at_server_->getStatus();
     at_server_->setStatus(true);
     return true;
 }

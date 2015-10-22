@@ -37,6 +37,7 @@ namespace affordance_template
 
   public:
     
+    AffordanceTemplate(){} // default constructor
     AffordanceTemplate(const ros::NodeHandle nh, 
                        boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server, 
                        std::string robot_name, 
@@ -57,7 +58,9 @@ namespace affordance_template
 
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
 
-    int getID() { return id_; }
+    inline int getID() { return id_; }
+    inline std::string getType() { return template_type_; }
+    inline std::string getCurrentTrajectory() { return current_trajectory_; }
 
   private:
 
