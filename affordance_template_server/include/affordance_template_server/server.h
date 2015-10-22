@@ -43,6 +43,7 @@ namespace affordance_template_server
     inline bool getStatus() { return status_; }
     inline void setStatus(bool status) { status_ = status; }
     inline std::map<std::string, affordance_template_msgs::RobotConfig> getRobotConfigs() { return robot_config_map_; }
+    inline std::map<std::string, affordance_template_object::AffordanceTemplateStructure> getTemplates() { return at_structure_map_; }
 
     // bool addTemplate(const std::string&);
     // bool removeTemplate(const std::string&);
