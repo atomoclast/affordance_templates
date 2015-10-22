@@ -416,6 +416,12 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       display_pose.position.y *= parent_scale;
       display_pose.position.z *= parent_scale;
 
+      //store base WP pose to publish by TF
+      geometry_msgs::PoseStamped ps;
+      ps.header.frame_id = root_frame_;
+      ps.pose = display_pose;
+      frame_store_[wp_name] = FrameInfo(wp_name, ps);
+
       visualization_msgs::InteractiveMarker int_marker;
       int_marker.header.frame_id = root_frame_;
       int_marker.header.stamp = ros::Time::now();
