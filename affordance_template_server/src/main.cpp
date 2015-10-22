@@ -10,5 +10,7 @@ int main(int argc, char **argv)
 
   affordance_template_server::AffordanceTemplateInterface ati(robot_name);
 
+  ros::spin();
+
   return 0;
 }

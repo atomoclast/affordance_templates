@@ -32,3 +32,6 @@ add_library(${PROJECT_NAME} src/interface.cpp src/server.cpp)
 
 add_executable(server src/server.cpp)
 target_link_libraries(server ${catkin_LIBRARIES} affordance_template_library)
+
+add_library(${PROJECT_NAME}_node src/interface.cpp src/server.cpp src/main.cpp)
+target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} affordance_template_library)

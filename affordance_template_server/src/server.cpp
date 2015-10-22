@@ -52,6 +52,9 @@ AffordanceTemplateServer::~AffordanceTemplateServer()
     for (auto ri : robot_interface_map_)
         delete ri.second;
     robot_interface_map_.clear();
+    for (auto at : at_map_)
+        delete at.second;
+    at_map_.clear();
 }
 
 void AffordanceTemplateServer::run()
@@ -196,7 +199,7 @@ std::string AffordanceTemplateServer::getPackagePath(const std::string &pkg_name
 }
 
 //################
-// public getters
+// public methods
 //################
 
 std::vector<affordance_template_msgs::RobotConfig> AffordanceTemplateServer::getRobotConfig(const std::string &name)
@@ -285,4 +288,18 @@ bool AffordanceTemplateServer::loadRobot(const affordance_template_msgs::RobotCo
     std::string name = msg.name;
     robot_interface_map_[name]->tearDown();
     return robot_interface_map_[name]->load(msg);
+}
+
+// TODO when we have ATS creating ATs
+bool AffordanceTemplateServer::addTemplate(const std::string &name, uint8_t& id, geometry_msgs::PoseStamped &pose)
+{
+    if (name.empty())
+        return false;
+
+    id = 0;
+    return true;
+
+    // id = 
+
+    // if (pose.header.frame_id.empty())
 }

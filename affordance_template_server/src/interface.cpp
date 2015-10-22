@@ -107,6 +107,9 @@ bool AffordanceTemplateInterface::handleLoadRobot(LoadRobotConfig::Request &req,
     else
         res.status = at_server_->loadRobot(req.robot_config);
 
+    if (!res.status)
+        ROS_ERROR("[AffordanceTemplateInterface::handleLoadRobot] error loading robot!!");
+
     at_server_->setStatus(true);
     return true;
 }
@@ -114,7 +117,13 @@ bool AffordanceTemplateInterface::handleLoadRobot(LoadRobotConfig::Request &req,
 bool AffordanceTemplateInterface::handleAddTemplate(AddAffordanceTemplate::Request &req, AddAffordanceTemplate::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleAddTemplate]");
+    ROS_INFO("[AffordanceTemplateInterface::handleAddTemplate] adding template: %s", req.class_type.c_str());
+
+    res.status = at_server_->addTemplate(req.class_type, res.id, req.pose);
+
+    if (!res.status)
+        ROS_ERROR("[AffordanceTemplateInterface::handleAddTemplate] error adding template!!");
+
     at_server_->setStatus(true);
     return true;
 }
@@ -130,7 +139,15 @@ bool AffordanceTemplateInterface::handleDeleteTemplate(DeleteAffordanceTemplate:
 bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::Request &req, GetRunningAffordanceTemplates::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleRunning]");
+    ROS_INFO("[AffordanceTemplateInterface::handleRunning] gathering names of running templates");
+
+    std::vector<AffordanceTemplateConfig> templates = at_server_->getTemplate();
+    for (auto t : templates)
+    {
+        ROS_INFO("[AffordanceTemplateInterface::handleRunning] found template: %s", t.type.c_str());
+        res.templates.push_back(t.type);
+    }
+
     at_server_->setStatus(true);
     return true;
 }
