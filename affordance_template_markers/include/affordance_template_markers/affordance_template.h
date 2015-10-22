@@ -57,6 +57,7 @@ namespace affordance_template
 
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
 
+    int getID() { return id_; }
 
   private:
 
