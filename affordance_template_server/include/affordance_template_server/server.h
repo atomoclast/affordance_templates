@@ -10,7 +10,6 @@
 #include <affordance_template_msgs/RobotConfig.h>
 #include <affordance_template_markers/robot_interface.h>
 #include <affordance_template_library/affordance_template_structure.h>
-#include <affordance_template_library/affordance_template_marker.h>
 #include <affordance_template_library/affordance_template_parser.h>
 #include <interactive_markers/interactive_marker_server.h>
 

@@ -556,8 +556,6 @@ class AffordanceTemplate(threading.Thread) :
             # adjust for scale factor of parent object
             parent_obj = self.parent_map[(trajectory,wp)]
             parent_scale = self.object_scale_factor[parent_obj]*self.end_effector_scale_factor[parent_obj]
-            # mag = math.sqrt(display_pose.position.x**2 + display_pose.position.y**2 + display_pose.position.z**2)
-            # scaled_mag = parent_scale*mag 
             display_pose.position.x *= parent_scale
             display_pose.position.y *= parent_scale
             display_pose.position.z *= parent_scale

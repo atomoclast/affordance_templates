@@ -1,6 +1,7 @@
 #include <affordance_template_markers/robot_interface.h>
 
 using namespace affordance_template_markers;
+using namespace end_effector_helper;
 
 RobotInterface::RobotInterface()
 {
@@ -26,10 +27,10 @@ RobotInterface::~RobotInterface()
 
 bool RobotInterface::load(const std::string &yaml)
 {
-  reset();
-
   ROS_INFO("[RobotInterface::load] loading with input yaml: %s", yaml.c_str());
-  
+
+  reset();
+ 
   try
   {
     std::vector<std::string> tokens;
@@ -120,7 +121,8 @@ bool RobotInterface::load(const std::string &yaml)
       {
         to.orientation.w = 1.0;  
       }
-      tool_offset_map_[ee_config.name] = ee_config.tool_offset;
+      //tool_offset_map_[ee_config.name] = ee_config.tool_offset;
+      tool_offset_map_[ee_config.name] = to;
 
       ee_names_.push_back(ee_config.name);
       ee_name_map_[ee_config.id] = ee_config.name;
@@ -167,7 +169,7 @@ bool RobotInterface::load(const std::string &yaml)
     {
       std::string path = ros::package::getPath("affordance_template_library");
       path += "/robots/" + yaml;
-      ROS_ERROR_STREAM("[RobotInterface::load] couldn't open file!! retrying with full path "<<path);
+      ROS_INFO_STREAM("[RobotInterface::load] couldn't open file!! retrying with full path "<<path);
 
       reload_attempted_ = true;
       bool loaded = load(path);
@@ -176,6 +178,7 @@ bool RobotInterface::load(const std::string &yaml)
     }
     else
     {
+      ROS_WARN("[RobotInterface::load] did not successfully load from yaml file");
       reload_attempted_ = false;
       return false;
     }
@@ -252,14 +255,27 @@ bool RobotInterface::configure() // TODO
     return false;
   }
 
+  ros::NodeHandle nh;
+  robot_planner_->initialize(nh, robot_config_.name);
+
   // root_frame_ = robot_planner_->getRobotPlanningFrame(); TODO - doesn't exist in planner_interface
   ee_groups_ = robot_planner_->getEndEffectorNames();
 
+  // get actual planning SRDF groups for EEs
+  std::vector<std::string> ee_planning_groups;
   for (auto g : ee_groups_)
   {
-    if (std::find(ee_groups_.begin(), ee_groups_.end(), g) == ee_groups_.end())
+    std::string pg;
+    robot_planner_->getRDFModel()->getEndEffectorPlanningGroup(g, pg);
+    ee_planning_groups.push_back(pg);
+  }
+  for (auto g : ee_planning_groups)
+  {
+    ROS_INFO("[RobotInterface::configure] setting up ee group: %s", g.c_str());
+
+    if (std::find(ee_planning_groups.begin(), ee_planning_groups.end(), g) == ee_planning_groups.end())
     {
-      ROS_FATAL("[RobotInterface::configure] group %s is  not in end effector groups!!", g.c_str());
+      ROS_FATAL("[RobotInterface::configure] group %s is not in end effector groups!!", g.c_str());
       return false;
     }
 
@@ -275,6 +291,10 @@ bool RobotInterface::configure() // TODO
         ROS_INFO("[RobotInterface::configure] control frame: %s", ee_root_frame.c_str());
 
         // @seth -- still todo with python-->cpp
+
+        EndEffectorHelperConstPtr ee(new EndEffectorHelper(g, ee_root_frame, robot_planner_->getRDFModel()));
+        ee_link_data_[g] = ee;
+
         // self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
         // self.end_effector_link_data[g].populate_data(self.robot_planner.get_group_links(g), self.robot_planner.get_urdf_model(), self.robot_planner.get_srdf_model())
         // rospy.sleep(1)
@@ -311,7 +331,7 @@ bool RobotInterface::configure() // TODO
     robot_planner_->getStoredStateList(g, state_list);
     for (auto name : state_list)
     {
-      ROS_INFO("[RobotInterface::configure] ading stored pose %s to group %s", name.c_str(), g.c_str());
+      ROS_INFO("[RobotInterface::configure] adding stored pose %s to group %s", name.c_str(), g.c_str());
       sensor_msgs::JointState state;
       robot_planner_->getStoredGroupState(g, name, state);
       stored_poses_[std::make_pair(g, name)] = state;
@@ -396,3 +416,41 @@ int main(int argc, char** argv)
 
   return 0;
 }
+
+std::map<std::string, int> RobotInterface::getEEPoseIDMap(std::string name) 
+{
+  std::map<std::string, int> pose_id_map;
+  for(auto key : ee_pose_map_) {
+    if(key.first.first == name) {
+      std::string pose_name = key.first.second;
+      pose_id_map[pose_name] = ee_pose_map_[key.first];
+    }
+  }
+  return pose_id_map;
+}
+
+std::map<int, std::string> RobotInterface::getEEPoseNameMap(std::string name) 
+{
+  std::map<int, std::string> pose_name_map;
+  for(auto key : ee_id_map_) {
+    if(key.first.first == name) {
+      int pose_id = key.first.second;
+      pose_name_map[pose_id] = ee_id_map_[key.first];
+    }
+  }
+  return pose_name_map;
+}
+
+bool RobotInterface::getEELinkData(std::string group_name, end_effector_helper::EndEffectorHelperConstPtr &link_data) 
+{
+  // for(auto g: ee_link_data_) {
+  //   std::cout << "has link data for " << g.first << std::endl;
+  // }
+  if(ee_link_data_.find(group_name) != std::end(ee_link_data_)) {
+    link_data = ee_link_data_[group_name];
+  } else{
+    return false;
+  }
+  return true;
+}
+
