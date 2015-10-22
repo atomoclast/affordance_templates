@@ -83,11 +83,11 @@ bool AffordanceTemplateInterface::handleTemplateRequest(GetAffordanceTemplateCon
         {
             WaypointTrajectory wp;
             wp.name = ee.name;
-            for (int w = 0; w < ee.waypoints.size(); ++w)
+            for (int w = 0; w < ee.ee_waypoint_list.size(); ++w)
             {
                 WaypointInfo wi;
-                wi.id = ee.waypoints[w].ee_pose; // right??
-                wi.num_waypoints = ee.waypoints.size();
+                wi.id = ee.ee_waypoint_list[w].id;
+                wi.num_waypoints = ee.ee_waypoint_list[w].waypoints.size();
                 wp.waypoint_info.push_back(wi);
             }
             atc.trajectory_info.push_back(wp);
@@ -110,11 +110,11 @@ bool AffordanceTemplateInterface::handleTemplateRequest(GetAffordanceTemplateCon
             {
                 WaypointTrajectory wp;
                 wp.name = ee.name;
-                for (int w = 0; w < ee.waypoints.size(); ++w)
+                for (int w = 0; w < ee.ee_waypoint_list.size(); ++w)
                 {
                     WaypointInfo wi;
-                    wi.id = ee.waypoints[w].ee_pose; // right??
-                    wi.num_waypoints = ee.waypoints.size();
+                    wi.id = ee.ee_waypoint_list[w].id;
+                    wi.num_waypoints = ee.ee_waypoint_list[w].waypoints.size();
                     wp.waypoint_info.push_back(wi);
                 }
                 atc.trajectory_info.push_back(wp);
@@ -132,7 +132,10 @@ bool AffordanceTemplateInterface::handleTemplateRequest(GetAffordanceTemplateCon
 bool AffordanceTemplateInterface::handleLoadRobot(LoadRobotConfig::Request &req, LoadRobotConfig::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleLoadRobot]");
+    ROS_INFO("[AffordanceTemplateInterface::handleLoadRobot] loading robot %s", req.robot_config.name.c_str());
+
+    res.status = false;
+
     at_server_->setStatus(true);
     return true;
 }
