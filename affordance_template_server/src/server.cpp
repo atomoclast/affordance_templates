@@ -273,13 +273,16 @@ std::vector<affordance_template_msgs::AffordanceTemplateConfig> AffordanceTempla
 bool AffordanceTemplateServer::loadRobot(const std::string &name="")
 {
     if (!name.empty())
-    {
+        return false;
 
-    }
+    robot_interface_map_[name]->tearDown();
+    return robot_interface_map_[name]->load(name);
 } 
 
 // from msg
-bool AffordanceTemplateServer::loadRobot(const affordance_template_msgs::RobotConfig&)
+bool AffordanceTemplateServer::loadRobot(const affordance_template_msgs::RobotConfig &msg)
 {
-
+    std::string name = msg.name;
+    robot_interface_map_[name]->tearDown();
+    return robot_interface_map_[name]->load(msg);
 }

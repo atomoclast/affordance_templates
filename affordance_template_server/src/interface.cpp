@@ -102,6 +102,10 @@ bool AffordanceTemplateInterface::handleLoadRobot(LoadRobotConfig::Request &req,
     ROS_INFO("[AffordanceTemplateInterface::handleLoadRobot] loading robot %s", req.robot_config.name.c_str());
 
     res.status = false;
+    if (!req.filename.empty())
+        res.status = at_server_->loadRobot(req.filename);
+    else
+        res.status = at_server_->loadRobot(req.robot_config);
 
     at_server_->setStatus(true);
     return true;

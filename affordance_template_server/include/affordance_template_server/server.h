@@ -55,7 +55,6 @@ namespace affordance_template_server
 
     // bool addTemplate(const std::string&);
     // bool removeTemplate(const std::string&);
-    // bool loadFromFile(const std::string&);
     // bool updateTemplatePose();
   };
 }
