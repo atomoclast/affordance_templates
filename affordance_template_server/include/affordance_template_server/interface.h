@@ -48,7 +48,7 @@ namespace affordance_template_server
         bool handleSetPose(SetAffordanceTemplatePose::Request&, SetAffordanceTemplatePose::Response&);
         
         void handleObjectScaleCallback(const ScaleDisplayObjectInfo&);
-        AffordanceTemplateStatus getTemplateStatus(const std::string& template_name, const int template_id, const std::string& traj_name, const std::string& frame_id="");
+        AffordanceTemplateStatus getTemplateStatus(const std::string& template_name, const int template_id, std::string& traj_name, const std::string& frame_id="");
 
         boost::shared_ptr<AffordanceTemplateServer> at_server_;
         tf::TransformListener listener_;
