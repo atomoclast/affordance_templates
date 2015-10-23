@@ -48,14 +48,9 @@ namespace affordance_template_server
      
     inline bool getStatus() { return status_; }
     inline void setStatus(bool status) { status_ = status; }
-
-    // inline bool findConfig(const std::string &name) { robot_config_map_.find(name) == robot_config_map_.end() ? false : true; }
-    // inline bool findInterface(const std::string &name) { robot_interface_map_.find(name) == robot_interface_map_.end() ? false : true; }
-
     inline bool findTemplate(const std::string &name) { at_structure_map_.find(name) == at_structure_map_.end() ? false : true; }
-
     inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
-    // std::vector<affordance_template_msgs::RobotConfig> getRobotConfig(const std::string &name="");
+    
     std::vector<affordance_template_msgs::AffordanceTemplateConfig> getTemplate(const std::string &name="");
 
     bool loadRobot(const std::string&); // from file
@@ -64,6 +59,7 @@ namespace affordance_template_server
     bool addTemplate(const std::string&, uint8_t&);
     bool addTemplate(const std::string&, uint8_t&, geometry_msgs::PoseStamped&);
     bool removeTemplate(const std::string&, const uint8_t);
+    bool updateTemplate(const std::string&, const uint8_t, const geometry_msgs::PoseStamped&);
 
     bool getTemplateInstance(const std::string&, const uint8_t, boost::shared_ptr<affordance_template::AffordanceTemplate>&);
     bool getTemplateInstance(const std::string&, boost::shared_ptr<affordance_template::AffordanceTemplate>&);

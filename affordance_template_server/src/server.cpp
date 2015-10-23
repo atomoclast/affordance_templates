@@ -284,9 +284,20 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
     return true;
 }
 
+bool AffordanceTemplateServer::updateTemplate(const std::string& type, const uint8_t id, const geometry_msgs::PoseStamped& pose)
+{
+    std::string key = type + ":" + std::to_string(id);
+    if (at_map_.find(key) == at_map_.end())
+        return false;
+
+    // ROS_INFO("[AffordanceTemplateServer::updateTemplate] updating %s to X: %g Y: %g Z: %g, x: %g y: %g z: %g w: %g", key.c_str(), pose.pose.position.x, pose.pose.position.y, pose.pose.position.z, pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w);
+    // return at_map_[key]->updatePose(pose); // @steve-todo
+    return true;
+}
+
 bool AffordanceTemplateServer::getTemplateInstance(const std::string &type, const uint8_t id, boost::shared_ptr<affordance_template::AffordanceTemplate> &ati)
 {
-   std::string key = type + ":" + std::to_string(id);
+    std::string key = type + ":" + std::to_string(id);
     if (at_map_.find(key) == at_map_.end())
         return false;
 
