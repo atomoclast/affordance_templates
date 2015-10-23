@@ -77,7 +77,6 @@ namespace affordance_template_markers
     std::map<int, std::string> getEEPoseNameMap(std::string name);
     
     std::vector<std::string> getEEPoseNames(std::string name);
-    std::vector<std::string> getEEPoseNames(int id);
 
     geometry_msgs::Pose getManipulatorOffsetPose(std::string name) { return manipulator_pose_map_[name]; }
     geometry_msgs::Pose getToolOffsetPose(std::string name) { return tool_offset_map_[name]; }

@@ -632,17 +632,15 @@ int AffordanceTemplate::getEEIDfromWaypointName(const std::string wp_name)
 
 void AffordanceTemplate::setupEndEffectorPoseMenu(const std::string& name)
 {
-  int ee_id = getEEIDfromWaypointName(name);
   std::string menu_text = "Change End-Effector Pose";
+  int ee_id = getEEIDfromWaypointName(name);
+  std::string ee_name = robot_interface_->getEEName(ee_id);
   interactive_markers::MenuHandler::EntryHandle sub_menu_handle = marker_menus_[name].insert( menu_text );
-  for(auto &pose_name: robot_interface_->getEEPoseNames(ee_id)) {
+  for(auto &pose_name: robot_interface_->getEEPoseNames(ee_name)) {
     MenuHandleKey key;
     key[name] = {menu_text, pose_name};
     group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, pose_name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) ); 
   }
-  // sub_menu_handle = self.marker_menus[waypoint].insert(m)
-  // for p in self.robot_interface.path_planner.get_stored_state_list(group) :
-  //     self.menu_handles[(waypoint,m,p)] = self.marker_menus[waypoint].insert(p,parent=sub_menu_handle,callback=self.change_ee_pose_callback)
 }
 
 void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMarker m)
