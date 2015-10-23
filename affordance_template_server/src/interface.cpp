@@ -316,6 +316,8 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
                 //         res.trajectory_names.push_back(t);
                 // }
             }
+            else
+                ROS_ERROR("[AffordanceTemplateInterface::handleTemplateStatus] %s not current running on server!!", req.name.c_str());
         }
         else
             ROS_ERROR("[AffordanceTemplateInterface::handleTemplateStatus] %s is an invalid template name!", req.name.c_str());
@@ -331,7 +333,9 @@ bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServer
 {
     at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handleServerStatus] getting server status...");
+    
     res.ready = at_server_->getStatus();
+    
     at_server_->setStatus(true);
     return true;
 }
@@ -339,7 +343,11 @@ bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServer
 bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTrajectory::Request &req, SetAffordanceTemplateTrajectory::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory]");
+
+    if (req.trajectory.empty())
+        ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to current trajectory", req.name.c_str());
+    else
+        ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to %s", req.name.c_str(), req.trajectory.c_str());
 
     res.success = false;
 
@@ -348,28 +356,23 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     if (keys.size() >= 2)
     {
         int id = std::stoi(keys[1]);
-        if ( at_server_->findTemplate(keys[0]) )
+        ATPointer at;
+        if ( at_server_->getTemplateInstance(req.name, at) )
         {
-            ATPointer at;
-            if ( at_server_->getTemplateInstance(req.name, at) )
+            // need to find trajectory here again, just as in handle template status
+            // TODO
+            // if traj not in traj
             {
-                // need to find trajectory here again, just as in handle template status
-                // TODO
-                // if traj not in traj
-                {
-                    // if ( !at->setTrajectory(req.trajectory)) // @steve-todo
-                        res.success = true;
-                    // else
-                        ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
-                }
+                // if ( !at->setTrajectory(req.trajectory)) // @steve-todo
+                    res.success = true;
                 // else
-                    // ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] trajectory %s not available to template %s", req.trajectory.c_str(), keys[0].c_str());
+                    ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
             }
-            else
-                ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on serveer!!", req.name.c_str());        
+            // else
+                // ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] trajectory %s not available to template %s", req.trajectory.c_str(), keys[0].c_str());
         }
         else
-            ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] template %s is not loaded onto server!!", keys[0].c_str());        
+            ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on serveer!!", req.name.c_str());        
     }
     else 
         ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s is an invalid template name!!", req.name.c_str());
@@ -381,7 +384,10 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
 bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Request &req, SetAffordanceTemplatePose::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleSetPose]");
+    ROS_INFO("[AffordanceTemplateInterface::handleSetPose] setting pose for %s:%d", req.class_type.c_str(), req.id);
+
+    res.success = at_server_->updateTemplate(req.class_type, req.id, req.pose);
+    
     at_server_->setStatus(true);
     return true;
 }
@@ -393,7 +399,7 @@ void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayOb
 
     ATPointer at;
     if ( at_server_->getTemplateInstance(data.class_type, data.id, at) )
-        // if (!at->scaleObject(data.object_name, data.scale_factor, data.end_effector_scale_factor) )
+        // if ( !at->scaleObject(data.object_name, data.scale_factor, data.end_effector_scale_factor) ) // @steve-todo
             ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
 
