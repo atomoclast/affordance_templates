@@ -5,7 +5,7 @@ using namespace affordance_template_server;
 AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yaml="") :
     robot_yaml_(_robot_yaml)
 {
-    boost::thread at_server_thread(boost::bind(&AffordanceTemplateServer::run, this));
+    // boost::thread at_server_thread(boost::bind(&AffordanceTemplateServer::run, this));
 
     if (robot_yaml_.empty())
         ROS_WARN("[AffordanceTemplateServer] no robot yaml provided - BE SURE TO LOAD ROBOT FROM SERVICE!!");
@@ -20,10 +20,10 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
     if (!loadTemplates())
         ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot JSONs!!");
 
-    status_ = false;
+    status_ = true;
 
     ROS_INFO("[AffordanceTemplateServer] server configured. spinning...");
-    at_server_thread.join();
+    // at_server_thread.join();
 }
 
 void AffordanceTemplateServer::run()
@@ -88,7 +88,7 @@ bool AffordanceTemplateServer::loadTemplates()
     for (auto& t : template_paths)
     {
         affordance_template_object::AffordanceTemplateStructure at;
-        atp.loadFromFile(t.second, at);
+        bool loaded = atp.loadFromFile(t.second, at);
         at_structure_map_[at.name] = at;
     }
 
@@ -181,7 +181,7 @@ int AffordanceTemplateServer::getNextID(const std::string &type)
 // public methods
 //################
 
-std::vector<affordance_template_msgs::AffordanceTemplateConfig> AffordanceTemplateServer::getTemplate(const std::string &name)
+std::vector<affordance_template_msgs::AffordanceTemplateConfig> AffordanceTemplateServer::getAvailableTemplates(const std::string &name)
 {
     std::vector<affordance_template_msgs::AffordanceTemplateConfig> templates;
     if (!name.empty())
@@ -233,6 +233,16 @@ std::vector<affordance_template_msgs::AffordanceTemplateConfig> AffordanceTempla
             templates.push_back(atc);
         }
     }
+    return templates;
+}
+
+std::vector<std::string> AffordanceTemplateServer::getRunningTemplates(const std::string &name)
+{
+    std::vector<std::string> templates;
+
+    for (auto a : at_map_)
+        templates.push_back(a.first);
+
     return templates;
 }
 

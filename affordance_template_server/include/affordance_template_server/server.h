@@ -51,7 +51,8 @@ namespace affordance_template_server
     inline bool findTemplate(const std::string &name) { at_structure_map_.find(name) == at_structure_map_.end() ? false : true; }
     inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
     
-    std::vector<affordance_template_msgs::AffordanceTemplateConfig> getTemplate(const std::string &name="");
+    std::vector<affordance_template_msgs::AffordanceTemplateConfig> getAvailableTemplates(const std::string &name="");
+    std::vector<std::string> getRunningTemplates(const std::string &name="");
 
     bool loadRobot(const std::string&); // from file
     bool loadRobot(const affordance_template_msgs::RobotConfig&); // from msg

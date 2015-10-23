@@ -58,7 +58,7 @@ bool AffordanceTemplateInterface::handleTemplateRequest(GetAffordanceTemplateCon
     if (!req.name.empty() && at_server_->findTemplate(req.name))
     {
         ROS_INFO("[AffordanceTemplateInterface::handleTemplateRequest] requesting %s template info", req.name.c_str());
-        templates = at_server_->getTemplate(req.name);
+        templates = at_server_->getAvailableTemplates(req.name);
         if (templates.size())
             res.templates.push_back(templates.front());
         else
@@ -66,8 +66,8 @@ bool AffordanceTemplateInterface::handleTemplateRequest(GetAffordanceTemplateCon
     }
     else
     {
-        ROS_INFO("[AffordanceTemplateInterface::handleTemplateRequest] requesting infor for all loaded templates");
-        templates = at_server_->getTemplate();
+        ROS_INFO("[AffordanceTemplateInterface::handleTemplateRequest] requesting info on all loaded templates");
+        templates = at_server_->getAvailableTemplates();
         if (templates.size())
             res.templates = templates;
         else
@@ -130,12 +130,15 @@ bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::R
     at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handleRunning] gathering names of running templates");
 
-    std::vector<AffordanceTemplateConfig> templates = at_server_->getTemplate();
+    std::vector<std::string> templates = at_server_->getRunningTemplates();
     for (auto t : templates)
     {
-        ROS_INFO("[AffordanceTemplateInterface::handleRunning] found template: %s", t.type.c_str());
-        res.templates.push_back(t.type);
+        ROS_INFO("[AffordanceTemplateInterface::handleRunning] \tfound template: %s", t.c_str());
+        res.templates.push_back(t);
     }
+
+    if (templates.size() == 0)
+        ROS_INFO("[AffordanceTemplateInterface::handleRunning] no templates are currently running on server");
 
     at_server_->setStatus(true);
     return true;
