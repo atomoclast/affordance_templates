@@ -66,6 +66,7 @@ namespace affordance_template_server
     bool removeTemplate(const std::string&, const uint8_t);
 
     bool getTemplateInstance(const std::string&, const uint8_t, boost::shared_ptr<affordance_template::AffordanceTemplate>&);
+    bool getTemplateInstance(const std::string&, boost::shared_ptr<affordance_template::AffordanceTemplate>&);
   };
 }
 

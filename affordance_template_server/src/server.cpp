@@ -294,3 +294,13 @@ bool AffordanceTemplateServer::getTemplateInstance(const std::string &type, cons
 
     return true;
 }
+
+bool AffordanceTemplateServer::getTemplateInstance(const std::string &key, boost::shared_ptr<affordance_template::AffordanceTemplate> &ati)
+{
+    if (at_map_.find(key) == at_map_.end())
+        return false;
+
+    ati = at_map_[key];
+
+    return true;
+}
