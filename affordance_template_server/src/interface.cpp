@@ -4,6 +4,8 @@ using namespace affordance_template_server;
 using namespace affordance_template_msgs;
 using namespace affordance_template_object;
 
+typedef boost::shared_ptr<affordance_template::AffordanceTemplate> ATPointer;
+
 AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_robot_yaml)
 {
     ROS_INFO("[AffordanceTemplateInterface] starting...");
@@ -144,7 +146,7 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
     at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] new plan request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
 
-    boost::shared_ptr<affordance_template::AffordanceTemplate> at;
+    ATPointer at;
     if ( !at_server_->getTemplateInstance(req.type, req.id, at) )
         ROS_ERROR("[AffordanceTemplateInterface::handlePlanCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
     else
@@ -192,7 +194,7 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
 
     res.status = false;
 
-    boost::shared_ptr<affordance_template::AffordanceTemplate> at;
+    ATPointer at;
     if ( !at_server_->getTemplateInstance(req.type, req.id, at) )
         ROS_ERROR("[AffordanceTemplateInterface::handleExecuteCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
     else
@@ -239,7 +241,7 @@ bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Req
     std::string old_key = req.original_class_type + ":" + std::to_string(req.id);
     std::string new_key = req.new_class_type + ":" + std::to_string(req.id);
     bool save_status = true; //false;
-    boost::shared_ptr<affordance_template::AffordanceTemplate> at;
+    ATPointer at;
     // if ( at_server_->getTemplateInstance(req.original_class_type, req.id, at) )
         // save_status = at->saveToDisk(req.filename, req.image, new_key, req.save_scale_updates);// @steve-todo
     bool remove_status = at_server_->removeTemplate(req.original_class_type, req.id);
@@ -255,7 +257,17 @@ bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Req
 bool AffordanceTemplateInterface::handleAddTrajectory(AddAffordanceTemplateTrajectory::Request &req, AddAffordanceTemplateTrajectory::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory]");
+    ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory] adding [%s] to template %s:%d", req.trajectory_name.c_str(), req.class_type.c_str(), req.id);
+
+    res.status = false;
+
+    ATPointer at;
+    // if ( at_server_->getTemplateInstance(req.class_type, req.id, at) )
+        // res.status = at->addTrajectory(req.trajectory_name); // @steve-todo
+
+    if ( !res.status )
+        ROS_ERROR("[AffordanceTemplateInterface::handleAddTrajectory] error adding trajectory to template!!");
+
     at_server_->setStatus(true);
     return true;
 }
@@ -263,7 +275,17 @@ bool AffordanceTemplateInterface::handleAddTrajectory(AddAffordanceTemplateTraje
 bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request &req, ScaleDisplayObject::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleObjectScale]");
+    ROS_INFO("[AffordanceTemplateInterface::handleObjectScale] scaling %s:%d object[%s] by (%g,%g)", req.scale_info.class_type.c_str(), req.scale_info.id, req.scale_info.object_name.c_str(), req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
+
+    res.status = false;
+
+    ATPointer at;
+    // if ( at_server_->getTemplateInstance(req.scale_info.class_type, req.scale_info.id, at) )
+        // res.status = at->scaleObject(req.scale_info.object_name, req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
+
+    if ( !res.status )
+        ROS_ERROR("[AffordanceTemplateInterface::handleObjectScale] error scaling object!!");
+
     at_server_->setStatus(true);
     return true;
 }
@@ -305,16 +327,11 @@ bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Reque
 void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayObjectInfo &data)
 {
     ROS_INFO_STREAM("[AffordanceTemplateInterface::handleObjectScaleCallback] scale "<<data.class_type<<":"<<data.id<<"->object["<<data.object_name<<"] by ("<<data.scale_factor<<", "<<data.end_effector_scale_factor<<")");
-    try
-    {
-        // TODO
-        // key = str(data.class_type) + ":" + str(data.id)
-        // self.server.at_data.class_map[data.class_type][data.id].scale_object(data.object_name, data.scale_factor, data.end_effector_scale_factor)
-    }
-    catch(...)
-    {
-        ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
-    }
+
+    ATPointer at;
+    if ( at_server_->getTemplateInstance(data.class_type, data.id, at) )
+        // if (!at->scaleObject(data.object_name, data.scale_factor, data.end_effector_scale_factor) )
+            ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
 
 AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const std::string& template_name, const int template_id, const std::string& traj_name, const std::string& frame_id)
