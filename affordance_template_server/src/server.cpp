@@ -252,6 +252,12 @@ bool AffordanceTemplateServer::loadRobot(const affordance_template_msgs::RobotCo
     return robot_interface_->load(msg);
 }
 
+bool AffordanceTemplateServer::addTemplate(const std::string& type, uint8_t& id)
+{
+    geometry_msgs::PoseStamped pose;
+    return addTemplate(type, id, pose);
+}
+
 bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id, geometry_msgs::PoseStamped &pose)
 {
     if (type.empty())
