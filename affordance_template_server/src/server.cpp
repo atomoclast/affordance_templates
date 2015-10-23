@@ -2,41 +2,20 @@
 
 using namespace affordance_template_server;
 
-AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yaml="")
+AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yaml="") :
+    robot_yaml_(_robot_yaml)
 {
     boost::thread at_server_thread(boost::bind(&AffordanceTemplateServer::run, this));
 
-    if (_robot_yaml.empty())
+    if (robot_yaml_.empty())
         ROS_WARN("[AffordanceTemplateServer] no robot yaml provided - BE SURE TO LOAD ROBOT FROM SERVICE!!");
+    else
+        if (!loadRobot())
+            ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot .yamls!!");
 
     pkg_name_ = "affordance_template_library";
 
     im_server_.reset( new interactive_markers::InteractiveMarkerServer(std::string("affordance_template_interactive_marker_server"), "", false));
-    
-    // load up robots if yaml provided
-    if (!_robot_yaml.empty())
-        if (!loadRobots())
-            ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot .yamls!!");
-    else 
-    {
-        affordance_template_markers::RobotInterface *ri = new affordance_template_markers::RobotInterface();
-        bool loaded = ri->load(_robot_yaml);
-
-        if (!loaded)        
-            ROS_WARN("[AffordanceTemplateServer] robot %s NOT loaded", _robot_yaml.c_str());
-
-        affordance_template_msgs::RobotConfig rconf = ri->getRobotConfig();
-        if (getPackagePath(rconf.config_package).empty())
-        {
-            ROS_WARN("[AffordanceTemplateServer::loadRobots] config package %s NOT found, ignoring.", _robot_yaml.c_str());
-        }
-        else
-        {
-            ROS_INFO("[AffordanceTemplateServer::loadRobots] config package %s found", _robot_yaml.c_str());
-            robot_config_map_[rconf.name] = rconf;
-            robot_interface_map_[ri->getRobotConfig().name] = ri;
-        }
-    }
 
     if (!loadTemplates())
         ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot JSONs!!");
@@ -45,16 +24,6 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
 
     ROS_INFO("[AffordanceTemplateServer] server configured. spinning...");
     at_server_thread.join();
-}
-
-AffordanceTemplateServer::~AffordanceTemplateServer() 
-{
-    for (auto ri : robot_interface_map_)
-        delete ri.second;
-    robot_interface_map_.clear();
-    for (auto at : at_map_)
-        delete at.second;
-    at_map_.clear();
 }
 
 void AffordanceTemplateServer::run()
@@ -126,63 +95,52 @@ bool AffordanceTemplateServer::loadTemplates()
     return true;
 }
 
-bool AffordanceTemplateServer::loadRobots()
+bool AffordanceTemplateServer::loadRobot()
 {
-    ROS_INFO("[AffordanceTemplateServer::loadRobots] loading all robots from path: %s", pkg_name_.c_str());
+    ROS_INFO("[AffordanceTemplateServer::loadRobot] loading robot yaml %s from path: %s", robot_yaml_.c_str(), pkg_name_.c_str());
+
+    robot_name_ = "";
 
     std::string root = getPackagePath(pkg_name_);
     if (!root.empty())
     {
         if (!boost::filesystem::exists(root) || !boost::filesystem::is_directory(root))
         {
-            ROS_WARN("[AffordanceTemplateServer::loadRobots] cannot find robots in path: %s!!", root.c_str());
+            ROS_WARN("[AffordanceTemplateServer::loadRobot] cannot find robots in path: %s!!", root.c_str());
             return false;
         }
 
-        // use boost to get all of the files with .yaml extension
-        std::vector<std::string> robot_paths_vec;
-        boost::filesystem::recursive_directory_iterator dir_it(root);
-        boost::filesystem::recursive_directory_iterator end_it;
-        while (dir_it != end_it)
-        {
-            if (boost::filesystem::is_regular_file(*dir_it) && dir_it->path().extension() == ".yaml")
-            {
-                ROS_INFO("[AffordanceTemplateServer::loadRobots] found robot yaml at path: %s", dir_it->path().string().c_str());
-                robot_paths_vec.push_back(dir_it->path().string());
-            }
-            ++dir_it;
-        }
+        // // use boost to get all of the files with .yaml extension
+        // // std::vector<std::string> robot_paths_vec;
+        // // boost::filesystem::recursive_directory_iterator dir_it(root);
+        // // boost::filesystem::recursive_directory_iterator end_it;
+        // while (dir_it != end_it)
+        // {
+        //     if (boost::filesystem::is_regular_file(*dir_it) && dir_it->path().extension() == ".yaml")
+        //     {
+        //         ROS_INFO("[AffordanceTemplateServer::loadRobot] found robot yaml at path: %s", dir_it->path().string().c_str());
+        //         robot_paths_vec.push_back(dir_it->path().string());
+        //     }
+        //     ++dir_it;
+        // }
 
         // make robot instances with the .yamls we just found
-        for (auto ri : robot_interface_map_)
-            delete ri.second;
-        robot_interface_map_.clear();
-        for (auto r : robot_paths_vec)
+        robot_interface_.reset(new affordance_template_markers::RobotInterface());
+        if ( !robot_interface_->load(root+robot_yaml_) )
         {
-            affordance_template_markers::RobotInterface *ri = new affordance_template_markers::RobotInterface();
-            bool loaded = ri->load(r);
-
-            if (!loaded)
-            {
-                ROS_WARN("[AffordanceTemplateServer::loadRobots] robot %s NOT loaded, ignoring.", r.c_str());
-                continue;
-            }
-
-            affordance_template_msgs::RobotConfig rconf = ri->getRobotConfig();
-            if (getPackagePath(rconf.config_package).empty())
-            {
-                ROS_WARN("[AffordanceTemplateServer::loadRobots] config package %s NOT found, ignoring.", r.c_str());
-            }
-            else
-            {
-                ROS_INFO("[AffordanceTemplateServer::loadRobots] config package %s found", r.c_str());
-                robot_config_map_[rconf.name] = rconf;
-                robot_interface_map_[ri->getRobotConfig().name] = ri;
-            }
+            ROS_WARN("[AffordanceTemplateServer::loadRobot] robot yaml %s NOT loaded, ignoring.", robot_yaml_.c_str());
+            return false;
         }
+
+        robot_config_ = robot_interface_->getRobotConfig();
+        robot_name_ = robot_config_.name;
+        if (getPackagePath(robot_config_.config_package).empty())
+            ROS_WARN("[AffordanceTemplateServer::loadRobot] config package %s NOT found, ignoring.", robot_config_.config_package.c_str());
+        else
+            ROS_INFO("[AffordanceTemplateServer::loadRobot] config package %s found", robot_config_.config_package.c_str());
     }
     else
-        ROS_WARN("[AffordanceTemplateServer::loadRobots] cannot find robots path!!");
+        ROS_WARN("[AffordanceTemplateServer::loadRobot] cannot find robots path!!");
 
     return true;
 }
@@ -222,21 +180,6 @@ int AffordanceTemplateServer::getNextID(const std::string &type)
 //################
 // public methods
 //################
-
-std::vector<affordance_template_msgs::RobotConfig> AffordanceTemplateServer::getRobotConfig(const std::string &name)
-{
-    std::vector<affordance_template_msgs::RobotConfig> configs;
-    if (!name.empty())
-    {
-        configs.push_back(robot_config_map_[name]);
-    }
-    else
-    {
-        for (auto c : robot_config_map_)
-            configs.push_back(c.second);
-    }
-    return configs;
-}
 
 std::vector<affordance_template_msgs::AffordanceTemplateConfig> AffordanceTemplateServer::getTemplate(const std::string &name)
 {
@@ -298,15 +241,15 @@ bool AffordanceTemplateServer::loadRobot(const std::string &name="")
     if (!name.empty())
         return false;
 
-    robot_interface_map_[name]->tearDown();
-    return robot_interface_map_[name]->load(name);
+    robot_interface_->tearDown();
+    return robot_interface_->load(name);
 } 
 
 bool AffordanceTemplateServer::loadRobot(const affordance_template_msgs::RobotConfig &msg)
 {
     std::string name = msg.name;
-    robot_interface_map_[name]->tearDown();
-    return robot_interface_map_[name]->load(msg);
+    robot_interface_->tearDown();
+    return robot_interface_->load(msg);
 }
 
 bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id, geometry_msgs::PoseStamped &pose)
@@ -329,13 +272,12 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
     if (at_map_.find(key) == at_map_.end())
         return false;
 
-    delete at_map_[key];
     at_map_.erase(key);
 
     return true;
 }
 
-bool AffordanceTemplateServer::getTemplateInstance(const std::string &type, const uint8_t id, affordance_template::AffordanceTemplate* ati)
+bool AffordanceTemplateServer::getTemplateInstance(const std::string &type, const uint8_t id, boost::shared_ptr<affordance_template::AffordanceTemplate> &ati)
 {
    std::string key = type + ":" + std::to_string(id);
     if (at_map_.find(key) == at_map_.end())

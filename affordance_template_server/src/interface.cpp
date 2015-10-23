@@ -4,15 +4,15 @@ using namespace affordance_template_server;
 using namespace affordance_template_msgs;
 using namespace affordance_template_object;
 
-AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_robot_name)
+AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_robot_yaml)
 {
     ROS_INFO("[AffordanceTemplateInterface] starting...");
 
     ros::NodeHandle nh;
 
-    if (!_robot_name.empty())
-        ROS_INFO("[AffordanceTemplateInterface] creating server using robot %s", _robot_name.c_str());
-    at_server_ = new AffordanceTemplateServer(_robot_name);
+    if (!_robot_yaml.empty())
+        ROS_INFO("[AffordanceTemplateInterface] creating server using robot yaml %s", _robot_yaml.c_str());
+    at_server_.reset(new AffordanceTemplateServer(_robot_yaml));
 
     const std::string base_srv = "/affordance_template_server/";
     at_srv_map_["get_robots"]              = nh.advertiseService(base_srv + "get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
@@ -35,34 +35,14 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_rob
     ROS_INFO("[AffordanceTemplateInterface] robot ready!!");
 }
 
-AffordanceTemplateInterface::~AffordanceTemplateInterface() 
-{
-    delete at_server_;
-}
-
 bool AffordanceTemplateInterface::handleRobotRequest(GetRobotConfigInfo::Request &req, GetRobotConfigInfo::Response &res)
 {
     at_server_->setStatus(false);
     
-    std::vector<RobotConfig> configs;
-    if (!req.name.empty() && at_server_->findConfig(req.name))
-    {
-        ROS_INFO("[AffordanceTemplateInterface::handleRobotRequest] requesting robot info for %s", req.name.c_str());
-        configs = at_server_->getRobotConfig(req.name);
-        if (configs.size())
-            res.robots.push_back(configs.front());
-        else
-            ROS_WARN("[AffordanceTemplateInterface::handleRobotRequest] couldn't find config matching robot name: %s on server!!", req.name.c_str());
-    }
-    else
-    {
-        ROS_INFO("[AffordanceTemplateInterface::handleRobotRequest] requesting robot info for all available robots");
-        configs = at_server_->getRobotConfig();
-        if (configs.size())
-            res.robots = configs;
-        else
-            ROS_WARN("[AffordanceTemplateInterface::handleRobotRequest] couldn't find any robot configs on server!!");
-    }
+    ROS_INFO("[AffordanceTemplateInterface::handleRobotRequest] requesting robot configuration from server");
+    res.robots.push_back( at_server_->getRobotConfig() );
+    if (res.robots.size() == 0)
+        ROS_WARN("[AffordanceTemplateInterface::handleRobotRequest] couldn't find any robot configurations on server!!");
 
     at_server_->setStatus(true);
     return true;
@@ -163,9 +143,8 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
     at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] new plan request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
 
-
-    affordance_template::AffordanceTemplate* at;
-    if (!at_server_->getTemplateInstance(req.type, req.id, at))
+    boost::shared_ptr<affordance_template::AffordanceTemplate> at;
+    if ( !at_server_->getTemplateInstance(req.type, req.id, at) )
         ROS_ERROR("[AffordanceTemplateInterface::handlePlanCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
     else
     {

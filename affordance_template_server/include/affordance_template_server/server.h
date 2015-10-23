@@ -22,45 +22,49 @@ namespace affordance_template_server
   {
     void run();
     void configureServer();
-    bool loadRobots();
+    bool loadRobot();
     bool loadTemplates();
     int getNextID(const std::string&);
     std::string getPackagePath(const std::string&);
 
     tf::TransformListener listener_;
-    boost::shared_ptr<interactive_markers::InteractiveMarkerServer> im_server_;
+    affordance_template_msgs::RobotConfig robot_config_;
 
-    std::map<std::string, affordance_template::AffordanceTemplate*> at_map_;
-    std::map<std::string, affordance_template_msgs::RobotConfig> robot_config_map_;
-    std::map<std::string, affordance_template_markers::RobotInterface*> robot_interface_map_;
+    boost::shared_ptr<interactive_markers::InteractiveMarkerServer> im_server_;
+    boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface_;
+
+    std::map<std::string, boost::shared_ptr<affordance_template::AffordanceTemplate> > at_map_;
     std::map<std::string, affordance_template_object::AffordanceTemplateStructure> at_structure_map_;
 
     bool status_;
-
     std::string pkg_name_;
+    std::string robot_yaml_;
+    std::string robot_name_;
     
   public:
     AffordanceTemplateServer(){} // default constructor 
     AffordanceTemplateServer(const std::string&);
-    ~AffordanceTemplateServer();
+    ~AffordanceTemplateServer(){}
      
     inline bool getStatus() { return status_; }
     inline void setStatus(bool status) { status_ = status; }
 
-    inline bool findConfig(const std::string &name) { robot_config_map_.find(name) == robot_config_map_.end() ? false : true; }
-    inline bool findTemplate(const std::string &name) { at_structure_map_.find(name) == at_structure_map_.end() ? false : true; }
-    inline bool findInterface(const std::string &name) { robot_interface_map_.find(name) == robot_interface_map_.end() ? false : true; }
+    // inline bool findConfig(const std::string &name) { robot_config_map_.find(name) == robot_config_map_.end() ? false : true; }
+    // inline bool findInterface(const std::string &name) { robot_interface_map_.find(name) == robot_interface_map_.end() ? false : true; }
 
-    std::vector<affordance_template_msgs::RobotConfig> getRobotConfig(const std::string &name="");
+    inline bool findTemplate(const std::string &name) { at_structure_map_.find(name) == at_structure_map_.end() ? false : true; }
+
+    inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
+    // std::vector<affordance_template_msgs::RobotConfig> getRobotConfig(const std::string &name="");
     std::vector<affordance_template_msgs::AffordanceTemplateConfig> getTemplate(const std::string &name="");
 
     bool loadRobot(const std::string&); // from file
     bool loadRobot(const affordance_template_msgs::RobotConfig&); // from msg
 
-    bool addTemplate(const std::string &name, uint8_t& id, geometry_msgs::PoseStamped &pose);
+    bool addTemplate(const std::string&, uint8_t&, geometry_msgs::PoseStamped&);
     bool removeTemplate(const std::string&, const uint8_t);
 
-    bool getTemplateInstance(const std::string&, const uint8_t, affordance_template::AffordanceTemplate*);
+    bool getTemplateInstance(const std::string&, const uint8_t, boost::shared_ptr<affordance_template::AffordanceTemplate>&);
   };
 }
 
