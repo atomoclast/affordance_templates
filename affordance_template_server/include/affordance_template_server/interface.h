@@ -27,6 +27,7 @@ using namespace affordance_template_msgs;
 namespace affordance_template_server
 {
     inline std::string boolToString(bool b) { return (b ? "true" : "false"); }
+    inline std::string successToString(bool b) { return (b ? "succeeded" : "failed"); }
 
     class AffordanceTemplateInterface
     {

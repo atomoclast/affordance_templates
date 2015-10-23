@@ -233,7 +233,21 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
 bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Request &req, SaveAffordanceTemplate::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleSaveTemplate]");
+    ROS_INFO("[AffordanceTemplateInterface::handleSaveTemplate] saving %s:%d as %s:%d to %s with image: %s", req.original_class_type.c_str(), req.id, req.new_class_type.c_str(), req.id, req.filename.c_str(), req.image.c_str());
+
+    res.status = false;
+    std::string old_key = req.original_class_type + ":" + std::to_string(req.id);
+    std::string new_key = req.new_class_type + ":" + std::to_string(req.id);
+    bool save_status = true; //false;
+    boost::shared_ptr<affordance_template::AffordanceTemplate> at;
+    // if ( at_server_->getTemplateInstance(req.original_class_type, req.id, at) )
+        // save_status = at->saveToDisk(req.filename, req.image, new_key, req.save_scale_updates);// @steve-todo
+    bool remove_status = at_server_->removeTemplate(req.original_class_type, req.id);
+    bool add_status = at_server_->addTemplate(req.new_class_type, req.id);
+    res.status = (save_status && remove_status && add_status);
+    if (!res.status)
+        ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] error saving template. save to file was: %s, remove was: %s, adding was: %s", successToString(save_status).c_str(), successToString(remove_status).c_str(), successToString(add_status).c_str());
+
     at_server_->setStatus(true);
     return true;
 }
