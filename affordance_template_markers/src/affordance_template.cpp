@@ -258,7 +258,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
     visualization_msgs::InteractiveMarker int_marker;
     int_marker.header.frame_id = root_frame_;
-    int_marker.header.stamp = ros::Time::now();
+    int_marker.header.stamp = ros::Time(0);
     int_marker.name = obj.name;
     int_marker.description = obj.name;
     int_marker.scale = obj.controls.scale*object_scale_factor_[obj.name];
@@ -418,7 +418,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
       visualization_msgs::InteractiveMarker int_marker;
       int_marker.header.frame_id = parent_obj;
-      int_marker.header.stamp = ros::Time::now();
+      int_marker.header.stamp = ros::Time(0);
       int_marker.name = wp_name;
       int_marker.description = wp_name;
       int_marker.scale = wp.controls.scale;
