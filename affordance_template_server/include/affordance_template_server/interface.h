@@ -26,6 +26,8 @@ using namespace affordance_template_msgs;
 
 namespace affordance_template_server
 {
+    inline std::string boolToString(bool b) { return (b ? "true" : "false"); }
+
     class AffordanceTemplateInterface
     {
         // srv handlers
@@ -46,7 +48,7 @@ namespace affordance_template_server
         bool handleSetPose(SetAffordanceTemplatePose::Request&, SetAffordanceTemplatePose::Response&);
         
         void handleObjectScaleCallback(const ScaleDisplayObjectInfo&);
-        bool getTemplateStatus(AffordanceTemplateStatus&, std::string, int, std::string, std::string);
+        AffordanceTemplateStatus getTemplateStatus(const std::string& template_name, const int template_id, const std::string& traj_name, const std::string& frame_id="");
 
         boost::shared_ptr<AffordanceTemplateServer> at_server_;
         tf::TransformListener listener_;
@@ -55,8 +57,7 @@ namespace affordance_template_server
     public:
         AffordanceTemplateInterface(const std::string&);
         ~AffordanceTemplateInterface() {}
-    };
-        
+    };       
 }
 
 #endif

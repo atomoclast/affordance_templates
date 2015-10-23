@@ -100,6 +100,7 @@ bool AffordanceTemplateInterface::handleAddTemplate(AddAffordanceTemplate::Reque
     ROS_INFO("[AffordanceTemplateInterface::handleAddTemplate] adding template: %s", req.class_type.c_str());
 
     res.status = at_server_->addTemplate(req.class_type, res.id, req.pose);
+    ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory] added template: %s",(req.class_type+":"+std::to_string(res.id)).c_str());
 
     if (!res.status)
         ROS_ERROR("[AffordanceTemplateInterface::handleAddTemplate] error adding template!!");
@@ -157,19 +158,27 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
         int steps = 0;
 
         std::vector<std::string> ee_names;
-        std::map<std::string, bool> req_map;
+        std::map<std::string, bool> ee_path;
         for (auto ee : req.end_effectors)
         {
-
+            ee_path[ee] = false;
             steps = req.steps[id];
-            // TODO
             // make sure EE is in trajectory
-            // if not at->trajectory_has_ee(request.trajectory_name, ee): 
-            //         rospy.logwarn(str("ServiceInterface::handle_plan_command() -- " + ee + " not in trajectory, can't plan"))
-            //         continue
+            // if ( !at->trajectoryHasEE(request.trajectory_name, ee) // @steve:todo
+            {
+                ROS_WARN("[AffordanceTemplateInterface::handlePlanCommand] %s not in trajectory, can't plan!!", ee.c_str());
+                continue;
+            }
             ee_names.push_back(ee);
             ++id;
         }
+
+        // compute path plan (returns dictionary of bools keyed off EE name)
+        // ee_path = at->planPathToWayPoints(ee_names, steps, req.direct, req.backwards); // @steve:todo
+        ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] planned path for %lu end-effectors:", ee_path.size());
+        for (auto ee : ee_path)
+            ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] \t%s : %s", ee.first.c_str(), boolToString(ee.second).c_str());
+        res.affordance_template_status = getTemplateStatus(req.type, req.id, req.trajectory_name);
     }
 
     at_server_->setStatus(true);
@@ -179,7 +188,44 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
 bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecuteCommand::Request &req, AffordanceTemplateExecuteCommand::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand]");
+    ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] new execution request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
+
+    res.status = false;
+
+    boost::shared_ptr<affordance_template::AffordanceTemplate> at;
+    if ( !at_server_->getTemplateInstance(req.type, req.id, at) )
+        ROS_ERROR("[AffordanceTemplateInterface::handleExecuteCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
+    else
+    {
+        // check if specific trajectory was given
+        if (req.trajectory_name.empty())
+            req.trajectory_name = at->getCurrentTrajectory();
+
+        std::vector<std::string> ee_list;
+        for (auto ee : req.end_effectors)
+        {
+            // if ( !at->trajectoryHasEE(req.trajectory_name, ee)) // @steve-todo
+                ROS_WARN("[AffordanceTemplateInterface::handleExecuteCommand] %s not in trajectory, can't execute!!", ee.c_str());
+            // else
+                ee_list.push_back(ee);
+        }
+
+        // if the AT has prevously computed a valid plan (can't execute unless this is True) 
+        // if ( at->validWaypointPlan(ee_list, req.trajectory_name) ) // @steve-todo
+        {
+            // if ( at->moveToWaypoints(ee_list) ) // @steve-todo
+            {
+                res.status = true; // only try if all plans valid
+                ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] done executing %s plan(s)", req.trajectory_name.c_str());
+            }
+        }
+        // else // TODO
+        {
+            ROS_WARN("[AffordanceTemplateInterface::handleExecuteCommand] no valid plan found for %s", req.trajectory_name.c_str());
+        }
+        res.affordance_template_status = getTemplateStatus(req.type, req.id, req.trajectory_name);
+    }
+
     at_server_->setStatus(true);
     return true;
 }
@@ -257,7 +303,9 @@ void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayOb
     }
 }
 
-bool AffordanceTemplateInterface::getTemplateStatus(AffordanceTemplateStatus &status, std::string template_name, int template_id, std::string traj_name, std::string frame_id="")
+AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const std::string& template_name, const int template_id, const std::string& traj_name, const std::string& frame_id)
 {
-    return true;
+    AffordanceTemplateStatus ats; 
+
+    return ats;
 }
