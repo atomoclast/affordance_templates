@@ -454,3 +454,30 @@ bool RobotInterface::getEELinkData(std::string group_name, end_effector_helper::
   return true;
 }
 
+std::vector<std::string> RobotInterface::getEEPoseNames(std::string name) 
+{
+  std::vector<std::string> pose_names;
+  for(auto &k : ee_id_map_) {
+    if(k.first.first == name) {
+      std::string p = k.second;
+      if(std::find(pose_names.begin(), pose_names.end(), p) == pose_names.end()) {
+        pose_names.push_back(p);
+      }
+    }
+  }
+  return pose_names;
+}
+
+std::vector<std::string> RobotInterface::getEEPoseNames(int id) 
+{
+  std::vector<std::string> pose_names;
+  for(auto &k : ee_id_map_) {
+    if(k.first.second == id) {
+      std::string p = k.second;
+      if(std::find(pose_names.begin(), pose_names.end(), p) == pose_names.end()) {
+        pose_names.push_back(p);
+      }
+    }
+  }
+  return pose_names;
+}

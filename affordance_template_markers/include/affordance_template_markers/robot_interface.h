@@ -65,13 +65,19 @@ namespace affordance_template_markers
     inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
     inline std::map<int, std::string> getEENameMap() { return ee_name_map_; }
 
-    bool getEELinkData(std::string group_name, end_effector_helper::EndEffectorHelperConstPtr &link_data); 
-    std::string getEEName(const int);
-    int getEEId(const std::string&);
     std::string getManipulator(const std::string&); // is this right??
     std::string getPkgPath(const std::string&);
+    
+    bool getEELinkData(std::string group_name, end_effector_helper::EndEffectorHelperConstPtr &link_data); 
+    
+    std::string getEEName(const int);
+    int getEEId(const std::string&);
+    
     std::map<std::string, int> getEEPoseIDMap(std::string name);
     std::map<int, std::string> getEEPoseNameMap(std::string name);
+    
+    std::vector<std::string> getEEPoseNames(std::string name);
+    std::vector<std::string> getEEPoseNames(int id);
 
     geometry_msgs::Pose getManipulatorOffsetPose(std::string name) { return manipulator_pose_map_[name]; }
     geometry_msgs::Pose getToolOffsetPose(std::string name) { return tool_offset_map_[name]; }

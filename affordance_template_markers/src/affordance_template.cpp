@@ -16,7 +16,7 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   template_type_(template_type),
   id_(id),
   root_object_(""),
-  loop_rate_(10.0),
+  loop_rate_(50.0),
   object_controls_display_on_(true)
 {
   ROS_INFO("AffordanceTemplate::init() -- Done Creating new AffordanceTemplate of type %s for robot: %s", template_type_.c_str(), robot_name_.c_str());
@@ -564,7 +564,7 @@ void AffordanceTemplate::setupObjectMenu(AffordanceTemplateStructure structure, 
     if(o.first == "Choose Trajectory") {
       setupTrajectoryMenu(structure, obj.name);
     } else {
-          setupSimpleMenuItem(structure, obj.name, o.first, o.second);
+      setupSimpleMenuItem(structure, obj.name, o.first, o.second);
     }
   }
 
@@ -582,7 +582,11 @@ void AffordanceTemplate::setupObjectMenu(AffordanceTemplateStructure structure, 
 void AffordanceTemplate::setupWaypointMenu(AffordanceTemplateStructure structure, std::string name)
 {
   for(auto& o : waypoint_menu_options_) {
-    setupSimpleMenuItem(structure, name, o.first, o.second);
+    if(o.first == "Change End-Effector Pose") {
+      setupEndEffectorPoseMenu(name);
+    } else {
+      setupSimpleMenuItem(structure, name, o.first, o.second);
+    }
   }
 }
 
@@ -611,6 +615,34 @@ void AffordanceTemplate::setupTrajectoryMenu(AffordanceTemplateStructure structu
       marker_menus_[name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );       
     }
   }
+}
+
+int AffordanceTemplate::getEEIDfromWaypointName(const std::string wp_name) 
+{
+  std::string delimiter = ".";
+  size_t pos = 0;
+  std::string token;
+  if ((pos = wp_name.find(delimiter)) != std::string::npos) {
+    token = wp_name.substr(0, pos);
+    return std::stoi(token);
+  }
+  ROS_ERROR("AffordanceTemplate::getEEIDfromWaypointName() -- could not find EE ID from %s", wp_name.c_str());
+  return -1;
+}
+
+void AffordanceTemplate::setupEndEffectorPoseMenu(const std::string& name)
+{
+  int ee_id = getEEIDfromWaypointName(name);
+  std::string menu_text = "Change End-Effector Pose";
+  interactive_markers::MenuHandler::EntryHandle sub_menu_handle = marker_menus_[name].insert( menu_text );
+  for(auto &pose_name: robot_interface_->getEEPoseNames(ee_id)) {
+    MenuHandleKey key;
+    key[name] = {menu_text, pose_name};
+    group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, pose_name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) ); 
+  }
+  // sub_menu_handle = self.marker_menus[waypoint].insert(m)
+  // for p in self.robot_interface.path_planner.get_stored_state_list(group) :
+  //     self.menu_handles[(waypoint,m,p)] = self.marker_menus[waypoint].insert(p,parent=sub_menu_handle,callback=self.change_ee_pose_callback)
 }
 
 void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMarker m)
@@ -676,12 +708,12 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
     case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT :
 
-      ROS_DEBUG("AffordanceTemplate::processFeedback() --   MENU_SELECT");
+      ROS_DEBUG("AffordanceTemplate::processFeedback() -- MENU_SELECT");
       ROS_DEBUG("AffordanceTemplate::processFeedback() --   menu id: %d", feedback->menu_entry_id);
-      ROS_DEBUG("AffordanceTemplate::processFeedback() --   pose: (%.3f, %.3f, %.3f), (%.3f, %.3f, %.3f, %.3f), frame_id: %s", 
-                                                                  feedback->pose.position.x, feedback->pose.position.y, feedback->pose.position.z, 
-                                                                  feedback->pose.orientation.x, feedback->pose.orientation.y, feedback->pose.orientation.z, feedback->pose.orientation.w,
-                                                                  feedback->header.frame_id.c_str());
+      // ROS_DEBUG("AffordanceTemplate::processFeedback() --   pose: (%.3f, %.3f, %.3f), (%.3f, %.3f, %.3f, %.3f), frame_id: %s", 
+      //                                                             feedback->pose.position.x, feedback->pose.position.y, feedback->pose.position.z, 
+      //                                                             feedback->pose.orientation.x, feedback->pose.orientation.y, feedback->pose.orientation.z, feedback->pose.orientation.w,
+      //                                                             feedback->header.frame_id.c_str());
 
       if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[reset_key] == feedback->menu_entry_id) {
@@ -696,11 +728,13 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
       if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[save_key] == feedback->menu_entry_id) {
+          ROS_DEBUG("AffordanceTemplate::processFeedback() --   SAVE");
         }
       }
 
       if(group_menu_handles_.find(hide_controls_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[hide_controls_key] == feedback->menu_entry_id) {
+          ROS_DEBUG("AffordanceTemplate::processFeedback() --   CONTROLS TOGGLE");
           if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) {
             if(state == interactive_markers::MenuHandler::CHECKED) {
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );

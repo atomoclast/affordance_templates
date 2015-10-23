@@ -120,7 +120,8 @@ namespace affordance_template
     std::string appendID(std::string s);
     std::string createWaypointID(int ee_id, int wp_id);
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
-    
+    int getEEIDfromWaypointName(const std::string wp_name);
+
     bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses=false, std::string traj="");
     bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
     bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
@@ -134,6 +135,7 @@ namespace affordance_template
     void setupWaypointMenu(affordance_template_object::AffordanceTemplateStructure structure,  std::string name);
     void setupSimpleMenuItem(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name, const std::string& menu_text, bool has_check_box);
     void setupTrajectoryMenu(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name);
+    void setupEndEffectorPoseMenu(const std::string& name);
 
     bool hasObjectFrame(std::string obj);
     bool hasWaypointFrame(std::string wp);
