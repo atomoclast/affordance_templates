@@ -261,7 +261,8 @@ bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id,
     std::string key = type + ":" + std::to_string(id);
     ROS_INFO("[AffordanceTemplateServer::addTemplate] creating new affordance template with ID: %d and key: %s", id, key.c_str());
 
-    // at_map_[key] = new affordance_template::AffordanceTemplate(ros::NodeHandle, im_server_, robot_interface_map_[""], "some_goddammed_robot", type, id); // WTF is the robot name??
+    ros::NodeHandle nh;
+    at_map_[key] = boost::shared_ptr<affordance_template::AffordanceTemplate>(new affordance_template::AffordanceTemplate(nh, im_server_, robot_interface_, robot_name_, type, id));
 
     return true;
 }
