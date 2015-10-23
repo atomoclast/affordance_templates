@@ -293,7 +293,36 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
 bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStatus::Request &req, GetAffordanceTemplateStatus::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleTemplateStatus]");
+    ROS_INFO("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
+
+    if (!req.name.empty())
+    {
+        std::vector<std::string> keys;
+        boost::split(keys, req.name, boost::is_any_of(":"));
+        if (keys.size() >= 2)
+        {
+            int id = std::stoi(keys[1]);
+            res.affordance_template_status.push_back(getTemplateStatus(keys[0], id, req.trajectory_name, req.frame_id));
+            ATPointer at;
+            if ( at_server_->getTemplateInstance(req.name, at))
+            {
+                res.current_trajectory = at->getCurrentTrajectory();
+                // @steve-todo ask
+                // TODO -- need to figure out if this will be EEs from current running AT or just eh EEs from generic AT matching this name
+                // std::vector<AffordanceTemplateConfig> ats = at_server_->getTemplate(req.name);
+                // if (ats.size())
+                // {
+                //     for (auto t : traj_map)
+                //         res.trajectory_names.push_back(t);
+                // }
+            }
+        }
+        else
+            ROS_ERROR("[AffordanceTemplateInterface::handleTemplateStatus] %s is an invalid template name!", req.name.c_str());
+    }
+    else
+        ROS_ERROR("[AffordanceTemplateInterface::handleTemplateStatus] no template name provided!!");
+
     at_server_->setStatus(true);
     return true;
 }
@@ -311,6 +340,40 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
 {
     at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory]");
+
+    res.success = false;
+
+    std::vector<std::string> keys;
+    boost::split(keys, req.name, boost::is_any_of(":"));
+    if (keys.size() >= 2)
+    {
+        int id = std::stoi(keys[1]);
+        if ( at_server_->findTemplate(keys[0]) )
+        {
+            ATPointer at;
+            if ( at_server_->getTemplateInstance(req.name, at) )
+            {
+                // need to find trajectory here again, just as in handle template status
+                // TODO
+                // if traj not in traj
+                {
+                    // if ( !at->setTrajectory(req.trajectory)) // @steve-todo
+                        res.success = true;
+                    // else
+                        ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
+                }
+                // else
+                    // ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] trajectory %s not available to template %s", req.trajectory.c_str(), keys[0].c_str());
+            }
+            else
+                ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on serveer!!", req.name.c_str());        
+        }
+        else
+            ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] template %s is not loaded onto server!!", keys[0].c_str());        
+    }
+    else 
+        ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s is an invalid template name!!", req.name.c_str());
+    
     at_server_->setStatus(true);
     return true;
 }

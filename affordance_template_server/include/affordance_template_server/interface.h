@@ -21,7 +21,6 @@
 #include <affordance_template_msgs/SetAffordanceTemplateTrajectory.h>
 #include <affordance_template_msgs/SetAffordanceTemplatePose.h>
 
-
 using namespace affordance_template_msgs;
 
 namespace affordance_template_server
