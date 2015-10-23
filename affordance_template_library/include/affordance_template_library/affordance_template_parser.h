@@ -11,6 +11,7 @@
 #include <rapidjson/filereadstream.h>
 
 #include <affordance_template_library/affordance_template_structure.h>
+#include <affordance_template_library/affordance_template_generics.h>
 
 using namespace rapidjson;
 

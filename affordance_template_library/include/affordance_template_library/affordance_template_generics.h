@@ -12,7 +12,7 @@ namespace affordance_template_object
         double orientation[3]; // rpy
     };
 
-    geometry_msgs::Pose originToPoseMsg(Origin origin) 
+    inline geometry_msgs::Pose originToPoseMsg(Origin origin) 
     { 
       geometry_msgs::Pose p;
       p.position.x = origin.position[0];
@@ -33,14 +33,13 @@ namespace affordance_template_object
         double radius; // for spherse and cylinders
     };
 
-    class Control
+    inline std::string toBoolString(bool b) { return (b ? "true" : "false"); }
+
+    struct Control
     {
-    public:
         bool translation[3]; // xyz
         bool rotation[3]; // rpy
         double scale;
-
-        inline std::string toBoolString(bool b) { return (b ? "true" : "false"); }
     };
 }
 

@@ -37,6 +37,7 @@ namespace affordance_template
 
   public:
     
+    AffordanceTemplate(){} // default constructor
     AffordanceTemplate(const ros::NodeHandle nh, 
                        boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server, 
                        std::string robot_name, 
@@ -57,7 +58,21 @@ namespace affordance_template
 
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
 
-    int getID() { return id_; }
+    inline int getID() { return id_; }
+    inline std::string getType() { return template_type_; }
+    inline std::string getCurrentTrajectory() { return current_trajectory_; }
+    inline affordance_template_object::AffordanceTemplateStructure getCurrentStructure() { return initial_structure_; }
+    inline boost::shared_ptr<affordance_template_markers::RobotInterface> getRobotInterface() { return robot_interface_; }
+
+    // TODO -- called from server/interface.cpp
+    bool trajectoryHasEE(const std::string&, const std::string&); // trajectory name, ee name
+    bool validWaypointPlan(const std::vector<std::string>&, const std::string&); //vector of ee names, trajectory name
+    bool moveToWaypoints(const std::vector<std::string>&); // list of ee waypoints to move to, return true if all waypoints were valid
+    bool saveToDisk(const std::string&, const std::string&, const std::string&, bool); // filename, image, new key/class name, save_scale_updates bool
+    bool addTrajectory(const std::string&); // trajectory name
+    bool setTrajectory(const std::string&); // trajectory name, from the service msg it looks like if it's blank then set to current??
+    bool scaleObject(const std::string&, double, double); // object name, scale factor, ee scale factor
+    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool); // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
 
   private:
 
