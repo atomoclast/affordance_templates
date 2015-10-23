@@ -7,7 +7,7 @@
       "shape": {
         "type": "mesh",
         "data": "package://affordance_template_library/models/torus.dae",
-        "size": [1.0, 1.0, 1.0]
+        "size": [1.15, 1.15, 1.15]
       },
       "origin" : {
         "xyz": [0.0, 0.0, 0.0],
@@ -32,7 +32,7 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, 0.3, -0.1],
+                "xyz": [0.0, 0.3, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -45,7 +45,7 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, 0.2, -0.1],
+                "xyz": [0.0, 0.198, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -58,7 +58,7 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, 0.2, -0.1],
+                "xyz": [0.0, 0.198, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -71,8 +71,8 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.1, 0.17, -0.1],
-                "rpy": [0.0, -1.57, -0.51]
+                "xyz": [0.1, 0.173, 0.0],
+                "rpy": [0.0, -1.57, -0.4]
               },
               "controls": {
                 "xyz": [true, true, true],
@@ -84,8 +84,8 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.1, 0.17, -0.1],
-                "rpy": [0.0, -1.57, -0.51]
+                "xyz": [0.1, 0.173, 0.0],
+                "rpy": [0.0, -1.57, -0.4]
               },
               "controls": {
                 "xyz": [true, true, true],
@@ -102,7 +102,7 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, -0.3, -0.1],
+                "xyz": [0.0, -0.3, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -115,7 +115,7 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, -0.2, -0.1],
+                "xyz": [0.0, -0.198, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -128,7 +128,7 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, -0.2, -0.1],
+                "xyz": [0.0, -0.198, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -141,8 +141,8 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [-0.1, -0.17, -0.1],
-                "rpy": [0.0, -1.57, -0.51]
+                "xyz": [-0.1, -0.172, 0.0],
+                "rpy": [0.0, -1.57, -0.63]
               },
               "controls": {
                 "xyz": [true, true, true],
@@ -154,8 +154,8 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [-0.1, -0.17, -0.1],
-                "rpy": [0.0, -1.57, -0.51]
+                "xyz": [-0.1, -0.172, 0.0],
+                "rpy": [0.0, -1.57, -0.63]
               },
               "controls": {
                 "xyz": [true, true, true],
@@ -177,7 +177,7 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, 0.3, -0.1],
+                "xyz": [0.0, 0.3, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -190,7 +190,7 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, 0.2, -0.1],
+                "xyz": [0.0, 0.198, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -203,7 +203,7 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, 0.2, -0.1],
+                "xyz": [0.0, 0.198, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -216,8 +216,8 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.1, 0.17, -0.1],
-                "rpy": [0.0, -1.57, -0.51]
+                "xyz": [0.1, 0.173, 0.0],
+                "rpy": [0.0, -1.57, -0.4]
               },
               "controls": {
                   "xyz": [true, true, true],
@@ -229,8 +229,8 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.1, 0.17, -0.1],
-                "rpy": [0.0, -1.57, -0.51]
+                "xyz": [0.1, 0.173, 0.0],
+                "rpy": [0.0, -1.57, -0.4]
               },
               "controls": {
                   "xyz": [true, true, true],
@@ -252,7 +252,7 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, -0.3, -0.1],
+                "xyz": [0.0, -0.3, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -265,7 +265,7 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, -0.2, -0.1],
+                "xyz": [0.0, -0.198, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -278,7 +278,7 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, -0.2, -0.1],
+                "xyz": [0.0, -0.198, 0.0],
                 "rpy": [0.0, -1.57, 0.0]
               },
               "controls": {
@@ -291,8 +291,8 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [-0.1, -0.17, -0.1],
-                "rpy": [0.0, -1.57, -0.51]
+                "xyz": [-0.1, -0.172, 0.0],
+                "rpy": [0.0, -1.57, -0.63]
               },
               "controls": {
                 "xyz": [true, true, true],
@@ -304,8 +304,8 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [-0.1, -0.17, -0.1],
-                "rpy": [0.0, -1.57, -0.51]
+                "xyz": [-0.1, -0.172, 0.0],
+                "rpy": [0.0, -1.57, -0.63]
               },
               "controls": {
                 "xyz": [true, true, true],

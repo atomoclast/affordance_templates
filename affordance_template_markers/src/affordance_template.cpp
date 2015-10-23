@@ -258,7 +258,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
     visualization_msgs::InteractiveMarker int_marker;
     int_marker.header.frame_id = root_frame_;
-    int_marker.header.stamp = ros::Time::now();
+    int_marker.header.stamp = ros::Time(0);
     int_marker.name = obj.name;
     int_marker.description = obj.name;
     int_marker.scale = obj.controls.scale*object_scale_factor_[obj.name];
@@ -403,32 +403,42 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
     for(auto &wp: wp_list.waypoints) {
 
       std::string wp_name = createWaypointID(ee_id, wp_id);
-
       ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Waypoint: %s", wp_name.c_str());
 
       setupWaypointMenu(structure, wp_name);
       geometry_msgs::Pose display_pose = originToPoseMsg(wp.origin);  
 
       std::string parent_obj = appendID(wp.display_object);
+      // std::cout << "Display Pose in frame: " << parent_obj << ":\n" << display_pose << std::endl;
       double parent_scale = object_scale_factor_[parent_obj]*ee_scale_factor_[parent_obj];  
 
       display_pose.position.x *= parent_scale;
       display_pose.position.y *= parent_scale;
       display_pose.position.z *= parent_scale;
 
-      //store base WP pose to publish by TF
-      geometry_msgs::PoseStamped ps;
-      ps.header.frame_id = root_frame_;
-      ps.pose = display_pose;
-      frame_store_[wp_name] = FrameInfo(wp_name, ps);
-
       visualization_msgs::InteractiveMarker int_marker;
-      int_marker.header.frame_id = root_frame_;
-      int_marker.header.stamp = ros::Time::now();
+      int_marker.header.frame_id = parent_obj;
+      int_marker.header.stamp = ros::Time(0);
       int_marker.name = wp_name;
       int_marker.description = wp_name;
-      int_marker.pose = display_pose;
       int_marker.scale = wp.controls.scale;
+
+    
+      if(!keep_poses || !hasWaypointFrame(wp_name) ) {
+        //store base WP pose to publish by TF
+        geometry_msgs::PoseStamped ps;
+        ps.header.frame_id = parent_obj;
+        ps.pose = display_pose;
+        frame_store_[wp_name] = FrameInfo(wp_name, ps);
+        int_marker.pose = ps.pose;
+      } else {
+        int_marker.pose = frame_store_[wp_name].second.pose;
+        // if(parent_obj != "") {
+        //   int_marker.pose.position.x /= object_scale_factor_[obj.name];
+        //   int_marker.pose.position.y /= object_scale_factor_[obj.name];
+        //   int_marker.pose.position.z /= object_scale_factor_[obj.name];
+        // }
+      }
 
       visualization_msgs::InteractiveMarkerControl menu_control;
       menu_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;    
@@ -480,10 +490,23 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       tf::Transform tfTm;
       tf::Transform wpTm;
 
-      std::cout << "getManipulatorOffsetPose() =" << std::endl;       
-      std::cout << robot_interface_->getManipulatorOffsetPose(ee_name) << std::endl;
-      std::cout << "getToolOffsetPose() =" << std::endl;       
-      std::cout << robot_interface_->getToolOffsetPose(ee_name) << std::endl;
+      // std::cout << "getManipulatorOffsetPose() =" << std::endl;       
+      // std::cout << robot_interface_->getManipulatorOffsetPose(ee_name) << std::endl;
+      // std::cout << "getToolOffsetPose() =" << std::endl;       
+      // std::cout << robot_interface_->getToolOffsetPose(ee_name) << std::endl;
+
+      geometry_msgs::PoseStamped ee_ps;
+      ee_ps.header.frame_id = wp_name;
+      ee_ps.pose = robot_interface_->getManipulatorOffsetPose(ee_name);
+      std::string ee_frame_name = wp_name + "/ee";
+      frame_store_[ee_frame_name] = FrameInfo(ee_frame_name, ee_ps);
+
+      geometry_msgs::PoseStamped tf_ps;
+      tf_ps.header.frame_id = ee_frame_name;
+      tf_ps.pose = robot_interface_->getToolOffsetPose(ee_name);
+      std::string tf_frame_name = wp_name + "/tf";
+      frame_store_[tf_frame_name] = FrameInfo(tf_frame_name, tf_ps);
+    
 
       try {
         tf::poseMsgToTF(robot_interface_->getManipulatorOffsetPose(ee_name),wpTee);
@@ -492,21 +515,11 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         ROS_ERROR("AffordanceTemplate::createWaypointsFromStructure() -- error getting transforms for %s", ee_name.c_str());
       }
 
-      //wpTee.setIdentity();
-
       for(auto &m: markers.markers) {
         visualization_msgs::Marker ee_m = m;
-        ee_m.header.frame_id = "";
+        ee_m.header.frame_id = tf_frame_name;
         ee_m.ns = name_;
-
-        // std::cout << robot_interface_->getToolOffsetPose(ee_name) << std::endl;
-
-        tf::poseMsgToTF(m.pose, tfTm);
-        wpTm = wpTee*eeTtf*tfTm;
-        tf::poseTFToMsg(wpTm,ee_m.pose);
-        // ee_m.pose = getPoseFromFrame(self.wpTee[wp]*self.eeTtf[wp]*getFrameFromPose(m.pose))
-
-        // std::cout << ee_m.pose << std::endl;
+        ee_m.pose = m.pose;
         menu_control.markers.push_back( ee_m );
       }
             // scale = 1.0
@@ -528,6 +541,8 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
           int_marker.controls.push_back(c);
         }
       }
+
+      // std::cout << int_marker << std::endl;
       addInteractiveMarker(int_marker);
 
       marker_menus_[wp_name].apply( *server_, wp_name );
@@ -639,7 +654,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   save_key[feedback->marker_name] = {"Save"};
   hide_controls_key[feedback->marker_name] = {"Hide Controls"};
 
-  if(hasObjectFrame(feedback->marker_name)) {
+  if(hasObjectFrame(feedback->marker_name) || hasWaypointFrame(feedback->marker_name)) {
     geometry_msgs::Pose p = feedback->pose;
     if(feedback->header.frame_id != frame_store_[feedback->marker_name].second.header.frame_id) {
       geometry_msgs::PoseStamped ps;
@@ -689,10 +704,18 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) {
             if(state == interactive_markers::MenuHandler::CHECKED) {
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );
-              object_controls_display_on_ = true;
+              if(isObject(feedback->marker_name)) {
+                object_controls_display_on_ = true;
+              } else {
+                waypoint_flags_[current_trajectory_].controls_on[feedback->marker_name] = true;
+              }
             } else {
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
-              object_controls_display_on_ = false;
+              if(isObject(feedback->marker_name)) {
+                object_controls_display_on_ = false;
+              } else {
+                waypoint_flags_[current_trajectory_].controls_on[feedback->marker_name] = false;
+              }
             }
           }
           removeAllMarkers();
@@ -709,11 +732,27 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
 }
 
-
-bool AffordanceTemplate::hasObjectFrame(std::string obj) {
-  return (frame_store_.find(obj) != std::end(frame_store_)); 
+bool AffordanceTemplate::isObject(std::string obj) {
+  for(auto &o : structure_.display_objects) {
+    if(o.name == obj) {
+      return true;
+    }
+  }
+  return false;
 }
 
+bool AffordanceTemplate::isWaypoint(std::string wp) {
+  return !isObject(wp);
+}
+
+
+bool AffordanceTemplate::hasObjectFrame(std::string obj) {
+  return isObject(obj) && (frame_store_.find(obj) != std::end(frame_store_)); 
+}
+
+bool AffordanceTemplate::hasWaypointFrame(std::string wp) {
+  return isWaypoint(wp) && (frame_store_.find(wp) != std::end(frame_store_)); 
+}
 
 void AffordanceTemplate::run()
 {

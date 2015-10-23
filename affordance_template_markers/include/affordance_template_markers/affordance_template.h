@@ -151,6 +151,10 @@ namespace affordance_template
     void setupTrajectoryMenu(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name);
 
     bool hasObjectFrame(std::string obj);
+    bool hasWaypointFrame(std::string wp);
+
+    bool isObject(std::string obj);
+    bool isWaypoint(std::string wp);
 
     geometry_msgs::Pose originToPose(affordance_template_object::Origin origin);
 
