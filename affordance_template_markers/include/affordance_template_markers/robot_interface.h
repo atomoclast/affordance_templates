@@ -43,13 +43,14 @@ namespace affordance_template_markers
     
     std::map<std::string, end_effector_helper::EndEffectorHelperConstPtr> ee_link_data_; 
     std::map<int, std::string> ee_name_map_;
+    std::map<std::string, int> ee_id_map_;
+    
     // std::map<std::string, > ee_markers_;
     std::map<std::string, geometry_msgs::Pose> tool_offset_map_;
-    std::map<std::string, int> manipulator_id_map_;
     std::map<std::string, geometry_msgs::Pose> manipulator_pose_map_;
 
-    std::map<std::pair<std::string, int>, std::string> ee_id_map_;
-    std::map<std::pair<std::string, std::string>, int> ee_pose_map_;
+    std::map<std::pair<std::string, int>, std::string> ee_pose_id_map_;
+    std::map<std::pair<std::string, std::string>, int> ee_pose_name_map_;
     std::map<std::pair<std::string, std::string>, sensor_msgs::JointState> stored_poses_;
 
 
@@ -64,14 +65,15 @@ namespace affordance_template_markers
 
     inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
     inline std::map<int, std::string> getEENameMap() { return ee_name_map_; }
+    inline std::map<std::string, int> getEEIDMap() { return ee_id_map_; }
 
-    std::string getManipulator(const std::string&); // is this right??
+    std::string getManipulator(const std::string&); 
     std::string getPkgPath(const std::string&);
     
     bool getEELinkData(std::string group_name, end_effector_helper::EndEffectorHelperConstPtr &link_data); 
     
     std::string getEEName(const int);
-    int getEEId(const std::string&);
+    int getEEID(const std::string&);
     
     std::map<std::string, int> getEEPoseIDMap(std::string name);
     std::map<int, std::string> getEEPoseNameMap(std::string name);
@@ -84,6 +86,7 @@ namespace affordance_template_markers
     void tearDown();
     void reset();
 
+    planner_interface::PlannerInterface * getPlanner() { return robot_planner_; }
   };
 }
 
