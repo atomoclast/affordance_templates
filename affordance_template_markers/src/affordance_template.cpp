@@ -21,6 +21,9 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
 {
   ROS_INFO("AffordanceTemplate::init() -- Done Creating new AffordanceTemplate of type %s for robot: %s", template_type_.c_str(), robot_name_.c_str());
   name_ = template_type_ + ":" + std::to_string(id);
+
+  boost::thread spin_thread(boost::bind(&AffordanceTemplate::run, this));
+
   setupMenuOptions();
 }
 
@@ -1000,7 +1003,6 @@ void AffordanceTemplate::run()
     }
     loop_rate.sleep();
   }
-
 }
 
 int main(int argc, char **argv)
@@ -1035,11 +1037,9 @@ int main(int argc, char **argv)
   
   AffordanceTemplateStructure structure;
   geometry_msgs::Pose p;
-  at.loadFromFile("/home/swhart/ros/catkin_workspace/src/affordance_templates/affordance_template_library/templates/wheel.json", p, structure);
+  at.loadFromFile("/home/seth/catkin/src/affordance_templates/affordance_template_library/templates/wheel.json", p, structure);
 
   at.run();
  
   return 0;
 }
-
-
