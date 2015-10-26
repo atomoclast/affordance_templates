@@ -190,7 +190,7 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
       if(t.name == traj) {
         if(isValidTrajectory(t)) {
           current_trajectory_ = t.name;
-          ROS_INFO("AffordanceTemplate::createFromStructure() -- setting current trajectory to: %s", current_trajectory_.c_str());
+          ROS_INFO("AffordanceTemplate::setCurrentTrajectory() -- setting current trajectory to: %s", current_trajectory_.c_str());
           break;
         }
       }
@@ -201,9 +201,9 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
       if(isValidTrajectory(t)) {
         current_trajectory_ = t.name;
         if(traj!=current_trajectory_) {
-          ROS_WARN("AffordanceTemplate::createFromStructure() -- \'%s\' not valid, setting current trajectory to: %s", traj.c_str(), current_trajectory_.c_str());
+          ROS_WARN("AffordanceTemplate::setCurrentTrajectory() -- \'%s\' not valid, setting current trajectory to: %s", traj.c_str(), current_trajectory_.c_str());
         } else {
-          ROS_INFO("AffordanceTemplate::createFromStructure() -- setting current trajectory to: %s", current_trajectory_.c_str());          
+          ROS_INFO("AffordanceTemplate::setCurrentTrajectory() -- setting current trajectory to: %s", current_trajectory_.c_str());          
         }
         break;
       }
@@ -296,6 +296,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     } else {
       int_marker.pose = frame_store_[obj.name].second.pose;
       if(obj.parent != "") {
+        // what is this? confused.... -SH
         int_marker.pose.position.x /= object_scale_factor_[obj.name];
         int_marker.pose.position.y /= object_scale_factor_[obj.name];
         int_marker.pose.position.z /= object_scale_factor_[obj.name];
@@ -316,7 +317,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
       marker.scale.x = obj.shape.size[0]*object_scale_factor_[obj.name];
       marker.scale.y = obj.shape.size[1]*object_scale_factor_[obj.name];
       marker.scale.z = obj.shape.size[2]*object_scale_factor_[obj.name];
-      ROS_INFO("Drawing Mesh for object %s : %s (scale=%.3f)", obj.name.c_str(), marker.mesh_resource.c_str(), object_scale_factor_[obj.name]);
+      ROS_DEBUG("Drawing Mesh for object %s : %s (scale=%.3f)", obj.name.c_str(), marker.mesh_resource.c_str(), object_scale_factor_[obj.name]);
     } else if(obj.shape.type == "box") {
       marker.type = visualization_msgs::Marker::CUBE;
       marker.scale.x = obj.shape.size[0]*object_scale_factor_[obj.name];
@@ -341,7 +342,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
       control.markers[0].color.b = obj.shape.rgba[2];
       control.markers[0].color.a = obj.shape.rgba[3];
     } else {
-      control.markers[0].mesh_use_embedded_materials = false;
+      control.markers[0].mesh_use_embedded_materials = true;
       control.markers[0].color.r = 1.0;
       control.markers[0].color.g = 1.0;
       control.markers[0].color.b = 1.0;
@@ -501,10 +502,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         return false;        
       }
 
-      tf::Transform wpTee;
-      tf::Transform eeTtf;
-      tf::Transform tfTm;
-      tf::Transform wpTm;
+      tf::Transform wpTee, eeTtf;
 
       // std::cout << "getManipulatorOffsetPose() =" << std::endl;       
       // std::cout << robot_interface_->getManipulatorOffsetPose(ee_name) << std::endl;
@@ -523,7 +521,6 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       std::string tf_frame_name = wp_name + "/tf";
       frame_store_[tf_frame_name] = FrameInfo(tf_frame_name, tf_ps);
     
-
       try {
         tf::poseMsgToTF(robot_interface_->getManipulatorOffsetPose(ee_name),wpTee);
         tf::poseMsgToTF(robot_interface_->getToolOffsetPose(ee_name),eeTtf);
@@ -538,9 +535,9 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         ee_m.pose = m.pose;
         menu_control.markers.push_back( ee_m );
       }
-            // scale = 1.0
-            // if wp in self.waypoint_controls[trajectory] :
-            //     scale = self.waypoint_controls[trajectory][wp]['scale']
+      // scale = 1.0
+      // if wp in self.waypoint_controls[trajectory] :
+      //     scale = self.waypoint_controls[trajectory][wp]['scale']
 
 
       int_marker.controls.push_back(menu_control);
@@ -633,19 +630,6 @@ void AffordanceTemplate::setupTrajectoryMenu(AffordanceTemplateStructure structu
   }
 }
 
-int AffordanceTemplate::getEEIDfromWaypointName(const std::string wp_name) 
-{
-  std::string delimiter = ".";
-  size_t pos = 0;
-  std::string token;
-  if ((pos = wp_name.find(delimiter)) != std::string::npos) {
-    token = wp_name.substr(0, pos);
-    return std::stoi(token);
-  }
-  ROS_ERROR("AffordanceTemplate::getEEIDfromWaypointName() -- could not find EE ID from %s", wp_name.c_str());
-  return -1;
-}
-
 void AffordanceTemplate::setupEndEffectorPoseMenu(const std::string& name)
 {
   std::string menu_text = "Change End-Effector Pose";
@@ -657,6 +641,19 @@ void AffordanceTemplate::setupEndEffectorPoseMenu(const std::string& name)
     key[name] = {menu_text, pose_name};
     group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, pose_name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) ); 
   }
+}
+
+int AffordanceTemplate::getEEIDfromWaypointName(const std::string wp_name) 
+{
+  std::string delimiter = ".";
+  size_t pos = 0;
+  std::string token;
+  if ((pos = wp_name.find(delimiter)) != std::string::npos) {
+    token = wp_name.substr(0, pos);
+    return std::stoi(token);
+  }
+  ROS_ERROR("AffordanceTemplate::getEEIDfromWaypointName() -- could not find EE ID from %s", wp_name.c_str());
+  return -1;
 }
 
 void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMarker m)
