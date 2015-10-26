@@ -86,7 +86,6 @@ namespace affordance_template
     bool validWaypointPlan(const std::vector<std::string>&, const std::string&); //vector of ee names, trajectory name
     bool saveToDisk(const std::string&, const std::string&, const std::string&, bool); // filename, image, new key/class name, save_scale_updates bool
     bool addTrajectory(const std::string&); // trajectory name
-    bool setTrajectory(const std::string&); // trajectory name, from the service msg it looks like if it's blank then set to current??
     bool scaleObject(const std::string&, double, double); // object name, scale factor, ee scale factor
     
   private:
