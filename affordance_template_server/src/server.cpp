@@ -129,7 +129,7 @@ bool AffordanceTemplateServer::loadRobot()
 
     // make robot instances with the .yamls we just found
     robot_interface_.reset(new affordance_template_markers::RobotInterface());
-    if ( !robot_interface_->load(root+robot_yaml_) )
+    if ( !robot_interface_->load(root+robot_yaml_))
     {
         ROS_WARN("[AffordanceTemplateServer::loadRobot] robot yaml %s NOT loaded, ignoring.", robot_yaml_.c_str());
         return false;
@@ -299,7 +299,7 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
     if (at_map_.find(key) == at_map_.end())
         return false;
 
-    ROS_WARN("about to remove AT: %s", key.c_str());
+    at_map_[key]->stop();
     at_map_.erase(key);
 
     return true;

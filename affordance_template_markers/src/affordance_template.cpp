@@ -22,12 +22,15 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   ROS_INFO("AffordanceTemplate::init() -- Done Creating new AffordanceTemplate of type %s for robot: %s", template_type_.c_str(), robot_name_.c_str());
   name_ = template_type_ + ":" + std::to_string(id);
 
-  boost::thread spin_thread(boost::bind(&AffordanceTemplate::run, this));
+  boost::thread spin_thread_(boost::bind(&AffordanceTemplate::run, this));
 
   ros::AsyncSpinner spinner(1.0/loop_rate_);
   spinner.start();
 
   setupMenuOptions();
+
+  // set to false when template gets destroyed
+  running_ = true;
 }
 
 
@@ -993,11 +996,8 @@ void AffordanceTemplate::run()
   tf::Transform transform;
   FrameInfo fi;
 
-  // ros::AsyncSpinner spinner(1.0/loop_rate_);
-  // spinner.start();
-
-  ROS_INFO("%s spinning.", nh_.getNamespace().c_str());
-  while(ros::ok())
+  // ROS_INFO("%s spinning.", nh_.getNamespace().c_str());
+  while(ros::ok() && running_)
   {
     for(auto &f: frame_store_) {
       fi = f.second;
@@ -1006,6 +1006,12 @@ void AffordanceTemplate::run()
     }
     loop_rate.sleep();
   }
+}
+
+void AffordanceTemplate::stop()
+{
+  running_ = false;
+  removeAllMarkers();
 }
 
 int main(int argc, char **argv)
