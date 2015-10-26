@@ -135,7 +135,11 @@ bool AffordanceTemplateServer::loadRobot()
         return false;
     }
 
-    robot_interface_->configure();
+    if ( !robot_interface_->configure())
+    {
+        ROS_WARN("[AffordanceTemplateServer::loadRobot] robot yaml %s NOT configured, ignoring.", robot_yaml_.c_str());
+        return false;
+    }        
 
     robot_config_ = robot_interface_->getRobotConfig();
     robot_name_ = robot_config_.name;
@@ -295,6 +299,7 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
     if (at_map_.find(key) == at_map_.end())
         return false;
 
+    ROS_WARN("about to remove AT: %s", key.c_str());
     at_map_.erase(key);
 
     return true;

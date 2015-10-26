@@ -24,6 +24,9 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
 
   boost::thread spin_thread(boost::bind(&AffordanceTemplate::run, this));
 
+  ros::AsyncSpinner spinner(1.0/loop_rate_);
+  spinner.start();
+
   setupMenuOptions();
 }
 
@@ -987,8 +990,8 @@ void AffordanceTemplate::run()
   tf::Transform transform;
   FrameInfo fi;
 
-  ros::AsyncSpinner spinner(1.0/loop_rate_);
-  spinner.start();
+  // ros::AsyncSpinner spinner(1.0/loop_rate_);
+  // spinner.start();
 
   ROS_INFO("%s spinning.", nh_.getNamespace().c_str());
   while(ros::ok())
