@@ -80,13 +80,13 @@ namespace affordance_template
 
     std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool); // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
     bool moveToWaypoints(const std::vector<std::string>&); // list of ee waypoints to move to, return true if all waypoints were valid
+    bool switchTrajectory(const std::string&);
     
     // TODO -- called from server/interface.cpp
     bool trajectoryHasEE(const std::string&, const std::string&) {return true;} // trajectory name, ee name
     bool validWaypointPlan(const std::vector<std::string>&, const std::string&) {return true;} //vector of ee names, trajectory name
     bool saveToDisk(const std::string&, const std::string&, const std::string&, bool) {return true;} // filename, image, new key/class name, save_scale_updates bool
-    bool addTrajectory(const std::string&) {return true;} // trajectory name
-    bool setTrajectory(const std::string&); // after looking at AT.py this is more complex than I thought it would be
+    bool addTrajectory(const std::string&) {return true;} // trajectory name    
     bool scaleObject(const std::string&, double, double) {return true;} // object name, scale factor, ee scale factor
 
   private:

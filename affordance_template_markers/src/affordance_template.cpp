@@ -125,6 +125,11 @@ bool AffordanceTemplate::getTrajectory(TrajectoryList traj_list, std::string tra
   return false;
 }
 
+bool AffordanceTemplate::switchTrajectory(const std::string& trajectory_name)
+{
+  return createFromStructure( getCurrentStructure(), false, trajectory_name);
+}
+
 void AffordanceTemplate::clearTrajectoryFlags()
 {
   waypoint_flags_.clear();

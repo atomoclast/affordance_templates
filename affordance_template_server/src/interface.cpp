@@ -346,42 +346,26 @@ bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServer
 bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTrajectory::Request &req, SetAffordanceTemplateTrajectory::Response &res)
 {
     at_server_->setStatus(false);
+    res.success = false;
 
     if (req.trajectory.empty())
         ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to current trajectory", req.name.c_str());
     else
         ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to %s", req.name.c_str(), req.trajectory.c_str());
 
-    res.success = false;
-
-    std::vector<std::string> keys;
-    boost::split(keys, req.name, boost::is_any_of(":"));
-    if (keys.size() >= 2)
+    ATPointer at;
+    if ( at_server_->getTemplateInstance(req.name, at) )
     {
-        int id = std::stoi(keys[1]);
-        ATPointer at;
-        if ( at_server_->getTemplateInstance(req.name, at) )
-        {
-            // need to find trajectory here again, just as in handle template status
-            // TODO
-            // if traj not in traj
-            {
-                if ( !at->setTrajectory(req.trajectory))
-                    res.success = true;
-                else
-                    ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
-            }
-            // else
-                // ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] trajectory %s not available to template %s", req.trajectory.c_str(), keys[0].c_str());
-        }
+        if ( !at->switchTrajectory(req.name))
+            res.success = true;
         else
-            ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on server!!", req.name.c_str());        
+            ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
     }
-    else 
-        ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s is an invalid template name!!", req.name.c_str());
+    else
+        ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on server!!", req.name.c_str());        
     
     at_server_->setStatus(true);
-    return true;
+    return res.success;
 }
 
 bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Request &req, SetAffordanceTemplatePose::Response &res)
