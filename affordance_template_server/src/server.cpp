@@ -280,10 +280,9 @@ bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id,
     ros::NodeHandle nh;
     at_map_[key] = boost::shared_ptr<affordance_template::AffordanceTemplate>(new affordance_template::AffordanceTemplate(nh, im_server_, robot_interface_, robot_name_, type, id));
     
-    // ROS_WARN("will run AT %s", key.c_str());
-    // affordance_template_object::AffordanceTemplateStructure structure;
-    // geometry_msgs::Pose p;
-    // at_map_[key]->loadFromFile("/home/seth/catkin/src/affordance_templates/affordance_template_library/templates/wheel.json", p, structure);
+    affordance_template_object::AffordanceTemplateStructure structure;
+    geometry_msgs::Pose p;
+    at_map_[key]->loadFromFile( at_structure_map_[type].filename, p, structure);
 
     return true;
 }
