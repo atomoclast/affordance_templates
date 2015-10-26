@@ -8,7 +8,7 @@ end_effector_group_map:
   - name: left_hand
     id: 0
     pose_offset: [0,0,0,1.57,0,0]
-    tool_offset: [-0.08,0,-.01,0,-.2,0]
+    tool_offset: [-0.08,0,-.01,0,-0.2,0]
   - name: right_hand
     id: 1
     pose_offset: [0,0,0,-1.57,0,0]

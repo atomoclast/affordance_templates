@@ -126,7 +126,7 @@ bool RobotInterface::load(const std::string &yaml)
 
       ee_names_.push_back(ee_config.name);
       ee_name_map_[ee_config.id] = ee_config.name;
-      manipulator_id_map_[ee_config.name] = ee_config.id;
+      ee_id_map_[ee_config.name] = ee_config.id;
       robot_config_.end_effectors.push_back(ee_config);
     } 
 
@@ -145,8 +145,8 @@ bool RobotInterface::load(const std::string &yaml)
 
       robot_config_.end_effector_pose_data.push_back(ee_pose);
 
-      ee_pose_map_[std::make_pair(ee_pose.group, ee_pose.name)] = ee_pose.id;
-      ee_id_map_[std::make_pair(ee_pose.group, ee_pose.id)] = ee_pose.name;
+      ee_pose_name_map_[std::make_pair(ee_pose.group, ee_pose.name)] = ee_pose.id;
+      ee_pose_id_map_[std::make_pair(ee_pose.group, ee_pose.id)] = ee_pose.name;
     }
 
     // TODO 
@@ -187,6 +187,10 @@ bool RobotInterface::load(const std::string &yaml)
   configured_ = true;
   ROS_INFO("[RobotInterface::load] successfully loaded from yaml file");
   
+
+
+  //planner_->addPlanningGroup(group_name, getTypeString(group_type), joint_tolerance_, position_tolerances_, orientation_tolerances_)
+
   return true;
 }
 
@@ -204,15 +208,15 @@ bool RobotInterface::load(const affordance_template_msgs::RobotConfig &config)
   {
     ee_names_.push_back(config.name);
     ee_name_map_[config.id] = config.name;
-    manipulator_id_map_[config.name] = config.id;
+    ee_id_map_[config.name] = config.id;
     manipulator_pose_map_[config.name] = config.pose_offset;
     tool_offset_map_[config.name] = config.tool_offset;
   }
 
   for (auto pose : robot_config_.end_effector_pose_data)
   {
-    ee_id_map_[std::make_pair(pose.group, pose.id)] = pose.name;
-    ee_pose_map_[std::make_pair(pose.group, pose.name)] = pose.id;
+    ee_pose_id_map_[std::make_pair(pose.group, pose.id)] = pose.name;
+    ee_pose_name_map_[std::make_pair(pose.group, pose.name)] = pose.id;
   }
 
   configured_ = true;
@@ -263,68 +267,35 @@ bool RobotInterface::configure() // TODO
 
   // get actual planning SRDF groups for EEs
   std::vector<std::string> ee_planning_groups;
+  std::vector<std::string> arm_planning_groups;
   for (auto g : ee_groups_)
   {
-    std::string pg;
+    std::string pg, ag;
     robot_planner_->getRDFModel()->getEndEffectorPlanningGroup(g, pg);
+    robot_planner_->getRDFModel()->getEndEffectorParentGroup(pg, ag);
     ee_planning_groups.push_back(pg);
+    arm_planning_groups.push_back(ag);
   }
   for (auto g : ee_planning_groups)
   {
     ROS_INFO("[RobotInterface::configure] setting up ee group: %s", g.c_str());
-
-    if (std::find(ee_planning_groups.begin(), ee_planning_groups.end(), g) == ee_planning_groups.end())
-    {
-      ROS_FATAL("[RobotInterface::configure] group %s is not in end effector groups!!", g.c_str());
-      return false;
-    }
-
     try
     {
       std::vector<double> pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
-      pos_tol.push_back(0.1);
-      orientation_tol.push_back(0.1);
-      if (robot_planner_->addPlanningGroup(g, "endeffector", 0.05, pos_tol, orientation_tol)) // was addPlanningGroup(g, "endeffector")
-      {
-        // robot_planner_->setGoalJointTolerance(g, 0.05);
+      pos_tol.push_back(0.01);
+      orientation_tol.push_back(0.005);
+      if (robot_planner_->addPlanningGroup(g, "endeffector", 0.01, pos_tol, orientation_tol)) {
         std::string ee_root_frame = robot_planner_->getControlFrame(g);
         ROS_INFO("[RobotInterface::configure] control frame: %s", ee_root_frame.c_str());
-
-        // @seth -- still todo with python-->cpp
-
         EndEffectorHelperConstPtr ee(new EndEffectorHelper(g, ee_root_frame, robot_planner_->getRDFModel()));
         ee_link_data_[g] = ee;
-
-        // self.end_effector_link_data[g] = EndEffectorHelper(self.robot_config.name, g, ee_root_frame, self.tf_listener)
-        // self.end_effector_link_data[g].populate_data(self.robot_planner.get_group_links(g), self.robot_planner.get_urdf_model(), self.robot_planner.get_srdf_model())
-        // rospy.sleep(1)
-        // self.end_effector_markers[g] = self.end_effector_link_data[g].get_current_position_marker_array(scale=1.0,color=(1,1,1,0.5))
-        // pg = self.robot_planner.get_srdf_model().get_end_effector_parent_group(g)
-        // if not pg == None :
-        //     rospy.loginfo(str("RobotInterface::configure() -- trying to add group: " + pg))
-        //     self.robot_planner.add_planning_group(pg, group_type="cartesian")
-        //     self.robot_planner.set_display_mode(pg, "all_points")
-        //     self.robot_planner.set_goal_position_tolerances(pg, [.01]*3)
-        //     self.robot_planner.set_goal_orientation_tolerances(pg, [.03]*3)
-        //     self.robot_planner.set_goal_joint_tolerance(pg, 0.05)
-
-        //     self.stored_poses[pg] = {}
-        //     for state_name in self.robot_planner.get_stored_state_list(pg) :
-        //         rospy.loginfo(str("RobotInterface::configure() adding stored pose \'" + state_name + "\' to group \'" + pg + "\'"))
-        //         self.stored_poses[pg][state_name] = self.robot_planner.get_stored_group_state(pg, state_name)
-
-        // else :
-            // rospy.logerror(str("RobotInterface::configure -- no manipulator group found for end-effector: " + g))
-
-      }
-      else
-      {
+      } else {
         ROS_ERROR("[RobotInterface::configure] problem adding end effector group %s to planner", g.c_str());
       }
     } 
     catch(...)
     {
-      ROS_WARN("[RobotInterface::configure] skipping group %s", g.c_str());
+      ROS_WARN("[RobotInterface::configure] skipping ee group %s", g.c_str());
     }
 
     std::vector<std::string> state_list;
@@ -337,6 +308,26 @@ bool RobotInterface::configure() // TODO
       stored_poses_[std::make_pair(g, name)] = state;
     }
   }
+
+  for (auto g : arm_planning_groups)
+  {
+    ROS_WARN("[RobotInterface::configure] setting up arm group: %s", g.c_str());
+    try
+    {
+      std::vector<double> pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
+      pos_tol.push_back(0.01);
+      orientation_tol.push_back(0.005);
+      if (robot_planner_->addPlanningGroup(g, "cartesian", 0.01, pos_tol, orientation_tol)) {
+      } else {
+        ROS_ERROR("[RobotInterface::configure] problem adding arm group %s to planner", g.c_str());
+      }
+    } 
+    catch(...)
+    {
+      ROS_WARN("[RobotInterface::configure] skipping arm group %s", g.c_str());
+    }
+  }
+
 
   // todo -- @seth figure out what the hell a gripper_action looks like
   // I am confused because this is a python list but other places (other classes) is referenced as a dictionary
@@ -362,14 +353,11 @@ void RobotInterface::reset()
   configured_ = false;
   ee_names_.clear();
   ee_groups_.clear();
-  ee_id_map_.clear();
-  // ee_markers_.clear(); // TODO
+  ee_id_map_.clear(); 
   ee_name_map_.clear();
-  ee_pose_map_.clear();
-  // ee_link_data_.clear(); // TODO
-  // stored_poses_.clear(); // TODO
+  ee_pose_id_map_.clear();
+  ee_pose_name_map_.clear();
   tool_offset_map_.clear();
-  manipulator_id_map_.clear();
   manipulator_pose_map_.clear();
 }
 
@@ -390,15 +378,19 @@ std::string RobotInterface::getEEName(const int id)
   return ee_name_map_[id];
 }
 
-int RobotInterface::getEEId(const std::string &name)
+int RobotInterface::getEEID(const std::string &name)
 {
-  return manipulator_id_map_[name];
+  return ee_id_map_[name];
 }
 
 std::string RobotInterface::getManipulator(const std::string &ee)
 {
-  // return robot_planner_->get_srdf_model().get_end_effector_parent_group(ee);
-  return "";//TODO
+  std::string parent;
+  if(robot_planner_->getRDFModel()->getEndEffectorParentGroup(ee, parent)) {
+    return parent;
+  } else {
+    return "";
+  }
 } 
 
 std::string RobotInterface::getPkgPath(const std::string &pkg)
@@ -420,10 +412,10 @@ int main(int argc, char** argv)
 std::map<std::string, int> RobotInterface::getEEPoseIDMap(std::string name) 
 {
   std::map<std::string, int> pose_id_map;
-  for(auto key : ee_pose_map_) {
+  for(auto key : ee_pose_name_map_) {
     if(key.first.first == name) {
       std::string pose_name = key.first.second;
-      pose_id_map[pose_name] = ee_pose_map_[key.first];
+      pose_id_map[pose_name] = ee_pose_name_map_[key.first];
     }
   }
   return pose_id_map;
@@ -432,10 +424,10 @@ std::map<std::string, int> RobotInterface::getEEPoseIDMap(std::string name)
 std::map<int, std::string> RobotInterface::getEEPoseNameMap(std::string name) 
 {
   std::map<int, std::string> pose_name_map;
-  for(auto key : ee_id_map_) {
+  for(auto key : ee_pose_id_map_) {
     if(key.first.first == name) {
       int pose_id = key.first.second;
-      pose_name_map[pose_id] = ee_id_map_[key.first];
+      pose_name_map[pose_id] = ee_pose_id_map_[key.first];
     }
   }
   return pose_name_map;
@@ -452,5 +444,19 @@ bool RobotInterface::getEELinkData(std::string group_name, end_effector_helper::
     return false;
   }
   return true;
+}
+
+std::vector<std::string> RobotInterface::getEEPoseNames(std::string name) 
+{
+  std::vector<std::string> pose_names;
+  for(auto &k : ee_pose_id_map_) {
+    if(k.first.first == name) {
+      std::string p = k.second;
+      if(std::find(pose_names.begin(), pose_names.end(), p) == pose_names.end()) {
+        pose_names.push_back(p);
+      }
+    }
+  }
+  return pose_names;
 }
 
