@@ -135,6 +135,8 @@ bool AffordanceTemplateServer::loadRobot()
         return false;
     }
 
+    robot_interface_->configure();
+
     robot_config_ = robot_interface_->getRobotConfig();
     robot_name_ = robot_config_.name;
     if (getPackagePath(robot_config_.config_package).empty())
