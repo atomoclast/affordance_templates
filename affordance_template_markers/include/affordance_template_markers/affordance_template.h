@@ -72,7 +72,8 @@ namespace affordance_template
     inline int getID() { return id_; }
     inline std::string getType() { return template_type_; }
     inline std::string getCurrentTrajectory() { return current_trajectory_; }
-    inline affordance_template_object::AffordanceTemplateStructure getCurrentStructure() { return initial_structure_; }
+    inline affordance_template_object::AffordanceTemplateStructure getCurrentStructure() { return structure_; }
+    inline affordance_template_object::AffordanceTemplateStructure getDefaultStructure() { return initial_structure_; }
     inline boost::shared_ptr<affordance_template_markers::RobotInterface> getRobotInterface() { return robot_interface_; }
 
     int getNumWaypoints(const affordance_template_object::AffordanceTemplateStructure structure, const std::string traj_name, const int ee_id);
@@ -87,7 +88,7 @@ namespace affordance_template
     bool addTrajectory(const std::string&) {return true;} // trajectory name
     bool setTrajectory(const std::string&); // after looking at AT.py this is more complex than I thought it would be
     bool scaleObject(const std::string&, double, double) {return true;} // object name, scale factor, ee scale factor
-    
+
   private:
 
     // menu config will hold the menu text as well as bool for whether it should have a checkbox
