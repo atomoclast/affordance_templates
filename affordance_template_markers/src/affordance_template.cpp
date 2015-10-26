@@ -948,6 +948,13 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
   return ret;
 }
 
+bool AffordanceTemplate::setTrajectory(const std::string& trajectory_name)
+{
+  if (!trajectory_name.empty())
+    current_trajectory_ = trajectory_name;
+  return true;
+}
+
 bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_names) 
 {
 
