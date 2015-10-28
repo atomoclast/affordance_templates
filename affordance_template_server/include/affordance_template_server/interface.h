@@ -20,6 +20,8 @@
 #include <affordance_template_msgs/GetAffordanceTemplateServerStatus.h>
 #include <affordance_template_msgs/SetAffordanceTemplateTrajectory.h>
 #include <affordance_template_msgs/SetAffordanceTemplatePose.h>
+#include <affordance_template_msgs/ObjectInfo.h>
+#include <affordance_template_msgs/WaypointInfo.h>
 
 using namespace affordance_template_msgs;
 

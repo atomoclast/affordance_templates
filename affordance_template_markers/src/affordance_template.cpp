@@ -134,6 +134,19 @@ bool AffordanceTemplate::getTrajectory(TrajectoryList traj_list, std::string tra
   return false;
 }
 
+bool AffordanceTemplate::getTrajectoryPlan(const std::string& trajectory, const std::string& ee, PlanStatus& plan)
+{
+  if (plan_status_.find(trajectory) != plan_status_.end())
+    if (plan_status_[trajectory].find(ee) != plan_status_[trajectory].end())
+      plan = plan_status_[trajectory][ee];
+    else
+      return false;
+  else
+    return false;
+
+  return true;
+}
+
 bool AffordanceTemplate::switchTrajectory(const std::string& trajectory_name)
 {
   return createFromStructure( getCurrentStructure(), false, trajectory_name);
@@ -801,7 +814,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
 }
 
-bool AffordanceTemplate::isObject(std::string obj) {
+bool AffordanceTemplate::isObject(const std::string& obj) {
   for(auto &o : structure_.display_objects) {
     if(o.name == obj) {
       return true;
@@ -810,7 +823,7 @@ bool AffordanceTemplate::isObject(std::string obj) {
   return false;
 }
 
-bool AffordanceTemplate::isWaypoint(std::string wp) {
+bool AffordanceTemplate::isWaypoint(const std::string& wp) {
   return !isObject(wp);
 }
 

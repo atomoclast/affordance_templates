@@ -78,7 +78,9 @@ namespace affordance_template
     std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool); // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
     bool moveToWaypoints(const std::vector<std::string>&); // list of ee waypoints to move to, return true if all waypoints were valid
     bool switchTrajectory(const std::string&);
-
+    
+    bool getTrajectoryPlan(const std::string&, const std::string&, PlanStatus&);
+    
     // TODO -- called from server/interface.cpp
     bool trajectoryHasEE(const std::string&, const std::string&) {return true;} // trajectory name, ee name
     bool validWaypointPlan(const std::vector<std::string>&, const std::string&) {return true;} //vector of ee names, trajectory name
@@ -171,9 +173,9 @@ namespace affordance_template
 
     bool hasObjectFrame(std::string obj);
     bool hasWaypointFrame(std::string wp);
-
-    bool isObject(std::string obj);
-    bool isWaypoint(std::string wp);
+    
+    bool isWaypoint(const std::string& wp);
+    bool isObject(const std::string& obj);
 
     geometry_msgs::Pose originToPose(affordance_template_object::Origin origin);
 
