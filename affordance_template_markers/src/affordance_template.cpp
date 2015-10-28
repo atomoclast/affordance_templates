@@ -892,6 +892,7 @@ bool AffordanceTemplate::computePathSequence(AffordanceTemplateStructure structu
   return true;
 }
 
+ // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
 std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::vector<std::string>& ee_names, int steps, bool direct, bool backwards)
 {
 
@@ -972,6 +973,7 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
   return ret;
 }
 
+ // list of ee waypoints to move to, return true if all waypoints were valid
 bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_names) 
 {
 
@@ -1024,41 +1026,50 @@ void AffordanceTemplate::stop()
   removeAllMarkers();
 }
 
-int main(int argc, char **argv)
+bool AffordanceTemplate::setObjectScaling(const std::string& object_name, double scale_factor, double ee_scale_factor)
 {
- 
-  ros::init(argc, argv, "affordance_template_test");
-  ros::NodeHandle nh("~");
- 
-  std::string robot_name, template_type;
-  
-  if (nh.hasParam("robot_name")) {
-    nh.getParam("robot_name", robot_name); 
-  } else {
-    robot_name = "r2_upperbody";
-  }
-
-  if (nh.hasParam("template_type")) {
-    nh.getParam("template_type", template_type); 
-  } else {
-    template_type = "wheel";
-  }
-
-  boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface;
-  robot_interface.reset(new affordance_template_markers::RobotInterface());
-  robot_interface->load("r2_upperbody.yaml");
-  robot_interface->configure();
-
-  boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server;
-  server.reset( new interactive_markers::InteractiveMarkerServer(std::string(robot_name + "_affordance_template_server"),"",false) );
-
-  AffordanceTemplate at(nh, server, robot_interface, robot_name, template_type, 0);
-  
-  AffordanceTemplateStructure structure;
-  geometry_msgs::Pose p;
-  at.loadFromFile("/home/seth/catkin/src/affordance_templates/affordance_template_library/templates/wheel.json", p, structure);
-
-  at.run();
- 
-  return 0;
+  std::string full_name = robot_name_ + "/" + object_name + ":" + std::to_string(id_);
+  object_scale_factor_[full_name] = scale_factor;
+  ee_scale_factor_[full_name] = ee_scale_factor;
+  removeAllMarkers();
+  return createFromStructure(structure_);
 }
+
+// int main(int argc, char **argv)
+// {
+ 
+//   ros::init(argc, argv, "affordance_template_test");
+//   ros::NodeHandle nh("~");
+ 
+//   std::string robot_name, template_type;
+  
+//   if (nh.hasParam("robot_name")) {
+//     nh.getParam("robot_name", robot_name); 
+//   } else {
+//     robot_name = "r2_upperbody";
+//   }
+
+//   if (nh.hasParam("template_type")) {
+//     nh.getParam("template_type", template_type); 
+//   } else {
+//     template_type = "wheel";
+//   }
+
+//   boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface;
+//   robot_interface.reset(new affordance_template_markers::RobotInterface());
+//   robot_interface->load("r2_upperbody.yaml");
+//   robot_interface->configure();
+
+//   boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server;
+//   server.reset( new interactive_markers::InteractiveMarkerServer(std::string(robot_name + "_affordance_template_server"),"",false) );
+
+//   AffordanceTemplate at(nh, server, robot_interface, robot_name, template_type, 0);
+  
+//   AffordanceTemplateStructure structure;
+//   geometry_msgs::Pose p;
+//   at.loadFromFile("/home/seth/catkin/src/affordance_templates/affordance_template_library/templates/wheel.json", p, structure);
+
+//   at.run();
+ 
+//   return 0;
+// }

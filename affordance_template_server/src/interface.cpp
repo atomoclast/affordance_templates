@@ -279,7 +279,7 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
 
     ATPointer at;
     if ( at_server_->getTemplateInstance(req.scale_info.class_type, req.scale_info.id, at))
-        res.status = at->scaleObject(req.scale_info.object_name, req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
+        res.status = at->setObjectScaling(req.scale_info.object_name, req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
 
     if ( !res.status )
         ROS_ERROR("[AffordanceTemplateInterface::handleObjectScale] error scaling object!!");
@@ -376,7 +376,7 @@ void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayOb
 
     ATPointer at;
     if ( at_server_->getTemplateInstance(data.class_type, data.id, at))
-        if ( !at->scaleObject(data.object_name, data.scale_factor, data.end_effector_scale_factor))
+        if ( !at->setObjectScaling(data.object_name, data.scale_factor, data.end_effector_scale_factor))
             ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
 
