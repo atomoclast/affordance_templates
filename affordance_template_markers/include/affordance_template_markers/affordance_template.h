@@ -62,29 +62,30 @@ namespace affordance_template
                        int id);
     ~AffordanceTemplate();
 
+    // public methods used by server node
     void run();
     void stop();
+    bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
+    bool moveToWaypoints(const std::vector<std::string>&); // list of ee waypoints to move to, return true if all waypoints were valid
+    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool); // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
 
+    // public getters
     inline int getID() { return id_; }
     inline std::string getType() { return template_type_; }
     inline std::string getCurrentTrajectory() { return current_trajectory_; }
     inline affordance_template_object::AffordanceTemplateStructure getCurrentStructure() { return structure_; }
     inline affordance_template_object::AffordanceTemplateStructure getDefaultStructure() { return initial_structure_; }
     inline boost::shared_ptr<affordance_template_markers::RobotInterface> getRobotInterface() { return robot_interface_; }
-
-    void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
-    bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
     int getNumWaypoints(const affordance_template_object::AffordanceTemplateStructure structure, const std::string traj_name, const int ee_id);
-    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool); // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
-    bool moveToWaypoints(const std::vector<std::string>&); // list of ee waypoints to move to, return true if all waypoints were valid
-    bool switchTrajectory(const std::string&);
-    
     bool getTrajectoryPlan(const std::string&, const std::string&, PlanStatus&);
     
-    // TODO -- called from server/interface.cpp
-    bool trajectoryHasEE(const std::string&, const std::string&) {return true;} // trajectory name, ee name
-    bool validWaypointPlan(const std::vector<std::string>&, const std::string&) {return true;} //vector of ee names, trajectory name
+    // public setters 
+    bool setTrajectory(const std::string&);
+    void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
+    
+    // TODO     
     bool saveToDisk(const std::string&, const std::string&, const std::string&, bool) {return true;} // filename, image, new key/class name, save_scale_updates bool
+    bool validWaypointPlan(const std::vector<std::string>&, const std::string&) {return true;} //vector of ee names, trajectory name
     bool addTrajectory(const std::string&) {return true;} // trajectory name    
     bool scaleObject(const std::string&, double, double) {return true;} // object name, scale factor, ee scale factor
 

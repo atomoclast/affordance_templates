@@ -147,9 +147,9 @@ bool AffordanceTemplate::getTrajectoryPlan(const std::string& trajectory, const 
   return true;
 }
 
-bool AffordanceTemplate::switchTrajectory(const std::string& trajectory_name)
+bool AffordanceTemplate::setTrajectory(const std::string& trajectory_name)
 {
-  return createFromStructure( getCurrentStructure(), false, trajectory_name);
+  return createFromStructure(getCurrentStructure(), false, trajectory_name);
 }
 
 void AffordanceTemplate::clearTrajectoryFlags()

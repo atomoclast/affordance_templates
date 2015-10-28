@@ -27,6 +27,8 @@ using namespace affordance_template_msgs;
 
 namespace affordance_template_server
 {
+    typedef boost::shared_ptr<affordance_template::AffordanceTemplate> ATPointer;
+
     inline std::string boolToString(bool b) { return (b ? "true" : "false"); }
     inline std::string successToString(bool b) { return (b ? "succeeded" : "failed"); }
 
@@ -50,6 +52,8 @@ namespace affordance_template_server
         bool handleSetPose(SetAffordanceTemplatePose::Request&, SetAffordanceTemplatePose::Response&);
         
         void handleObjectScaleCallback(const ScaleDisplayObjectInfo&);
+        bool doesTrajectoryExist(const ATPointer&, const std::string&);
+        bool doesEndEffectorExist(const ATPointer&, const std::string&);
         AffordanceTemplateStatus getTemplateStatus(const std::string& template_name, const int template_id, std::string& traj_name, const std::string& frame_id="");
 
         boost::shared_ptr<AffordanceTemplateServer> at_server_;

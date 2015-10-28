@@ -4,8 +4,6 @@ using namespace affordance_template_server;
 using namespace affordance_template_msgs;
 using namespace affordance_template_object;
 
-typedef boost::shared_ptr<affordance_template::AffordanceTemplate> ATPointer;
-
 AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_robot_yaml)
 {
     ROS_INFO("[AffordanceTemplateInterface] starting...");
@@ -169,11 +167,8 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
             ee_path[ee] = false;
             steps = req.steps[id];
             // make sure EE is in trajectory
-            if ( !at->trajectoryHasEE(req.trajectory_name, ee))
-            {
-                ROS_WARN("[AffordanceTemplateInterface::handlePlanCommand] %s not in trajectory, can't plan!!", ee.c_str());
+            if (!doesEndEffectorExist(at, ee))
                 continue;
-            }
             ee_names.push_back(ee);
             ++id;
         }
@@ -209,7 +204,7 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
         std::vector<std::string> ee_list;
         for (auto ee : req.end_effectors)
         {
-            if ( !at->trajectoryHasEE(req.trajectory_name, ee))
+            if (!doesEndEffectorExist(at, ee))
                 ROS_WARN("[AffordanceTemplateInterface::handleExecuteCommand] %s not in trajectory, can't execute!!", ee.c_str());
             else
                 ee_list.push_back(ee);
@@ -283,8 +278,8 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
     res.status = false;
 
     ATPointer at;
-    // if ( at_server_->getTemplateInstance(req.scale_info.class_type, req.scale_info.id, at))
-        // res.status = at->scaleObject(req.scale_info.object_name, req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
+    if (at_server_->getTemplateInstance(req.scale_info.class_type, req.scale_info.id, at))
+        res.status = at->scaleObject(req.scale_info.object_name, req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
 
     if ( !res.status )
         ROS_ERROR("[AffordanceTemplateInterface::handleObjectScale] error scaling object!!");
@@ -351,7 +346,7 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     ATPointer at;
     if ( at_server_->getTemplateInstance(req.name, at))
     {
-        if ( !at->switchTrajectory(req.name))
+        if ( !at->setTrajectory(req.name))
             res.success = true;
         else
             ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
@@ -406,20 +401,8 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
 
     AffordanceTemplateStructure at_struct = at->getCurrentStructure();
 
-    bool found = false;
-    for ( auto traj : at_struct.ee_trajectories)
-    {
-        if (traj.name == trajectory)
-        {
-            found = true;
-            break;
-        }
-    }
-    if (!found)
-    {
-        ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory name %s not found in template", trajectory.c_str());
+    if (!doesTrajectoryExist(at, ats.trajectory_name))
         return ats;
-    }
 
     for ( auto obj : at_struct.display_objects)
     {
@@ -455,4 +438,41 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
     }
 
     return ats;
+}
+
+bool AffordanceTemplateInterface::doesTrajectoryExist(const ATPointer& atp, const std::string& trajectory)
+{
+    bool found = false;
+    
+    AffordanceTemplateStructure ats = atp->getCurrentStructure();
+    for ( auto traj : ats.ee_trajectories)
+    {
+        if (traj.name == trajectory)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+        ROS_WARN("[AffordanceTemplateInterface::doesTrajectoryExist] trajectory name %s not found in template", trajectory.c_str());
+
+    return found;
+}
+
+bool AffordanceTemplateInterface::doesEndEffectorExist(const ATPointer& atp, const std::string& ee)
+{
+    bool found = false;
+
+    std::map<int, std::string> ee_map = atp->getRobotInterface()->getEENameMap();
+    for ( auto e : ee_map)
+    {
+        if (e.second == ee)
+        {
+            found = true;
+            break;
+        }
+    }
+    
+    return found;
 }
