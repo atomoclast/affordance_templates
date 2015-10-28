@@ -64,6 +64,7 @@ namespace affordance_template
     // public methods used by server node
     void run();
     void stop();
+    bool addTrajectory(const std::string&);
     bool moveToWaypoints(const std::vector<std::string>&);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
     std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool);
@@ -86,8 +87,6 @@ namespace affordance_template
     
     // TODO     
     bool saveToDisk(const std::string&, const std::string&, const std::string&, bool) {return true;} // filename, image, new key/class name, save_scale_updates bool
-    bool validWaypointPlan(const std::vector<std::string>&, const std::string&) {return true;} //vector of ee names, trajectory name
-    bool addTrajectory(const std::string&) {return true;} // trajectory name    
 
   private:
     

@@ -190,8 +190,6 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
     at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] new execution request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
 
-    res.status = false;
-
     ATPointer at;
     if ( !at_server_->getTemplateInstance(req.type, req.id, at))
         ROS_ERROR("[AffordanceTemplateInterface::handleExecuteCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
@@ -210,19 +208,12 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
                 ee_list.push_back(ee);
         }
 
-        // if the AT has prevously computed a valid plan (can't execute unless this is True) 
-        if ( at->validWaypointPlan(ee_list, req.trajectory_name))
-        {
-            if ( at->moveToWaypoints(ee_list))
-            {
-                res.status = true; // only try if all plans valid
-                ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] done executing %s plan(s)", req.trajectory_name.c_str());
-            }
-        }
+        res.status = at->moveToWaypoints(ee_list);
+        
+        if ( res.status)
+            ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] done executing %s plan(s)", req.trajectory_name.c_str());
         else
-        {
-            ROS_WARN("[AffordanceTemplateInterface::handleExecuteCommand] no valid plan found for %s", req.trajectory_name.c_str());
-        }
+            ROS_ERROR("[AffordanceTemplateInterface::handleExecuteCommand] execution failed for %s", req.trajectory_name.c_str());
         res.affordance_template_status = getTemplateStatus(req.type, req.id, req.trajectory_name);
     }
 

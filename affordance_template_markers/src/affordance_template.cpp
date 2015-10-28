@@ -122,6 +122,13 @@ std::string AffordanceTemplate::appendID(std::string s)
   return s + ":" + std::to_string(id_);
 } 
 
+// TODO
+// is this all that needs to happen??
+bool AffordanceTemplate::addTrajectory(const std::string& trajectory_name) 
+{
+  return createFromStructure(getCurrentStructure(), false, trajectory_name);
+}
+
 bool AffordanceTemplate::getTrajectory(TrajectoryList traj_list, std::string traj_name, Trajectory &traj) 
 {
   for (auto &t: traj_list) {
@@ -976,7 +983,6 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
  // list of ee waypoints to move to, return true if all waypoints were valid
 bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_names) 
 {
-
   ROS_INFO("AffordanceTemplate::moveToWaypoints()");
   std::vector<std::string> valid_ee_plans;
   std::vector<std::string> m_names;
