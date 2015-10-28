@@ -129,13 +129,13 @@ bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::R
     ROS_INFO("[AffordanceTemplateInterface::handleRunning] gathering names of running templates");
 
     std::vector<std::string> templates = at_server_->getRunningTemplates();
-    for (auto t : templates)
+    for ( auto t : templates)
     {
         ROS_INFO("[AffordanceTemplateInterface::handleRunning] \tfound template: %s", t.c_str());
         res.templates.push_back(t);
     }
 
-    if (templates.size() == 0)
+    if ( templates.size() == 0)
         ROS_INFO("[AffordanceTemplateInterface::handleRunning] no templates are currently running on server");
 
     at_server_->setStatus(true);
@@ -153,7 +153,7 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
     else
     {
         // check if specific trajectory was given
-        if (req.trajectory_name.empty())
+        if ( req.trajectory_name.empty())
             req.trajectory_name = at->getCurrentTrajectory();
 
         // go through all the EE waypoints in the request
@@ -162,12 +162,12 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
 
         std::vector<std::string> ee_names;
         std::map<std::string, bool> ee_path;
-        for (auto ee : req.end_effectors)
+        for ( auto ee : req.end_effectors)
         {
             ee_path[ee] = false;
             steps = req.steps[id];
             // make sure EE is in trajectory
-            if (!doesEndEffectorExist(at, ee))
+            if ( !doesEndEffectorExist(at, ee))
                 continue;
             ee_names.push_back(ee);
             ++id;
@@ -176,7 +176,7 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
         // compute path plan (returns dictionary of bools keyed off EE name)
         ee_path = at->planPathToWaypoints(ee_names, steps, req.direct, req.backwards);
         ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] planned path for %lu end-effectors:", ee_path.size());
-        for (auto ee : ee_path)
+        for ( auto ee : ee_path)
             ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] \t%s : %s", ee.first.c_str(), boolToString(ee.second).c_str());
         res.affordance_template_status = getTemplateStatus(req.type, req.id, req.trajectory_name);
     }
@@ -198,13 +198,13 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
     else
     {
         // check if specific trajectory was given
-        if (req.trajectory_name.empty())
+        if ( req.trajectory_name.empty())
             req.trajectory_name = at->getCurrentTrajectory();
 
         std::vector<std::string> ee_list;
-        for (auto ee : req.end_effectors)
+        for ( auto ee : req.end_effectors)
         {
-            if (!doesEndEffectorExist(at, ee))
+            if ( !doesEndEffectorExist(at, ee))
                 ROS_WARN("[AffordanceTemplateInterface::handleExecuteCommand] %s not in trajectory, can't execute!!", ee.c_str());
             else
                 ee_list.push_back(ee);
@@ -245,7 +245,7 @@ bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Req
     bool remove_status = at_server_->removeTemplate(req.original_class_type, req.id);
     bool add_status = at_server_->addTemplate(req.new_class_type, req.id);
     res.status = (save_status && remove_status && add_status);
-    if (!res.status)
+    if ( !res.status)
         ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] error saving template. save to file was: %s, remove was: %s, adding was: %s", successToString(save_status).c_str(), successToString(remove_status).c_str(), successToString(add_status).c_str());
 
     at_server_->setStatus(true);
@@ -278,7 +278,7 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
     res.status = false;
 
     ATPointer at;
-    if (at_server_->getTemplateInstance(req.scale_info.class_type, req.scale_info.id, at))
+    if ( at_server_->getTemplateInstance(req.scale_info.class_type, req.scale_info.id, at))
         res.status = at->scaleObject(req.scale_info.object_name, req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
 
     if ( !res.status )
@@ -293,11 +293,11 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
     at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
 
-    if (!req.name.empty())
+    if ( !req.name.empty())
     {
         std::vector<std::string> keys;
         boost::split(keys, req.name, boost::is_any_of(":"));
-        if (keys.size() >= 2)
+        if ( keys.size() >= 2)
         {
             int id = std::stoi(keys[1]);
             res.affordance_template_status.push_back(getTemplateStatus(keys[0], id, req.trajectory_name, req.frame_id));
@@ -306,7 +306,7 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
             {
                 res.current_trajectory = at->getCurrentTrajectory();
                 AffordanceTemplateStructure ats = at->getCurrentStructure();
-                for (auto t : ats.ee_trajectories)
+                for ( auto t : ats.ee_trajectories)
                     res.trajectory_names.push_back(t.name);
             }
             else
@@ -338,7 +338,7 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     at_server_->setStatus(false);
     res.success = false;
 
-    if (req.trajectory.empty())
+    if ( req.trajectory.empty())
         ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to current trajectory", req.name.c_str());
     else
         ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to %s", req.name.c_str(), req.trajectory.c_str());
@@ -395,13 +395,13 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
 
     ats.type = type;
     ats.id = id;
-    if (trajectory.empty())
+    if ( trajectory.empty())
         trajectory = at->getCurrentTrajectory();
     ats.trajectory_name = trajectory;
 
     AffordanceTemplateStructure at_struct = at->getCurrentStructure();
 
-    if (!doesTrajectoryExist(at, ats.trajectory_name))
+    if ( !doesTrajectoryExist(at, ats.trajectory_name))
         return ats;
 
     for ( auto obj : at_struct.display_objects)
@@ -413,7 +413,7 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
     }
 
     std::map<std::string, int> ee_names = at->getRobotInterface()->getEEIDMap();
-    for (auto ee : ee_names)
+    for ( auto ee : ee_names)
     {
         WaypointInfo wpi;
         wpi.end_effector_name = ee.first;
@@ -421,7 +421,7 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
         wpi.num_waypoints = at->getNumWaypoints(at_struct, at->getCurrentTrajectory(), wpi.id);
 
         affordance_template::PlanStatus ps;
-        if (!at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps))
+        if ( !at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps))
         {
             ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't exist!!", ats.trajectory_name.c_str(), ee.first.c_str());
             continue;
@@ -447,14 +447,14 @@ bool AffordanceTemplateInterface::doesTrajectoryExist(const ATPointer& atp, cons
     AffordanceTemplateStructure ats = atp->getCurrentStructure();
     for ( auto traj : ats.ee_trajectories)
     {
-        if (traj.name == trajectory)
+        if ( traj.name == trajectory)
         {
             found = true;
             break;
         }
     }
 
-    if (!found)
+    if ( !found)
         ROS_WARN("[AffordanceTemplateInterface::doesTrajectoryExist] trajectory name %s not found in template", trajectory.c_str());
 
     return found;
@@ -467,12 +467,12 @@ bool AffordanceTemplateInterface::doesEndEffectorExist(const ATPointer& atp, con
     std::map<int, std::string> ee_map = atp->getRobotInterface()->getEENameMap();
     for ( auto e : ee_map)
     {
-        if (e.second == ee)
+        if ( e.second == ee)
         {
             found = true;
             break;
         }
     }
-    
+
     return found;
 }
