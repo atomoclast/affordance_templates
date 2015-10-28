@@ -310,14 +310,9 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
             if ( at_server_->getTemplateInstance(req.name, at))
             {
                 res.current_trajectory = at->getCurrentTrajectory();
-                // @steve-todo ask
-                // TODO -- need to figure out if this will be EEs from current running AT or just eh EEs from generic AT matching this name
-                // std::vector<AffordanceTemplateConfig> ats = at_server_->getTemplate(req.name);
-                // if (ats.size())
-                // {
-                //     for (auto t : traj_map)
-                //         res.trajectory_names.push_back(t);
-                // }
+                AffordanceTemplateStructure ats = at->getCurrentStructure();
+                for (auto t : ats.ee_trajectories)
+                    res.trajectory_names.push_back(t.name);
             }
             else
                 ROS_ERROR("[AffordanceTemplateInterface::handleTemplateStatus] %s not current running on server!!", req.name.c_str());
