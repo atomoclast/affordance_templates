@@ -96,6 +96,11 @@ bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose 
   return true;
 }
 
+bool AffordanceTemplate::saveToDisk(const std::string& filename, const std::string& image, const std::string& key, bool save_scale_updates)
+{
+  return true;
+}
+
 bool AffordanceTemplate::appendIDToStructure(AffordanceTemplateStructure &structure) 
 {
   structure.name = appendID(structure.name);
@@ -252,6 +257,7 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
     ROS_ERROR("AffordanceTemplate::createFromStructure() -- couldn't set the current trajectory");
     return false;
   }
+  ROS_INFO("AffordanceTemplate::createFromStructure() -- done creating %s", template_type_.c_str());
   return true;
 }
  
