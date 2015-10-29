@@ -13,6 +13,7 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_rob
     if (!_robot_yaml.empty())
         ROS_INFO("[AffordanceTemplateInterface] creating server using robot yaml %s", _robot_yaml.c_str());
     at_server_.reset(new AffordanceTemplateServer(_robot_yaml));
+    at_server_->setStatus(true);
 
     const std::string base_srv = "/affordance_template_server/";
     at_srv_map_["get_robots"]              = nh.advertiseService(base_srv + "get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
@@ -315,12 +316,10 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
 
 bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServerStatus::Request &req, GetAffordanceTemplateServerStatus::Response &res)
 {
-    at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleServerStatus] getting server status...");
+    // ROS_INFO("[AffordanceTemplateInterface::handleServerStatus] getting server status...");
     
     res.ready = at_server_->getStatus();
     
-    at_server_->setStatus(true);
     return true;
 }
 
