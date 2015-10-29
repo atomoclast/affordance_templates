@@ -107,6 +107,7 @@ void AffordanceTemplateRVizClient::run_function() {
         ros::Duration(0.1).sleep();
         updateServerStatus();
         if(server_monitor_->isReady()) {
+            
             controlStatusUpdate();
             //printTemplateStatus();
         }
@@ -1247,7 +1248,7 @@ void AffordanceTemplateRVizClient::doCommand(Controls::CommandType command_type)
 
     string key = ui_->control_template_box->currentText().toUtf8().constData();
     if(key=="") return;
-    
+    ROS_INFO("being called from docommand");
     controlStatusUpdate(); // this is probably inefficient. we could store whether things have been updated, but this is safer.
 
     bool ret = controls_->requestPlan(command_type); 
@@ -1302,10 +1303,11 @@ void AffordanceTemplateRVizClient::controlStatusUpdate() {
 
     srv.request.name = ui_->control_template_box->currentText().toStdString();  
     srv.request.trajectory_name = "";
+    ROS_INFO("sending for request with name %s", srv.request.name.c_str());
     
     if (get_template_status_client_.call(srv))
     {
-        ROS_DEBUG("Got Info for %d Templates", (int)(srv.response.affordance_template_status.size()));
+        ROS_INFO("Got Info for %d Templates", (int)(srv.response.affordance_template_status.size()));
        
         if(srv.response.affordance_template_status.size() == 0) {
             return;
@@ -1331,7 +1333,7 @@ void AffordanceTemplateRVizClient::controlStatusUpdate() {
             return;
         }
         
-        ROS_DEBUG("Current Trajectory: %s", srv.response.current_trajectory.c_str());
+        ROS_INFO("Current Trajectory: %s", srv.response.current_trajectory.c_str());
         template_status_info[srv.request.name]->setCurrentTrajectory(srv.response.current_trajectory);
 
         for(int t=0; t<srv.response.trajectory_names.size(); t++) {

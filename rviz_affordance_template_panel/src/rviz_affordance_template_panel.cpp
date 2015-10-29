@@ -32,7 +32,7 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     ui_->affordanceTemplateGraphicsView->setScene(affordanceTemplateGraphicsScene_);
 
     recognitionObjectGraphicsScene_ = new QGraphicsScene(this);
-    ui_->recognitionObjectGraphicsView->setScene(recognitionObjectGraphicsScene_);
+    // ui_->recognitionObjectGraphicsView->setScene(recognitionObjectGraphicsScene_);
 
     QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
     QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));

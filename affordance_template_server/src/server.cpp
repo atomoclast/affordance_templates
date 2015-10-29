@@ -20,7 +20,7 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
     if (!loadTemplates())
         ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot JSONs!!");
 
-    status_ = true;
+    // status_ = true;
 
     ROS_INFO("[AffordanceTemplateServer] server configured. spinning...");
     // at_server_thread.join();
@@ -28,7 +28,7 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
 
 void AffordanceTemplateServer::run()
 {
-    status_ = true;
+    // status_ = true;
     ros::spin();
 }
 

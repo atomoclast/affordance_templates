@@ -13,7 +13,7 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_rob
     if (!_robot_yaml.empty())
         ROS_INFO("[AffordanceTemplateInterface] creating server using robot yaml %s", _robot_yaml.c_str());
     at_server_.reset(new AffordanceTemplateServer(_robot_yaml));
-    at_server_->setStatus(true);
+    // at_server_->setStatus(true);
 
     const std::string base_srv = "/affordance_template_server/";
     at_srv_map_["get_robots"]              = nh.advertiseService(base_srv + "get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
@@ -325,7 +325,7 @@ bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServer
 
 bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTrajectory::Request &req, SetAffordanceTemplateTrajectory::Response &res)
 {
-    at_server_->setStatus(false);
+    // at_server_->setStatus(false);
     res.success = false;
 
     if ( req.trajectory.empty())
@@ -344,18 +344,18 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     else
         ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on server!!", req.name.c_str());        
     
-    at_server_->setStatus(true);
+    // at_server_->setStatus(true);
     return res.success;
 }
 
 bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Request &req, SetAffordanceTemplatePose::Response &res)
 {
-    at_server_->setStatus(false);
+    // at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handleSetPose] setting pose for %s:%d", req.class_type.c_str(), req.id);
 
     res.success = at_server_->updateTemplate(req.class_type, req.id, req.pose);
     
-    at_server_->setStatus(true);
+    // at_server_->setStatus(true);
     return true;
 }
 
@@ -413,7 +413,7 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
         affordance_template::PlanStatus ps;
         if ( !at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps))
         {
-            ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't exist!!", ats.trajectory_name.c_str(), ee.first.c_str());
+            ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't have a valid plan!!", ats.trajectory_name.c_str(), ee.first.c_str());
             continue;
         }
         wpi.waypoint_index = ps.current_idx; // is this reversed??
