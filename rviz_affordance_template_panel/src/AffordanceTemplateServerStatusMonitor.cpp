@@ -19,7 +19,7 @@ AffordanceTemplateServerStatusMonitor::~AffordanceTemplateServerStatusMonitor() 
 }
 
 void AffordanceTemplateServerStatusMonitor::start() {
-	ROS_DEBUG("AffordanceTemplateServerStatusMonitor::start()");
+	ROS_INFO("AffordanceTemplateServerStatusMonitor::start()");
 	monitor_thread_ = new boost::thread(boost::bind(&AffordanceTemplateServerStatusMonitor::run_function, this));
 }
 
@@ -55,7 +55,7 @@ void AffordanceTemplateServerStatusMonitor::run_function() {
 				}
 				else
 				{
-			        ROS_ERROR("AffordanceTemplateServerStatusMonitor::run_function() -- service call failed");
+			        ROS_DEBUG("AffordanceTemplateServerStatusMonitor::run_function() -- service call failed");
 				}
 			} else {
 				ROS_DEBUG("AffordanceTemplateServerStatusMonitor::run_function() -- service does not exist");

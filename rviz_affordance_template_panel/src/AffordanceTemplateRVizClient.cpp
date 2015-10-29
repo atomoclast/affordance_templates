@@ -31,14 +31,14 @@ AffordanceTemplateRVizClient::AffordanceTemplateRVizClient(ros::NodeHandle &nh, 
 
     // setup service clients
     add_template_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplate>("/affordance_template_server/add_template");
-    add_object_client_ = nh_.serviceClient<affordance_template_msgs::AddRecognitionObject>("/affordance_template_server/add_recognition_object");
+    // add_object_client_ = nh_.serviceClient<affordance_template_msgs::AddRecognitionObject>("/affordance_template_server/add_recognition_object");
     add_trajectory_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplateTrajectory>("/affordance_template_server/add_trajectory");
     plan_command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplatePlanCommand>("/affordance_template_server/plan_command");
     execute_command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplateExecuteCommand>("/affordance_template_server/execute_command");
     delete_template_client_ = nh_.serviceClient<affordance_template_msgs::DeleteAffordanceTemplate>("/affordance_template_server/delete_template");
-    delete_object_client_ = nh_.serviceClient<affordance_template_msgs::DeleteRecognitionObject>("/affordance_template_server/delete_recognition_object");
+    // delete_object_client_ = nh_.serviceClient<affordance_template_msgs::DeleteRecognitionObject>("/affordance_template_server/delete_recognition_object");
     get_robots_client_ = nh_.serviceClient<affordance_template_msgs::GetRobotConfigInfo>("/affordance_template_server/get_robots");
-    get_objects_client_ = nh_.serviceClient<affordance_template_msgs::GetRecognitionObjectConfigInfo>("/affordance_template_server/get_recognition_objects");
+    // get_objects_client_ = nh_.serviceClient<affordance_template_msgs::GetRecognitionObjectConfigInfo>("/affordance_template_server/get_recognition_objects");
     get_running_client_ = nh_.serviceClient<affordance_template_msgs::GetRunningAffordanceTemplates>("/affordance_template_server/get_running");
     get_templates_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateConfigInfo>("/affordance_template_server/get_templates");
     get_template_status_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateStatus>("/affordance_template_server/get_template_status");
@@ -59,7 +59,7 @@ AffordanceTemplateRVizClient::AffordanceTemplateRVizClient(ros::NodeHandle &nh, 
     label_palette_ = new QPalette();// ui_->server_status_label->palette();
 
     // start up server monitor thread
-    server_monitor_ = new AffordanceTemplateServerStatusMonitor(nh_, std::string("/affordance_template_server/status"), 1);
+    server_monitor_ = new AffordanceTemplateServerStatusMonitor(nh_, std::string("/affordance_template_server/get_status"), 1);
 
 }
 
