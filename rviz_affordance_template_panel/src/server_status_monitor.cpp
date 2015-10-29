@@ -1,4 +1,4 @@
-#include "AffordanceTemplateServerStatusMonitor.hpp"
+#include <rviz_affordance_template_panel/server_status_monitor.h>
 
 using namespace rviz_affordance_template_panel;
 using namespace std;

@@ -4,11 +4,9 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 
-#include <vector>
 #include <assert.h>
 #include <iostream>
 #include <sstream>
-#include <string>
 #include <kdl/frames.hpp>
 
 #include <geometry_msgs/Pose.h>

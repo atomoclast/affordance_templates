@@ -1,4 +1,4 @@
-#include "rviz_affordance_template_panel.hpp"
+#include <rviz_affordance_template_panel/rviz_affordance_template_panel.h>
 
 using namespace rviz_affordance_template_panel;
 using namespace std;

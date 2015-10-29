@@ -16,18 +16,18 @@
 #include <QSlider>
 
 /* Project Include */
-#include "Affordance.hpp"
-#include "RecognitionObject.hpp"
-#include "RobotConfig.hpp"
-#include "Controls.hpp"
-#include "util.hpp"
+#include <rviz_affordance_template_panel/affordance.h>
+#include <rviz_affordance_template_panel/RecognitionObject.hpp>
+#include <rviz_affordance_template_panel/robot_config.h>
+#include <rviz_affordance_template_panel/controls.h>
+#include <rviz_affordance_template_panel/util.h>
 #include "ui_rviz_affordance_template_panel.h"
 
 #include <geometry_msgs/Pose.h>
 
-#include "AffordanceTemplateMsgHeaders.hpp"
-#include "AffordanceTemplateStatusInfo.hpp"
-#include "AffordanceTemplateServerStatusMonitor.hpp"
+#include <rviz_affordance_template_panel/msg_headers.h>
+#include <rviz_affordance_template_panel/template_status_info.h>
+#include <rviz_affordance_template_panel/server_status_monitor.h>
 
 namespace Ui {
 class RVizAffordanceTemplatePanel;

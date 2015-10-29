@@ -1,4 +1,4 @@
-#include "RecognitionObject.hpp"
+#include <rviz_affordance_template_panel/RecognitionObject.hpp>
 
 #define PIXMAP_SIZE 100
 #define OBJECT_INDEX 0

@@ -1,4 +1,4 @@
-#include "Affordance.hpp"
+#include <rviz_affordance_template_panel/affordance.h>
 
 #define PIXMAP_SIZE 100
 #define CLASS_INDEX 0

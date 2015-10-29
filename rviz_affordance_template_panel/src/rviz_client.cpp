@@ -1,4 +1,4 @@
-#include "rviz_affordance_template_panel.hpp"
+#include <rviz_affordance_template_panel/rviz_affordance_template_panel.h>
 
 // TODO: don't like these
 #define PIXMAP_SIZE 100

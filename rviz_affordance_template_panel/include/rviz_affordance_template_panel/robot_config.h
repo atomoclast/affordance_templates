@@ -5,7 +5,6 @@ using namespace std;
 
 #include <affordance_template_msgs/GripperActionMap.h>
 
-
 namespace rviz_affordance_template_panel
 {
 
