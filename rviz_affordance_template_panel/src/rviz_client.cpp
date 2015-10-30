@@ -968,6 +968,7 @@ void AffordanceTemplateRVizClient::getRunningItems() {
     {
         ui_->server_output_status->clear();
         ui_->control_template_box->clear();
+        ui_->control_trajectory_box->clear();
         for (int i=0; i < srv.response.templates.size(); i++) {
             string t = srv.response.templates[i];
             ROS_INFO("Found running template: %s", t.c_str());
@@ -1311,7 +1312,7 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
     
     if (get_template_status_client_.call(srv))
     {
-        ROS_INFO("Got Info for %d Templates", (int)(srv.response.affordance_template_status.size()));
+        ROS_INFO("Got info for template %s", srv.request.name.c_str());//(int)(srv.response.affordance_template_status.size()));
        
         if(srv.response.affordance_template_status.size() == 0) {
             return;
@@ -1330,22 +1331,17 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
             }
             affordance_template_msgs::AffordanceTemplateStatusConstPtr ptr(new affordance_template_msgs::AffordanceTemplateStatus(srv.response.affordance_template_status[i]));
             template_status_info[full_name]->updateTrajectoryStatus(ptr);
-
         }
 
-        if(srv.response.trajectory_names.size() == 0) {
+        if(srv.response.trajectory_names.size() == 0)
             return;
-        }
         
         ROS_INFO("Current Trajectory: %s", srv.response.current_trajectory.c_str());
         template_status_info[srv.request.name]->setCurrentTrajectory(srv.response.current_trajectory);
 
-        for(int t=0; t<srv.response.trajectory_names.size(); t++) {
-            std::string s = srv.response.trajectory_names[t];
-            if(ui_->control_trajectory_box->findText(QString(s.c_str())) == -1) {
-                ui_->control_trajectory_box->addItem(QString(s.c_str()));
-            }       
-        }
+        ui_->control_trajectory_box->clear();
+        for(int t=0; t<srv.response.trajectory_names.size(); ++t)
+            ui_->control_trajectory_box->addItem(QString(srv.response.trajectory_names[t].c_str()));
 
         int id = ui_->control_trajectory_box->findText(QString(srv.response.current_trajectory.c_str()));
         ui_->control_trajectory_box->setCurrentIndex(id);
@@ -1353,7 +1349,6 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
         updateTable(srv.request.name, srv.response.current_trajectory);
         
         controls_->setTemplateStatusInfo(template_status_info[srv.request.name]);
-
     }   
     else
     {

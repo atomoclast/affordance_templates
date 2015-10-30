@@ -689,6 +689,7 @@ void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMar
   int_markers_[m.name] = m;
   server_->insert(m);
   server_->setCallback(m.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ));
+  server_->applyChanges();
 }
 
 void AffordanceTemplate::removeInteractiveMarker(std::string marker_name) 
@@ -1015,12 +1016,11 @@ bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_name
 
 void AffordanceTemplate::run()
 {
- 
   ros::Rate loop_rate(loop_rate_);
   tf::Transform transform;
   FrameInfo fi;
 
-  // ROS_INFO("%s spinning.", nh_.getNamespace().c_str());
+  ROS_INFO("spinning.");
   while(ros::ok() && running_)
   {
     for(auto &f: frame_store_) {
@@ -1034,6 +1034,7 @@ void AffordanceTemplate::run()
 
 void AffordanceTemplate::stop()
 {
+  ROS_ERROR("[AffordanceTemplate::stop] %s being asked to stop :-(", name_.c_str());
   running_ = false;
   removeAllMarkers();
 }
