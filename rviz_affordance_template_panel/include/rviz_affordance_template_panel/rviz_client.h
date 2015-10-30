@@ -148,6 +148,10 @@ namespace rviz_affordance_template_panel
         void sendScaleInfo();
         void setupDisplayObjectSliders(TemplateInstanceID template_instance);
         bool endEffectorInTrajectory(AffordanceTemplateStatusInfo::EndEffectorInfo ee_info);
+
+        std::string createShortName(const std::string&);
+        std::string getLongName(const std::string&);
+        std::map<std::string, std::string> robot_name_map_; 
                 
         std::string getRobotFromDescription();
         std::vector<std::string> getSelectedEndEffectors();
