@@ -101,10 +101,11 @@ bool AffordanceTemplateInterface::handleAddTemplate(AddAffordanceTemplate::Reque
     ROS_INFO("[AffordanceTemplateInterface::handleAddTemplate] adding template: %s", req.class_type.c_str());
 
     res.status = at_server_->addTemplate(req.class_type, res.id, req.pose);
-    ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory] added template: %s",(req.class_type+":"+std::to_string(res.id)).c_str());
 
     if (!res.status)
         ROS_ERROR("[AffordanceTemplateInterface::handleAddTemplate] error adding template!!");
+    else
+        ROS_INFO("[AffordanceTemplateInterface::handleAddTemplate] added template: %s",(req.class_type+":"+std::to_string(res.id)).c_str());
 
     at_server_->setStatus(true);
     return true;
@@ -283,7 +284,7 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
 bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStatus::Request &req, GetAffordanceTemplateStatus::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
+    ROS_DEBUG("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
 
     if ( !req.name.empty())
     {
@@ -316,16 +317,15 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
 
 bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServerStatus::Request &req, GetAffordanceTemplateServerStatus::Response &res)
 {
-    // ROS_INFO("[AffordanceTemplateInterface::handleServerStatus] getting server status...");
-    
     res.ready = at_server_->getStatus();
-    
+
+    ROS_DEBUG_STREAM("[AffordanceTemplateInterface::handleServerStatus] getting server status..."<<boolToString(res.ready));
+
     return true;
 }
 
 bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTrajectory::Request &req, SetAffordanceTemplateTrajectory::Response &res)
 {
-    // at_server_->setStatus(false);
     res.success = false;
 
     if ( req.trajectory.empty())
@@ -344,18 +344,15 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     else
         ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on server!!", req.name.c_str());        
     
-    // at_server_->setStatus(true);
     return res.success;
 }
 
 bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Request &req, SetAffordanceTemplatePose::Response &res)
 {
-    // at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handleSetPose] setting pose for %s:%d", req.class_type.c_str(), req.id);
 
     res.success = at_server_->updateTemplate(req.class_type, req.id, req.pose);
     
-    // at_server_->setStatus(true);
     return true;
 }
 

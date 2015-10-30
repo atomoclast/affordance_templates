@@ -288,9 +288,7 @@ bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id,
     
     affordance_template_object::AffordanceTemplateStructure structure;
     geometry_msgs::Pose p;
-    at_map_[key]->loadFromFile( at_structure_map_[type].filename, p, structure);
-
-    return true;
+    return at_map_[key]->loadFromFile( at_structure_map_[type].filename, p, structure);
 }
 
 bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uint8_t id)
