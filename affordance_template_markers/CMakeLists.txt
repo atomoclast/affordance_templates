@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     roscpp
 )
+find_package(Boost REQUIRED COMPONENTS filesystem)
 
 catkin_package(
     INCLUDE_DIRS include
@@ -29,13 +30,14 @@ include_directories(
     include
     yaml-cpp
     ${catkin_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
 )
 
 add_library(robot_interface src/robot_interface.cpp)
 target_link_libraries(robot_interface ${catkin_LIBRARIES} yaml-cpp end_effector_helper)
 
 add_library(affordance_template src/affordance_template.cpp)
-target_link_libraries(affordance_template ${catkin_LIBRARIES} yaml-cpp robot_interface affordance_template_library)
+target_link_libraries(affordance_template ${catkin_LIBRARIES} yaml-cpp robot_interface affordance_template_library ${Boost_FILESYSTEM_LIBRARY})
 
 # !!!!!
 # use to test various .yaml files, take out when running as lib
