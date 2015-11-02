@@ -3,10 +3,7 @@
 
 using namespace affordance_template_object;
 
-AffordanceTemplateParser::AffordanceTemplateParser() {}
-AffordanceTemplateParser::~AffordanceTemplateParser() {}
-
-bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemplateStructure &at)
+bool AffordanceTemplateParser::loadFromFile(const std::string& filename, AffordanceTemplateStructure &at)
 {
 
   char *cstr = new char[filename.length() + 1];
@@ -162,19 +159,17 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
           DisplayObject display_object;
           display_object.name = objects[i]["name"].GetString();
 
-          if(objects[i].HasMember("parent")) {  
+          if(objects[i].HasMember("parent"))
             display_object.parent = objects[i]["parent"].GetString();
-          } else {
+          else
             display_object.parent = "";
-          }
           display_object.origin = orig;
           display_object.shape = shp;
           display_object.controls = ctrl;
 
           ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] display object "<<i+1<<" has name: "<<display_object.name);
-          if(display_object.parent != "") {
+          if(display_object.parent != "")
             ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tparent object: %s", display_object.parent.c_str());
-          }
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", orig.position[0], orig.position[1], orig.position[2], orig.orientation[0], orig.orientation[1], orig.orientation[2]);
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
@@ -182,12 +177,17 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
 
           at.display_objects.push_back(display_object);
       }
-
       std::cout<<std::endl;
-
-      // at_collection_[at.name] = at;
   }
   std::fclose(f_pnt);
 
+  return true;
+}
+
+bool AffordanceTemplateParser::saveToFile(const std::string& filepath, const AffordanceTemplateStructure& at)
+{
+  FILE* f_pnt = std::fopen(filepath.c_str(), "w");
+  
+  std::fclose(f_pnt);
   return true;
 }

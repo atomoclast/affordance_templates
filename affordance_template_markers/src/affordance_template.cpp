@@ -115,6 +115,13 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
   root += "/templates";
   std::string output_path = root + "/" + filename;
 
+  // if filename given is actually directory, return
+  if (boost::filesystem::is_directory(output_path))
+  {
+    ROS_ERROR("[AffordanceTemplate::saveToDisk] error formatting filename!!");
+    return false;
+  }
+
   ROS_INFO("[AffordanceTemplate::saveToDisk] writing template to file: %s", output_path.c_str());
 
   if (!boost::filesystem::exists(output_path))
@@ -125,20 +132,16 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
     boost::filesystem::recursive_directory_iterator dir_it(root);
     boost::filesystem::recursive_directory_iterator end_it;
     int bak_counter = 0;
-    ROS_INFO("looking for class type %s", class_type.c_str());
     while (dir_it != end_it)
     {
 
-      if (std::string(dir_it->path().string()).find(class_type) != std::string::npos)
-        ROS_INFO("found a path with tempalte type %s with file %s", template_type_.c_str(), dir_it->path().string().c_str());
       if (std::string(dir_it->path().string()).find(".bak") != std::string::npos
           && std::string(dir_it->path().string()).find(class_type) != std::string::npos)
         ++bak_counter;
       ++dir_it;
     }
-    ROS_INFO("found end of tempalte directory with bak counter %d", bak_counter);
 
-    // copy current template_type.json into .bak
+    // copy current class_type.json into .bak
     std::string bak_path = "";
     if (bak_counter > 0)
     {
@@ -151,16 +154,9 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
       bak_path = output_path + ".bak";
     }
     boost::filesystem::copy_file(output_path, bak_path, boost::filesystem::copy_option::overwrite_if_exists);
-
   }
 
-  if (boost::filesystem::is_directory(output_path))
-  {
-    ROS_ERROR("[AffordanceTemplate::saveToDisk] error formatting filename!!");
-    return false;
-  }
-
-  return true;
+  return at_parser_.saveToFile(output_path, structure_);
 }
 
 bool AffordanceTemplate::appendIDToStructure(AffordanceTemplateStructure &structure) 
@@ -1082,7 +1078,7 @@ void AffordanceTemplate::run()
   tf::Transform transform;
   FrameInfo fi;
 
-  ROS_INFO("spinning.");
+  ROS_INFO("[AffordanceTemplate] spinning...");
   while(ros::ok() && running_)
   {
     for(auto &f: frame_store_) {
@@ -1096,7 +1092,7 @@ void AffordanceTemplate::run()
 
 void AffordanceTemplate::stop()
 {
-  ROS_ERROR("[AffordanceTemplate::stop] %s being asked to stop :-(", name_.c_str());
+  ROS_ERROR("[AffordanceTemplate::stop] %s being asked to stop..", name_.c_str());
   running_ = false;
   removeAllMarkers();
 }
