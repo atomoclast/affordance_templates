@@ -186,8 +186,124 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
 
 bool AffordanceTemplateParser::saveToFile(const std::string& filepath, const AffordanceTemplateStructure& at)
 {
-  FILE* f_pnt = std::fopen(filepath.c_str(), "w");
+  ROS_INFO("[AffordanceTemplateParser::saveToFile] opening file for JSON saving: %s", filepath.c_str());
+
+  // create writer doc
+  rapidjson::StringBuffer json;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(json);
+  writer.StartObject();
+  writer.SetIndent(' ', 2);
+
+  // extract the template type out of the name
+  std::vector<std::string> names;
+  boost::split(names, at.name, boost::is_any_of(":"));
+  assert(names.size());
+
+  writer.Key("name");  writer.String(names.front().c_str());
+  writer.Key("image"); writer.String(at.image.c_str());
+
+  writer.Key("display_objects"); 
+  writer.StartArray();
+  for ( auto d : at.display_objects)
+  {
+    writer.StartObject();
+
+    // NAME, PARENT if available
+    names.clear();
+    boost::split(names, d.name, boost::is_any_of(":"));
+    assert(names.size());
+    writer.Key("name");  writer.String(names.front().c_str());
+    if (!d.parent.empty()) 
+    {
+      writer.Key("parent");
+      writer.String(d.parent.c_str());
+    }
+
+    // SHAPE
+    writer.Key("shape");
+    writer.StartObject();
+    writer.Key("type"); writer.String(d.shape.type.c_str());
+    if (d.shape.type == "mesh" || d.shape.type == "box")
+    {
+      if (d.shape.type == "mesh")
+      {
+        writer.Key("mesh"); writer.String(d.shape.mesh.c_str());
+      }
+      else
+      {
+        writer.Key("material");
+        writer.StartObject();
+        writer.Key("color"); writer.String(d.shape.color.c_str());
+        writer.Key("rgba");
+        writer.StartArray();
+        writer.Double(d.shape.rgba[0]);
+        writer.Double(d.shape.rgba[1]);
+        writer.Double(d.shape.rgba[2]);
+        writer.Double(d.shape.rgba[3]);
+        writer.EndArray();
+        writer.EndObject();
+      }
+      writer.Key("size");
+      writer.StartArray();
+      writer.Double(d.shape.size[0]);
+      writer.Double(d.shape.size[1]);
+      writer.Double(d.shape.size[2]);
+      writer.EndArray();
+    }
+    else ROS_FATAL("[AffordanceTemplateParser::saveToFile] shape %s has not be formatted to write to file!! contact developer.", d.shape.type.c_str());
+    writer.EndObject();
+
+    // ORIGIN 
+    writer.Key("origin");
+    writer.StartObject();
+    writer.Key("xyz");
+    writer.StartArray();
+    writer.Double(d.origin.position[0]);
+    writer.Double(d.origin.position[1]);
+    writer.Double(d.origin.position[2]);
+    writer.EndArray();
+    writer.Key("rpy");
+    writer.StartArray();
+    writer.Double(d.origin.orientation[0]);
+    writer.Double(d.origin.orientation[1]);
+    writer.Double(d.origin.orientation[2]);
+    writer.EndArray();
+    writer.EndObject();
+
+    // CONTROLS
+    writer.Key("controls");
+    writer.StartObject();
+    writer.Key("xyz");
+    writer.StartArray();
+    writer.Bool(d.controls.translation[0]);
+    writer.Bool(d.controls.translation[1]);
+    writer.Bool(d.controls.translation[2]);
+    writer.EndArray();
+    writer.Key("rpy");
+    writer.StartArray();
+    writer.Bool(d.controls.rotation[0]);
+    writer.Bool(d.controls.rotation[1]);
+    writer.Bool(d.controls.rotation[2]);
+    writer.EndArray();
+    writer.Key("scale"); writer.Double(d.controls.scale);
+    writer.EndObject();
+
+    writer.EndObject(); // end of each display object
+  }
+  writer.EndArray();
+
+  writer.Key("end_effector_trajectory"); 
+  writer.StartArray();
+  for ( auto ee : at.ee_trajectories)
+  {
+
+  }
+
+  writer.EndObject(); // end of json object
   
-  std::fclose(f_pnt);
+  std::ofstream file("test.txt.json", std::ios::trunc); //filepath.c_str()
+  file << json.GetString() << std::endl;
+  file.close();
+
   return true;
 }

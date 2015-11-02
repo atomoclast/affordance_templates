@@ -4,13 +4,15 @@
 #include <ros/ros.h>
 
 #include <iostream>
+#include <fstream>
 
 #include <boost/thread.hpp>
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
-#include <rapidjson/writer.h>
 #include <rapidjson/document.h>
+#include <rapidjson/prettywriter.h>
 #include <rapidjson/filereadstream.h>
 
 #include <affordance_template_library/affordance_template_structure.h>
