@@ -4,6 +4,9 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/filesystem.hpp>
+
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -66,7 +69,7 @@ namespace affordance_template
     void stop();
     bool addTrajectory(const std::string&);
     bool moveToWaypoints(const std::vector<std::string>&);
-    bool saveToDisk(const std::string&, const std::string&, const std::string&, bool);
+    bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
     std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool);
 

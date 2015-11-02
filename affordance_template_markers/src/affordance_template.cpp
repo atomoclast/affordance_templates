@@ -96,8 +96,57 @@ bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose 
   return true;
 }
 
-bool AffordanceTemplate::saveToDisk(const std::string& filename, const std::string& image, const std::string& key, bool save_scale_updates)
+bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& image, const std::string& key, bool save_scale_updates)
 {
+  if (filename.empty())
+    filename = template_type_ + ".json";
+
+  std::string root = ros::package::getPath("affordance_template_library");
+  if (root.empty())
+      return false;
+  root += "/templates/";
+  std::string output_path = root + filename;
+
+  ROS_INFO("[AffordanceTemplate::saveToDisk] writing template to file: %s", root.c_str());
+
+  if (!boost::filesystem::exists(output_path))
+    ROS_WARN("[AffordanceTemplate::saveToDisk] no file found with name: %s. cannot create backup.", filename.c_str());
+  else
+  {
+    // count how many bak files we have for this particular template type
+    boost::filesystem::recursive_directory_iterator dir_it(root);
+    boost::filesystem::recursive_directory_iterator end_it;
+    int bak_counter = 0;
+    while (dir_it != end_it)
+    {
+      if (std::string(dir_it->path().string()).find(".bak") != std::string::npos
+          && std::string(dir_it->path().string()).find(template_type_) != std::string::npos)
+        ++bak_counter;
+      ++dir_it;
+    }
+
+    // copy current template_type.json into .bak
+    std::string bak_path = "";
+    if (bak_counter > 0)
+    {
+      ROS_INFO("[AffordanceTemplate::saveToDisk] creating backup file: %s.bak%d", filename.c_str(), bak_counter);
+      bak_path = output_path + ".bak" + std::to_string(bak_counter);
+    }
+    else
+    {
+      ROS_INFO("[AffordanceTemplate::saveToDisk] creating backup file: %s.bak", filename.c_str());
+      bak_path = output_path + ".bak";
+    }
+    boost::filesystem::copy_file(output_path, bak_path, boost::filesystem::copy_option::overwrite_if_exists);
+
+  }
+
+  if (boost::filesystem::is_directory(root))
+  {
+    ROS_ERROR("[AffordanceTemplate::saveToDisk] error formatting filename!!");
+    return false;
+  }
+
   return true;
 }
 
