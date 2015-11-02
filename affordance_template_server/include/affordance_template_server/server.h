@@ -1,20 +1,29 @@
 #ifndef _AFFORDANCE_TEMPLATE_SERVER_H_
 #define _AFFORDANCE_TEMPLATE_SERVER_H_
 
-#include <ros/ros.h>
 #include <iostream>
-#include <boost/thread.hpp>
-#include <boost/filesystem.hpp>
+
+#include <ros/ros.h>
 #include <ros/package.h>
+
 #include <tf/transform_listener.h>
+
 #include <affordance_template_markers/robot_interface.h>
 #include <affordance_template_markers/affordance_template.h>
+
 #include <affordance_template_library/affordance_template_structure.h>
 #include <affordance_template_library/affordance_template_parser.h>
-#include <interactive_markers/interactive_marker_server.h>
-#include <geometry_msgs/PoseStamped.h>
+
 #include <affordance_template_msgs/RobotConfig.h>
 #include <affordance_template_msgs/AffordanceTemplateConfig.h>
+
+#include <interactive_markers/interactive_marker_server.h>
+
+#include <geometry_msgs/PoseStamped.h>
+
+#include <boost/thread.hpp>
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/filesystem.hpp>
 
 namespace affordance_template_server
 {

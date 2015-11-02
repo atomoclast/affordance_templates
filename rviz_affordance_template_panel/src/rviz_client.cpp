@@ -1339,9 +1339,9 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
         ROS_INFO("Current Trajectory: %s", srv.response.current_trajectory.c_str());
         template_status_info[srv.request.name]->setCurrentTrajectory(srv.response.current_trajectory);
 
-        ui_->control_trajectory_box->clear();
         for(int t=0; t<srv.response.trajectory_names.size(); ++t)
-            ui_->control_trajectory_box->addItem(QString(srv.response.trajectory_names[t].c_str()));
+            if(ui_->control_trajectory_box->findText(QString(srv.response.trajectory_names[t].c_str())) == -1)
+                ui_->control_trajectory_box->addItem(QString(srv.response.trajectory_names[t].c_str()));
 
         int id = ui_->control_trajectory_box->findText(QString(srv.response.current_trajectory.c_str()));
         ui_->control_trajectory_box->setCurrentIndex(id);
