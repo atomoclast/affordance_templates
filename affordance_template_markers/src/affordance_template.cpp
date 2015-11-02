@@ -98,16 +98,24 @@ bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose 
 
 bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& image, const std::string& key, bool save_scale_updates)
 {
+  std::string class_type = template_type_;
   if (filename.empty())
     filename = template_type_ + ".json";
+  else
+  {
+    std::vector<std::string> keys;
+    boost::split(keys, filename, boost::is_any_of("."));
+    if (keys.size())
+      class_type = keys.front();
+  }
 
   std::string root = ros::package::getPath("affordance_template_library");
   if (root.empty())
       return false;
-  root += "/templates/";
-  std::string output_path = root + filename;
+  root += "/templates";
+  std::string output_path = root + "/" + filename;
 
-  ROS_INFO("[AffordanceTemplate::saveToDisk] writing template to file: %s", root.c_str());
+  ROS_INFO("[AffordanceTemplate::saveToDisk] writing template to file: %s", output_path.c_str());
 
   if (!boost::filesystem::exists(output_path))
     ROS_WARN("[AffordanceTemplate::saveToDisk] no file found with name: %s. cannot create backup.", filename.c_str());
@@ -117,13 +125,18 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
     boost::filesystem::recursive_directory_iterator dir_it(root);
     boost::filesystem::recursive_directory_iterator end_it;
     int bak_counter = 0;
+    ROS_INFO("looking for class type %s", class_type.c_str());
     while (dir_it != end_it)
     {
+
+      if (std::string(dir_it->path().string()).find(class_type) != std::string::npos)
+        ROS_INFO("found a path with tempalte type %s with file %s", template_type_.c_str(), dir_it->path().string().c_str());
       if (std::string(dir_it->path().string()).find(".bak") != std::string::npos
-          && std::string(dir_it->path().string()).find(template_type_) != std::string::npos)
+          && std::string(dir_it->path().string()).find(class_type) != std::string::npos)
         ++bak_counter;
       ++dir_it;
     }
+    ROS_INFO("found end of tempalte directory with bak counter %d", bak_counter);
 
     // copy current template_type.json into .bak
     std::string bak_path = "";
@@ -141,7 +154,7 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
 
   }
 
-  if (boost::filesystem::is_directory(root))
+  if (boost::filesystem::is_directory(output_path))
   {
     ROS_ERROR("[AffordanceTemplate::saveToDisk] error formatting filename!!");
     return false;

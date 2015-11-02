@@ -233,12 +233,12 @@ bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Req
     bool save_status = false;
     ATPointer at;
     if ( at_server_->getTemplateInstance(req.original_class_type, req.id, at))
-        save_status = at->saveToDisk(req.filename, req.image, new_key, req.save_scale_updates);
+        save_status = at->saveToDisk( req.filename, req.image, new_key, req.save_scale_updates);
     bool remove_status = at_server_->removeTemplate(req.original_class_type, req.id);
     bool add_status = at_server_->addTemplate(req.new_class_type, req.id);
     res.status = (save_status && remove_status && add_status);
     if ( !res.status)
-        ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] error saving template. save to file was: %s, remove was: %s, adding was: %s", successToString(save_status).c_str(), successToString(remove_status).c_str(), successToString(add_status).c_str());
+        ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] error saving template. save to file: %s, remove: %s, adding: %s", successToString(save_status).c_str(), successToString(remove_status).c_str(), successToString(add_status).c_str());
 
     at_server_->setStatus(true);
     return true;
