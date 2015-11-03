@@ -96,6 +96,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", org.position[0], org.position[1], org.position[2], org.orientation[0], org.orientation[1], org.orientation[2]);
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
+              ROS_INFO("[AffordanceTemplateParser::loadFromFile] \twaypoint is scaled to %g", ctrl.scale);
           }
           ee_trajectory.ee_waypoint_list.push_back(ee);
         }
@@ -173,6 +174,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", orig.position[0], orig.position[1], orig.position[2], orig.orientation[0], orig.orientation[1], orig.orientation[2]);
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
+          ROS_INFO("[AffordanceTemplateParser::loadFromFile] \t%s is scaled to %g", display_object.name.c_str(), ctrl.scale);
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \t%s", shape_str.c_str());
 
           at.display_objects.push_back(display_object);
