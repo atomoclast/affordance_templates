@@ -44,7 +44,7 @@ target_link_libraries(affordance_template ${catkin_LIBRARIES} yaml-cpp robot_int
 # add_executable(ri_test_main src/robot_interface.cpp)
 # target_link_libraries(ri_test_main ${catkin_LIBRARIES} yaml-cpp)
 
-add_executable(at_test src/affordance_template.cpp)
-target_link_libraries(at_test ${catkin_LIBRARIES} robot_interface affordance_template_library)
+#add_executable(at_test src/affordance_template.cpp)
+#target_link_libraries(at_test ${catkin_LIBRARIES} robot_interface affordance_template_library)
 
 # !!!!!

@@ -22,15 +22,15 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   ROS_INFO("AffordanceTemplate::init() -- Done Creating new AffordanceTemplate of type %s for robot: %s", template_type_.c_str(), robot_name_.c_str());
   name_ = template_type_ + ":" + std::to_string(id);
 
-  boost::thread spin_thread_(boost::bind(&AffordanceTemplate::run, this));
-
   ros::AsyncSpinner spinner(1.0/loop_rate_);
   spinner.start();
 
   setupMenuOptions();
 
-  // set to false when template gets destroyed
+  // set to false when template gets destroyed, otherwise we can get a dangling pointer
   running_ = true;
+  
+  boost::thread spin_thread_(boost::bind(&AffordanceTemplate::run, this));
 }
 
 
@@ -369,7 +369,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
     visualization_msgs::Marker marker;
     marker.ns = obj.name;
-    marker.id = idx;    
+    marker.id = idx++;
   
     if(!keep_poses || !hasObjectFrame(obj.name) ) {
       geometry_msgs::PoseStamped ps;
@@ -466,11 +466,8 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     }
 
     marker_menus_[obj.name].apply( *server_, obj.name );
-    server_->applyChanges();
-
-    idx += 1;
-
   }
+  server_->applyChanges();
 
   return true;
 }
@@ -1081,13 +1078,15 @@ void AffordanceTemplate::run()
   ROS_INFO("[AffordanceTemplate] spinning...");
   while(ros::ok() && running_)
   {
-    for(auto &f: frame_store_) {
+    for(auto &f: frame_store_) 
+    {
       fi = f.second;
       tf::poseMsgToTF(fi.second.pose, transform);
       tf_broadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), fi.second.header.frame_id, fi.first));
     }
     loop_rate.sleep();
   }
+  ROS_INFO("[AffordanceTemplate] leaving spin thread. template must be shutting down...");
 }
 
 void AffordanceTemplate::stop()
