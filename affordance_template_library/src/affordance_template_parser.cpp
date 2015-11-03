@@ -227,7 +227,7 @@ bool AffordanceTemplateParser::saveToFile(const std::string& filepath, const Aff
     {
       if (d.shape.type == "mesh")
       {
-        writer.Key("mesh"); writer.String(d.shape.mesh.c_str());
+        writer.Key("data"); writer.String(d.shape.mesh.c_str());
       }
       else
       {
@@ -296,14 +296,82 @@ bool AffordanceTemplateParser::saveToFile(const std::string& filepath, const Aff
   writer.StartArray();
   for ( auto ee : at.ee_trajectories)
   {
+    writer.StartObject();
+    
+    writer.Key("name"); writer.String(ee.name.c_str());
 
+    writer.Key("end_effector_group");
+    writer.StartArray();
+    for ( auto grp : ee.ee_waypoint_list)
+    {
+      writer.StartObject(); 
+
+      writer.Key("id"); writer.Int(grp.id);
+
+      writer.Key("end_effector_waypoint");
+      writer.StartArray();
+      for ( auto wp : grp.waypoints)
+      {
+        writer.StartObject();
+
+        writer.Key("ee_pose"); writer.Int(wp.ee_pose);
+        writer.Key("display_object"); writer.String(wp.display_object.c_str());
+
+        // ORIGIN 
+        writer.Key("origin");
+        writer.StartObject();
+        writer.Key("xyz");
+        writer.StartArray();
+        writer.Double(wp.origin.position[0]);
+        writer.Double(wp.origin.position[1]);
+        writer.Double(wp.origin.position[2]);
+        writer.EndArray();
+        writer.Key("rpy");
+        writer.StartArray();
+        writer.Double(wp.origin.orientation[0]);
+        writer.Double(wp.origin.orientation[1]);
+        writer.Double(wp.origin.orientation[2]);
+        writer.EndArray();
+        writer.EndObject();
+
+        // CONTROLS
+        writer.Key("controls");
+        writer.StartObject();
+        writer.Key("xyz");
+        writer.StartArray();
+        writer.Bool(wp.controls.translation[0]);
+        writer.Bool(wp.controls.translation[1]);
+        writer.Bool(wp.controls.translation[2]);
+        writer.EndArray();
+        writer.Key("rpy");
+        writer.StartArray();
+        writer.Bool(wp.controls.rotation[0]);
+        writer.Bool(wp.controls.rotation[1]);
+        writer.Bool(wp.controls.rotation[2]);
+        writer.EndArray();
+        writer.Key("scale"); writer.Double(wp.controls.scale);
+        writer.EndObject();
+
+        writer.EndObject(); // each waypoint struct
+      }
+      writer.EndArray(); // waypoints vector
+
+      writer.EndObject(); // each ee group struct
+    }
+    writer.EndArray(); // ee groups vector
+
+    writer.EndObject(); // end of each ee trajectory struct
   }
+  writer.EndArray();
 
   writer.EndObject(); // end of json object
   
-  std::ofstream file("test.txt.json", std::ios::trunc); //filepath.c_str()
+  std::ofstream file(filepath.c_str(), std::ios::trunc);
   file << json.GetString() << std::endl;
   file.close();
+
+
+  ROS_INFO("[AffordanceTemplateParser::saveToFile] successfully wrote template %s to file", at.name.c_str());
 
   return true;
 }

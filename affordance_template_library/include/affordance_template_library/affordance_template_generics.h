@@ -28,7 +28,7 @@ namespace affordance_template_object
         double rgba[4];
         std::string type;
         std::string mesh; // if type == "mesh" then we need to fill the file name in here
-        double size[3]; // for cubes and meshes
+        double size[3]; // for boxes and meshes
         double length; // for cylinders
         double radius; // for spherse and cylinders
     };
