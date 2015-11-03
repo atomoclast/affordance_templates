@@ -189,7 +189,9 @@ std::string AffordanceTemplate::appendID(std::string s)
 // is this all that needs to happen??
 bool AffordanceTemplate::addTrajectory(const std::string& trajectory_name) 
 {
-  return createFromStructure(getCurrentStructure(), false, trajectory_name);
+  ROS_WARN("trying to add trajectory hereeeeeeeeieieirifkeiek");
+  return true;
+  // return createFromStructure(getCurrentStructure(), false, trajectory_name);
 }
 
 bool AffordanceTemplate::getTrajectory(TrajectoryList traj_list, std::string traj_name, Trajectory &traj) 
@@ -477,7 +479,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses) 
 {
   // DEBUG statements -- TODO
-  // ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- trajectory: %s", current_trajectory_.c_str());
+  ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- trajectory: %s", current_trajectory_.c_str());
 
   int wp_ids = 0;
 
@@ -495,20 +497,19 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
     int wp_id = 0;
 
-    // ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Trajectory for Waypoint[%d]: %s", ee_id, ee_name.c_str());
+    ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Trajectory for Waypoint[%d]: %s", ee_id, ee_name.c_str());
 
     setTrajectoryFlags(traj);
 
     for(auto &wp: wp_list.waypoints) {
 
       std::string wp_name = createWaypointID(ee_id, wp_id);
-      // ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Waypoint: %s", wp_name.c_str());
+      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Waypoint: %s", wp_name.c_str());
 
       setupWaypointMenu(structure, wp_name);
       geometry_msgs::Pose display_pose = originToPoseMsg(wp.origin);  
 
       std::string parent_obj = appendID(wp.display_object);
-      // std::cout << "Display Pose in frame: " << parent_obj << ":\n" << display_pose << std::endl;
       double parent_scale = object_scale_factor_[parent_obj]*ee_scale_factor_[parent_obj];  
 
       display_pose.position.x *= parent_scale;
@@ -570,7 +571,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       } catch(...) {
         ee_pose_name = "current";
       }
-      // ROS_INFO("AffordanceTemplate::createWaypointsFromStructure()   ee_pose_name: %s", ee_pose_name.c_str());
+      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure()   ee_pose_name: %s", ee_pose_name.c_str());
                
       visualization_msgs::MarkerArray markers;
       end_effector_helper::EndEffectorHelperConstPtr ee_link_data;
@@ -688,8 +689,8 @@ void AffordanceTemplate::setupWaypointMenu(AffordanceTemplateStructure structure
 void AffordanceTemplate::setupSimpleMenuItem(AffordanceTemplateStructure structure, const std::string& name, const std::string& menu_text, bool has_check_box)
 {
   MenuHandleKey key;
-  key[name] = {menu_text};
-  group_menu_handles_[key] = marker_menus_[name].insert( menu_text, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );
+  key[name] = {menu_text};  
+  group_menu_handles_[key] = marker_menus_[name].insert( menu_text, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );  
   if(has_check_box) {
     marker_menus_[name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
   }
@@ -740,25 +741,24 @@ int AffordanceTemplate::getEEIDfromWaypointName(const std::string wp_name)
 
 void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMarker m)
 {
+  ROS_INFO("AffordanceTemplate::addInteractiveMarker() -- %s with frame: %s", m.name.c_str(), m.header.frame_id.c_str());
   std::string name = m.name;
-  // DEBUG -- TODO
-  // ROS_INFO("AffordanceTemplate::addInteractiveMarker() -- %s with frame: %s", m.name.c_str(), m.header.frame_id.c_str());
   int_markers_[m.name] = m;
   server_->insert(m);
   server_->setCallback(m.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ));
-  server_->applyChanges();
 }
 
 void AffordanceTemplate::removeInteractiveMarker(std::string marker_name) 
 {
+  ROS_INFO("[AffordanceTemplate::removeInteractiveMarker] removing marker %s", marker_name.c_str());
   server_->erase(marker_name);
   server_->applyChanges();
 }
 
-void AffordanceTemplate::removeAllMarkers() {
-  for(auto &m: int_markers_) {
+void AffordanceTemplate::removeAllMarkers() 
+{
+  for(auto &m: int_markers_)
     removeInteractiveMarker(m.first);
-  }
   group_menu_handles_.clear();
   int_markers_.clear();
   marker_menus_.clear();
@@ -767,7 +767,6 @@ void AffordanceTemplate::removeAllMarkers() {
 
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
-
   ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
 
   interactive_markers::MenuHandler::CheckState state;
@@ -800,8 +799,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   switch ( feedback->event_type ) {
 
     ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
-
-    case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :      
+    case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :
       ROS_DEBUG("AffordanceTemplate::processFeedback() --   MOUSE_UP");
       break;
 
@@ -825,10 +823,22 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
-      if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) {
-        if(group_menu_handles_[save_key] == feedback->menu_entry_id) {
-          ROS_DEBUG("AffordanceTemplate::processFeedback() --   SAVE");
-        }
+      // TODO I don't really understand how this works, I feel like the group menu handles gets clear out and not repopulated at some point
+      // this may have to do with how all the menu items get appended toa n already populated menu
+      // if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) {
+      //   if(group_menu_handles_[save_key] == feedback->menu_entry_id) {
+      //     ROS_DEBUG("AffordanceTemplate::processFeedback() --   SAVE");
+      //   }
+      // }
+      if(feedback->menu_entry_id == 4) 
+      {
+          ROS_DEBUG("AffordanceTemplate::processFeedback() -- SAVE");
+          std::vector<std::string> keys;
+          boost::split(keys, structure_.filename, boost::is_any_of("/"));
+          if (keys.size())
+            saveToDisk(keys.back(), structure_.image, feedback->marker_name, true);
+          else
+            ROS_ERROR("[AffordanceTemplate::processFeedback::SAVE] invalid filename: %s", structure_.filename.c_str());
       }
 
       if(group_menu_handles_.find(hide_controls_key) != std::end(group_menu_handles_)) {
@@ -878,7 +888,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
       break;
 
-    default :
+    default : ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
       break;
   }
   server_->applyChanges();
@@ -1100,52 +1110,27 @@ void AffordanceTemplate::stop()
 
 bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_factor, double ee_scale_factor)
 { 
-  // replaced full_name with key, key was just object_name
-  // std::string full_name = robot_name_ + "/" + object_name + ":" + std::to_string(id_);
   ROS_DEBUG("[AffordanceTemplate::setObjectScaling] setting object %s scaling to %g, %g", key.c_str(), scale_factor, ee_scale_factor);
   
+  // TODO this probably needs double-checking 
+  // also, this should only happen if we want to save scaling factor
+  // for ( auto& d : structure_.display_objects)
+  // {
+  //   if ( d.name == key)
+  //     d.controls.scale = scale_factor;
+  // }
+  // for ( auto& t : structure_.ee_trajectories)
+  // {
+  //   for ( auto& e : t.ee_waypoint_list)
+  //   {
+  //     for ( auto& w : e.waypoints)
+  //       w.controls.scale = ee_scale_factor;
+  //   }
+  // }
+
   object_scale_factor_[key] = scale_factor;
   ee_scale_factor_[key] = ee_scale_factor;
 
   removeAllMarkers();
   return createFromStructure(structure_);
 }
-
-// int main(int argc, char **argv)
-// {
- 
-//   ros::init(argc, argv, "affordance_template_test");
-//   ros::NodeHandle nh("~");
- 
-//   std::string robot_name, template_type;
-  
-//   if (nh.hasParam("robot_name")) {
-//     nh.getParam("robot_name", robot_name); 
-//   } else {
-//     robot_name = "r2_upperbody";
-//   }
-
-//   if (nh.hasParam("template_type")) {
-//     nh.getParam("template_type", template_type); 
-//   } else {
-//     template_type = "wheel";
-//   }
-
-//   boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface;
-//   robot_interface.reset(new affordance_template_markers::RobotInterface());
-//   robot_interface->load("r2_upperbody.yaml");
-//   robot_interface->configure();
-
-//   boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server;
-//   server.reset( new interactive_markers::InteractiveMarkerServer(std::string(robot_name + "_affordance_template_server"),"",false) );
-
-//   AffordanceTemplate at(nh, server, robot_interface, robot_name, template_type, 0);
-  
-//   AffordanceTemplateStructure structure;
-//   geometry_msgs::Pose p;
-//   at.loadFromFile("/home/seth/catkin/src/affordance_templates/affordance_template_library/templates/wheel.json", p, structure);
-
-//   at.run();
- 
-//   return 0;
-// }
