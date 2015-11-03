@@ -326,8 +326,13 @@ bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServer
 bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTrajectory::Request &req, SetAffordanceTemplateTrajectory::Response &res)
 {
     res.success = false;
+    if (req.name.empty())
+    {
+        ROS_WARN("[AffordanceTemplateInterface::handleSetTrajectory] no template provided, ignoring.");
+        return true;
+    }
 
-    if ( req.trajectory.empty())
+    if (req.trajectory.empty())
         ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to current trajectory", req.name.c_str());
     else
         ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to %s", req.name.c_str(), req.trajectory.c_str());
@@ -343,7 +348,7 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     else
         ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on server!!", req.name.c_str());        
     
-    return res.success;
+    return true;
 }
 
 bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Request &req, SetAffordanceTemplatePose::Response &res)
