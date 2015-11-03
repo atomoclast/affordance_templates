@@ -349,9 +349,10 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
       object_scale_factor_[obj.name] = 1.0;
       ee_scale_factor_[obj.name] = 1.0;
       ROS_WARN("Setting scale factor for %s", obj.name.c_str());
-    } else {
-      ROS_WARN("huh %s", obj.name.c_str());
-    }
+    } //TODO deubg??
+    // else {
+    //   ROS_WARN("huh %s", obj.name.c_str());
+    // }
 
     //   object_scale_factor_[obj.name] = 1.0;
     //   ee_scale_factor_[obj.name] = 1.0;
@@ -475,8 +476,8 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
 bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses) 
 {
-
-  ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- trajectory: %s", current_trajectory_.c_str());
+  // DEBUG statements -- TODO
+  // ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- trajectory: %s", current_trajectory_.c_str());
 
   int wp_ids = 0;
 
@@ -494,14 +495,14 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
     int wp_id = 0;
 
-    ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Trajectory for Waypoint[%d]: %s", ee_id, ee_name.c_str());
+    // ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Trajectory for Waypoint[%d]: %s", ee_id, ee_name.c_str());
 
     setTrajectoryFlags(traj);
 
     for(auto &wp: wp_list.waypoints) {
 
       std::string wp_name = createWaypointID(ee_id, wp_id);
-      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Waypoint: %s", wp_name.c_str());
+      // ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Waypoint: %s", wp_name.c_str());
 
       setupWaypointMenu(structure, wp_name);
       geometry_msgs::Pose display_pose = originToPoseMsg(wp.origin);  
@@ -569,7 +570,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       } catch(...) {
         ee_pose_name = "current";
       }
-      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure()   ee_pose_name: %s", ee_pose_name.c_str());
+      // ROS_INFO("AffordanceTemplate::createWaypointsFromStructure()   ee_pose_name: %s", ee_pose_name.c_str());
                
       visualization_msgs::MarkerArray markers;
       end_effector_helper::EndEffectorHelperConstPtr ee_link_data;
@@ -740,7 +741,8 @@ int AffordanceTemplate::getEEIDfromWaypointName(const std::string wp_name)
 void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMarker m)
 {
   std::string name = m.name;
-  ROS_INFO("AffordanceTemplate::addInteractiveMarker() -- %s with frame: %s", m.name.c_str(), m.header.frame_id.c_str());
+  // DEBUG -- TODO
+  // ROS_INFO("AffordanceTemplate::addInteractiveMarker() -- %s with frame: %s", m.name.c_str(), m.header.frame_id.c_str());
   int_markers_[m.name] = m;
   server_->insert(m);
   server_->setCallback(m.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ));
@@ -1096,11 +1098,15 @@ void AffordanceTemplate::stop()
   removeAllMarkers();
 }
 
-bool AffordanceTemplate::setObjectScaling(const std::string& object_name, double scale_factor, double ee_scale_factor)
-{
-  std::string full_name = robot_name_ + "/" + object_name + ":" + std::to_string(id_);
-  object_scale_factor_[full_name] = scale_factor;
-  ee_scale_factor_[full_name] = ee_scale_factor;
+bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_factor, double ee_scale_factor)
+{ 
+  // replaced full_name with key, key was just object_name
+  // std::string full_name = robot_name_ + "/" + object_name + ":" + std::to_string(id_);
+  ROS_DEBUG("[AffordanceTemplate::setObjectScaling] setting object %s scaling to %g, %g", key.c_str(), scale_factor, ee_scale_factor);
+  
+  object_scale_factor_[key] = scale_factor;
+  ee_scale_factor_[key] = ee_scale_factor;
+
   removeAllMarkers();
   return createFromStructure(structure_);
 }

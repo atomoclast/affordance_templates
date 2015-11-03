@@ -30,6 +30,9 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_rob
     at_srv_map_["get_status"]              = nh.advertiseService(base_srv + "get_status", &AffordanceTemplateInterface::handleServerStatus, this);
     at_srv_map_["set_template_trajectory"] = nh.advertiseService(base_srv + "set_template_trajectory", &AffordanceTemplateInterface::handleSetTrajectory, this);
     at_srv_map_["set_template_pose"]       = nh.advertiseService(base_srv + "set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
+
+    scale_stream_sub_ = nh.subscribe(base_srv + "scale_object_streamer", 1000, &AffordanceTemplateInterface::handleObjectScaleCallback, this);
+
     ROS_INFO("[AffordanceTemplateInterface] services set up...");
 
     ROS_INFO("[AffordanceTemplateInterface] robot ready!!");
@@ -363,11 +366,13 @@ bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Reque
 
 void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayObjectInfo &data)
 {
-    ROS_INFO_STREAM("[AffordanceTemplateInterface::handleObjectScaleCallback] scale "<<data.class_type<<":"<<data.id<<"->object["<<data.object_name<<"] by ("<<data.scale_factor<<", "<<data.end_effector_scale_factor<<")");
+    ROS_DEBUG("[AffordanceTemplateInterface::handleObjectScaleCallback] scale %s:%d->object[%s] by: %g, %g", data.class_type.c_str(), data.id, data.object_name.c_str(), data.scale_factor, data.end_effector_scale_factor);
+
+    std::string key = data.object_name + ":" + std::to_string(data.id);
 
     ATPointer at;
     if ( at_server_->getTemplateInstance(data.class_type, data.id, at))
-        if ( !at->setObjectScaling(data.object_name, data.scale_factor, data.end_effector_scale_factor))
+        if ( !at->setObjectScaling(key, data.scale_factor, data.end_effector_scale_factor))
             ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
 

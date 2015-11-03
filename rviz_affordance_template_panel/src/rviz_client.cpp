@@ -783,7 +783,7 @@ void AffordanceTemplateRVizClient::updateObjectScale(int value) {
     display_object_scale_map[object_info] = value;
     if(ui_->stream_scale_check_box->isChecked()) {
         sendScaleInfo();
-    }    
+    }
 }
 
 void AffordanceTemplateRVizClient::updateEndEffectorScaleAdjustment(int value) {
@@ -792,7 +792,7 @@ void AffordanceTemplateRVizClient::updateEndEffectorScaleAdjustment(int value) {
     end_effector_adjustment_map[object_info] = value;
     if(ui_->stream_scale_check_box->isChecked()) {
         sendScaleInfo();
-    }    
+    }
 }
 
 void AffordanceTemplateRVizClient::scaleSliderReleased() {
@@ -803,8 +803,8 @@ void AffordanceTemplateRVizClient::scaleSliderReleased() {
     sendScaleInfo();
 }
 
-void AffordanceTemplateRVizClient::sendScaleInfo() {
-
+void AffordanceTemplateRVizClient::sendScaleInfo() 
+{
     string current_template_class = selected_template.first;
     int current_template_id = selected_template.second;
 
@@ -832,7 +832,7 @@ void AffordanceTemplateRVizClient::sendScaleInfo() {
     msg.object_name = current_scale_object;
     msg.scale_factor = obj_scale_value;
     msg.end_effector_scale_factor = ee_adj_value;
-
+    
     ROS_DEBUG("sending scale to template[%s:%d].%s  with scales(%2.2f,%2.2f) " , current_template_class.c_str(), current_template_id, current_scale_object.c_str(), obj_scale_value, ee_adj_value);
     streamObjectScale(msg);
 }
@@ -860,13 +860,9 @@ void AffordanceTemplateRVizClient::sendObjectScale(affordance_template_msgs::Sca
     affordance_template_msgs::ScaleDisplayObject srv;
     srv.request.scale_info = scale_info;
     if (scale_object_client_.call(srv))
-    {
         ROS_INFO("Scale successful");
-    }
     else
-    {
         ROS_ERROR("Failed to scale objectd");
-    }  
 }
 
 void AffordanceTemplateRVizClient::streamObjectScale(affordance_template_msgs::ScaleDisplayObjectInfo scale_info) {  
@@ -1312,7 +1308,8 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
     
     if (get_template_status_client_.call(srv))
     {
-        ROS_INFO("Got info for template %s", srv.request.name.c_str());//(int)(srv.response.affordance_template_status.size()));
+        //TODO@DEBUG??? 
+        ROS_DEBUG("Got info for template %s", srv.request.name.c_str());//(int)(srv.response.affordance_template_status.size()));
        
         if(srv.response.affordance_template_status.size() == 0) {
             return;
@@ -1336,7 +1333,8 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
         if(srv.response.trajectory_names.size() == 0)
             return;
         
-        ROS_INFO("Current Trajectory: %s", srv.response.current_trajectory.c_str());
+        //TODO@DEBUG???
+        ROS_DEBUG("Current Trajectory: %s", srv.response.current_trajectory.c_str());
         template_status_info[srv.request.name]->setCurrentTrajectory(srv.response.current_trajectory);
 
         for(int t=0; t<srv.response.trajectory_names.size(); ++t)
