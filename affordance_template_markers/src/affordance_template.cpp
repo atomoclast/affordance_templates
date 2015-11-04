@@ -897,9 +897,17 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         MenuHandleKey key;
         key[feedback->marker_name] = {"Choose Trajectory", traj.name}; // FIXME -- can this be static like this??
         if(group_menu_handles_.find(key) != std::end(group_menu_handles_)) 
+        {
+          marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED);
           if(group_menu_handles_[key] == feedback->menu_entry_id) 
+          {
+            ROS_DEBUG("[AffordanceTemplate::processFeedback::Choose Trajectory] found matching trajectory name %s", traj.name.c_str());
             setTrajectory(traj.name);
+            marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED);
+          }
+        }
       }
+      marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
 
       break;
 
