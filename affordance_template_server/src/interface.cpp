@@ -130,17 +130,17 @@ bool AffordanceTemplateInterface::handleDeleteTemplate(DeleteAffordanceTemplate:
 bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::Request &req, GetRunningAffordanceTemplates::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleRunning] gathering names of running templates");
+    ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] getting names of running templates");
 
     std::vector<std::string> templates = at_server_->getRunningTemplates();
     for ( auto t : templates)
     {
-        ROS_INFO("[AffordanceTemplateInterface::handleRunning] \tfound template: %s", t.c_str());
+        ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] \tfound template: %s", t.c_str());
         res.templates.push_back(t);
     }
 
     if ( templates.size() == 0)
-        ROS_INFO("[AffordanceTemplateInterface::handleRunning] no templates are currently running on server");
+        ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] no templates are currently running on server");
 
     at_server_->setStatus(true);
     return true;
