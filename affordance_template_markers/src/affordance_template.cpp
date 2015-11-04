@@ -184,13 +184,14 @@ std::string AffordanceTemplate::appendID(std::string s)
   return s + ":" + std::to_string(id_);
 } 
 
-// TODO
-// is this all that needs to happen??
 bool AffordanceTemplate::addTrajectory(const std::string& trajectory_name) 
 {
-  ROS_WARN("trying to add trajectory hereeeeeeeeieieirifkeiek");
-  return true;
-  // return createFromStructure(getCurrentStructure(), false, trajectory_name);
+  affordance_template_object::Trajectory traj;
+  traj.name = trajectory_name;
+  structure_.ee_trajectories.push_back(traj);
+  setTrajectory(trajectory_name);
+  setupTrajectoryMenu(structure_, trajectory_name);
+  return createFromStructure( structure_, false, trajectory_name);
 }
 
 bool AffordanceTemplate::getTrajectory(TrajectoryList traj_list, std::string traj_name, Trajectory &traj) 
@@ -703,7 +704,7 @@ void AffordanceTemplate::setupTrajectoryMenu(AffordanceTemplateStructure structu
   interactive_markers::MenuHandler::EntryHandle sub_menu_handle = marker_menus_[name].insert( menu_text );
   for(auto &traj: structure.ee_trajectories) {
     MenuHandleKey key;
-    ROS_WARN("making choose trajectory key of %s with menu text %s and trajectory name %s", name.c_str(), menu_text.c_str(), traj.name.c_str());
+    ROS_DEBUG("[AffordanceTemplate::setupTrajectoryMenu] add menu text %s and trajectory name %s to key %s", menu_text.c_str(), traj.name.c_str(), name.c_str());
     key[name] = {menu_text, traj.name};
     group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, traj.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );   
     if(traj.name == current_trajectory_) {
@@ -773,12 +774,16 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   interactive_markers::MenuHandler::CheckState state;
 
   // set up key maps for easy comparison to menu handler ID
+  MenuHandleKey wp_before_key;
+  MenuHandleKey wp_after_key;
   MenuHandleKey reset_key;
   MenuHandleKey save_key;
   MenuHandleKey hide_controls_key;
   MenuHandleKey plan_test_key;
   MenuHandleKey execute_test_key;
   
+  wp_before_key[feedback->marker_name] = {"Add Waypoint Before"};
+  wp_after_key[feedback->marker_name] = {"Add Waypoint After"};
   reset_key[feedback->marker_name] = {"Reset"};
   save_key[feedback->marker_name] = {"Save"};
   plan_test_key[feedback->marker_name] = {"Plan Test"};
@@ -801,7 +806,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
     case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :
       ROS_INFO("[AffordanceTemplate::processFeedback] %s mouse up", feedback->marker_name.c_str());
-      // ROS_DEBUG("AffordanceTemplate::processFeedback() --   MOUSE_UP");
       break;
 
     case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT :
@@ -813,14 +817,29 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       //                                                             feedback->pose.orientation.x, feedback->pose.orientation.y, feedback->pose.orientation.z, feedback->pose.orientation.w,
       //                                                             feedback->header.frame_id.c_str());
       
-      // FIXME I don't really understand how this works. Also, I don't think it works as intended
-      //       I feel like the group menu handles gets clear out and not repopulated at some point
-      //       this may have to do with how all the menu items get appended toa n already populated menu
+      // FIXME I don't really understand how this works
 
-      // FIXME: why does this one work, plan and execute work, but SAVE menu entry does not work??
-      if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) {
-        if(group_menu_handles_[reset_key] == feedback->menu_entry_id) {
-          ROS_INFO("AffordanceTemplate::processFeedback() --   RESET");
+      if(group_menu_handles_.find(wp_before_key) != std::end(group_menu_handles_)) 
+      {
+        if(group_menu_handles_[wp_before_key] == feedback->menu_entry_id)
+        {
+          ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint Before] wanting to add waypoint before current");
+        }
+      }
+
+      if(group_menu_handles_.find(wp_after_key) != std::end(group_menu_handles_)) 
+      {
+        if(group_menu_handles_[wp_after_key] == feedback->menu_entry_id)
+        {
+          ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint After] wanting to add waypoint after current");
+        }
+      }
+
+      if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) 
+      {
+        if(group_menu_handles_[reset_key] == feedback->menu_entry_id) 
+        {
+          ROS_INFO("AffordanceTemplate::processFeedback::Reset] resetting current structure to the inital structure.");
           structure_ = initial_structure_;      
           appendIDToStructure(structure_);
           removeAllMarkers();
@@ -829,23 +848,20 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
-      // FIXME
-      if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) {
-        if(group_menu_handles_[save_key] == feedback->menu_entry_id) {
-          ROS_ERROR("SAVE SELECTION WORKED!!");
-          ROS_DEBUG("AffordanceTemplate::processFeedback() --   SAVE");
+      if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) 
+      {
+        if(group_menu_handles_[save_key] == feedback->menu_entry_id) 
+        {
+          ROS_DEBUG("[AffordanceTemplate::processFeedback::Save] saving file");
+          std::vector<std::string> keys;
+          boost::split(keys, structure_.filename, boost::is_any_of("/"));
+          if (keys.size())
+            saveToDisk(keys.back(), structure_.image, feedback->marker_name, true);
+          else
+            ROS_ERROR("[AffordanceTemplate::processFeedback::Save] invalid filename: %s", structure_.filename.c_str());
         }
       }
-      // if(feedback->menu_entry_id == 4) 
-      // {
-      //   ROS_DEBUG("AffordanceTemplate::processFeedback() -- SAVE");
-      //   std::vector<std::string> keys;
-      //   boost::split(keys, structure_.filename, boost::is_any_of("/"));
-      //   if (keys.size())
-      //     saveToDisk(keys.back(), structure_.image, feedback->marker_name, true);
-      //   else
-      //     ROS_ERROR("[AffordanceTemplate::processFeedback::Save] invalid filename: %s", structure_.filename.c_str());
-      // }
+
 
       if(group_menu_handles_.find(hide_controls_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[hide_controls_key] == feedback->menu_entry_id) {
@@ -892,6 +908,8 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
       
+      //
+      // switch trajectories using the context menu
       for(auto &traj: structure_.ee_trajectories) 
       {
         MenuHandleKey key;
@@ -907,14 +925,14 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           }
         }
       }
-      marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
 
       break;
 
-    default : ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
+    default : //ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
       break;
   }
   server_->applyChanges();
+  marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
 
 }
 
