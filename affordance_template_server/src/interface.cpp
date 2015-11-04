@@ -250,13 +250,14 @@ bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Req
 bool AffordanceTemplateInterface::handleAddTrajectory(AddAffordanceTemplateTrajectory::Request &req, AddAffordanceTemplateTrajectory::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory] adding [%s] to template %s:%d", req.trajectory_name.c_str(), req.class_type.c_str(), req.id);
+    ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory] adding new trajectory \'%s\' to template %s:%d", req.trajectory_name.c_str(), req.class_type.c_str(), req.id);
 
     res.status = false;
 
     ATPointer at;
     if ( at_server_->getTemplateInstance(req.class_type, req.id, at))
         res.status = at->addTrajectory(req.trajectory_name);
+    else ROS_WARN("[AffordanceTemplateInterface::handleAddTrajectory] error getting instance of AT");
 
     if ( !res.status )
         ROS_ERROR("[AffordanceTemplateInterface::handleAddTrajectory] error adding trajectory to template!!");
