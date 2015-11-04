@@ -83,17 +83,16 @@ void AffordanceTemplate::setupMenuOptions()
 
 bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose pose, AffordanceTemplateStructure &structure)
 {
-
   at_parser_.loadFromFile(filename, structure);
 
   // store copies in class, one as backup to reset/restore later
   initial_structure_ = structure;
   structure_ = structure;
 
-  appendIDToStructure(structure_);
-  createFromStructure(structure_);
+  bool append = appendIDToStructure(structure_);
+  bool created = createFromStructure(structure_);
 
-  return true;
+  return (append && created);
 }
 
 bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& image, const std::string& key, bool save_scale_updates)
@@ -230,7 +229,7 @@ void AffordanceTemplate::clearTrajectoryFlags()
 }
 
 void AffordanceTemplate::setTrajectoryFlags(Trajectory traj) 
-{
+{  
   if(waypoint_flags_.find(traj.name) == std::end(waypoint_flags_)) {
     WaypointTrajectoryFlags wp_flags;
 
@@ -263,14 +262,14 @@ bool AffordanceTemplate::isValidTrajectory(Trajectory traj)
  return valid_trajectory;
 } 
 
+// set the default (current) traj to the input one.
+// if no input request, find the first valid one
 bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::string traj) 
 {
-  
-  // set the default (current) traj to the input one.
-  // if no input request, find the first valid one
+  ROS_DEBUG("[AffordanceTemplate::setCurrentTrajectory] will attempt to set current trajectory to %s", traj.c_str());
 
   current_trajectory_ = "";
-  if(traj!="") {
+  if ( !traj.empty()) {
     for (auto &t: traj_list) {
       if(t.name == traj) {
         if(isValidTrajectory(t)) {
@@ -281,7 +280,7 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
       }
     }
   } 
-  if(current_trajectory_=="") {
+  if ( current_trajectory_.empty()) {
     for (auto &t: traj_list) {
       if(isValidTrajectory(t)) {
         current_trajectory_ = t.name;
@@ -294,8 +293,9 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
       }
     }
   } 
-  // still no valid traj found
-  if(current_trajectory_=="") {
+  
+  if (current_trajectory_.empty()) // still no valid traj found
+  {
     ROS_ERROR("AffordanceTemplate::createDisplayObjectsFromStructure() -- no valid trajectory found");
     return false;
   }
@@ -350,7 +350,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     if(object_scale_factor_.find(obj.name) == std::end(object_scale_factor_)) {
       object_scale_factor_[obj.name] = 1.0;
       ee_scale_factor_[obj.name] = 1.0;
-      ROS_WARN("Setting scale factor for %s", obj.name.c_str());
+      ROS_DEBUG("[AffordanceTemplate::createDisplayObjectsFromStructure] setting scale factor for %s to default 1.0", obj.name.c_str());
     } //TODO deubg??
     // else {
     //   ROS_WARN("huh %s", obj.name.c_str());
@@ -703,6 +703,7 @@ void AffordanceTemplate::setupTrajectoryMenu(AffordanceTemplateStructure structu
   interactive_markers::MenuHandler::EntryHandle sub_menu_handle = marker_menus_[name].insert( menu_text );
   for(auto &traj: structure.ee_trajectories) {
     MenuHandleKey key;
+    ROS_WARN("making choose trajectory key of %s with menu text %s and trajectory name %s", name.c_str(), menu_text.c_str(), traj.name.c_str());
     key[name] = {menu_text, traj.name};
     group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, traj.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );   
     if(traj.name == current_trajectory_) {
@@ -767,7 +768,7 @@ void AffordanceTemplate::removeAllMarkers()
 
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
-  ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
+  // ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
 
   interactive_markers::MenuHandler::CheckState state;
 
@@ -798,23 +799,28 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   
   switch ( feedback->event_type ) {
 
-    ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
     case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :
-      ROS_DEBUG("AffordanceTemplate::processFeedback() --   MOUSE_UP");
+      ROS_INFO("[AffordanceTemplate::processFeedback] %s mouse up", feedback->marker_name.c_str());
+      // ROS_DEBUG("AffordanceTemplate::processFeedback() --   MOUSE_UP");
       break;
 
     case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT :
-
-      ROS_DEBUG("AffordanceTemplate::processFeedback() -- MENU_SELECT");
-      ROS_DEBUG("AffordanceTemplate::processFeedback() --   menu id: %d", feedback->menu_entry_id);
+      ROS_INFO("[AffordanceTemplate::processFeedback] %s selected menu entry: %d", feedback->marker_name.c_str(), feedback->menu_entry_id);
+      // ROS_DEBUG("AffordanceTemplate::processFeedback() -- MENU_SELECT");
+      // ROS_DEBUG("AffordanceTemplate::processFeedback() --   menu id: %d", feedback->menu_entry_id);
       // ROS_DEBUG("AffordanceTemplate::processFeedback() --   pose: (%.3f, %.3f, %.3f), (%.3f, %.3f, %.3f, %.3f), frame_id: %s", 
       //                                                             feedback->pose.position.x, feedback->pose.position.y, feedback->pose.position.z, 
       //                                                             feedback->pose.orientation.x, feedback->pose.orientation.y, feedback->pose.orientation.z, feedback->pose.orientation.w,
       //                                                             feedback->header.frame_id.c_str());
+      
+      // FIXME I don't really understand how this works. Also, I don't think it works as intended
+      //       I feel like the group menu handles gets clear out and not repopulated at some point
+      //       this may have to do with how all the menu items get appended toa n already populated menu
 
+      // FIXME: why does this one work, plan and execute work, but SAVE menu entry does not work??
       if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[reset_key] == feedback->menu_entry_id) {
-          ROS_DEBUG("AffordanceTemplate::processFeedback() --   RESET");
+          ROS_INFO("AffordanceTemplate::processFeedback() --   RESET");
           structure_ = initial_structure_;      
           appendIDToStructure(structure_);
           removeAllMarkers();
@@ -823,27 +829,27 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
-      // TODO I don't really understand how this works, I feel like the group menu handles gets clear out and not repopulated at some point
-      // this may have to do with how all the menu items get appended toa n already populated menu
-      // if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) {
-      //   if(group_menu_handles_[save_key] == feedback->menu_entry_id) {
-      //     ROS_DEBUG("AffordanceTemplate::processFeedback() --   SAVE");
-      //   }
-      // }
-      if(feedback->menu_entry_id == 4) 
-      {
-          ROS_DEBUG("AffordanceTemplate::processFeedback() -- SAVE");
-          std::vector<std::string> keys;
-          boost::split(keys, structure_.filename, boost::is_any_of("/"));
-          if (keys.size())
-            saveToDisk(keys.back(), structure_.image, feedback->marker_name, true);
-          else
-            ROS_ERROR("[AffordanceTemplate::processFeedback::SAVE] invalid filename: %s", structure_.filename.c_str());
+      // FIXME
+      if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) {
+        if(group_menu_handles_[save_key] == feedback->menu_entry_id) {
+          ROS_ERROR("SAVE SELECTION WORKED!!");
+          ROS_DEBUG("AffordanceTemplate::processFeedback() --   SAVE");
+        }
       }
+      // if(feedback->menu_entry_id == 4) 
+      // {
+      //   ROS_DEBUG("AffordanceTemplate::processFeedback() -- SAVE");
+      //   std::vector<std::string> keys;
+      //   boost::split(keys, structure_.filename, boost::is_any_of("/"));
+      //   if (keys.size())
+      //     saveToDisk(keys.back(), structure_.image, feedback->marker_name, true);
+      //   else
+      //     ROS_ERROR("[AffordanceTemplate::processFeedback::Save] invalid filename: %s", structure_.filename.c_str());
+      // }
 
       if(group_menu_handles_.find(hide_controls_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[hide_controls_key] == feedback->menu_entry_id) {
-          ROS_DEBUG("AffordanceTemplate::processFeedback() --   CONTROLS TOGGLE");
+          ROS_INFO("AffordanceTemplate::processFeedback() --   CONTROLS TOGGLE");
           if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) {
             if(state == interactive_markers::MenuHandler::CHECKED) {
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );
@@ -884,6 +890,15 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           moveToWaypoints(ee_names); 
 
         }
+      }
+      
+      for(auto &traj: structure_.ee_trajectories) 
+      {
+        MenuHandleKey key;
+        key[feedback->marker_name] = {"Choose Trajectory", traj.name}; // FIXME -- can this be static like this??
+        if(group_menu_handles_.find(key) != std::end(group_menu_handles_)) 
+          if(group_menu_handles_[key] == feedback->menu_entry_id) 
+            setTrajectory(traj.name);
       }
 
       break;
@@ -1103,7 +1118,7 @@ void AffordanceTemplate::run()
 
 void AffordanceTemplate::stop()
 {
-  ROS_ERROR("[AffordanceTemplate::stop] %s being asked to stop..", name_.c_str());
+  ROS_WARN("[AffordanceTemplate::stop] %s being asked to stop..", name_.c_str());
   running_ = false;
   removeAllMarkers();
 }
