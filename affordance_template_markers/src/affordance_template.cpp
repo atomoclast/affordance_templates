@@ -221,7 +221,7 @@ bool AffordanceTemplate::getTrajectoryPlan(const std::string& trajectory, const 
 
 bool AffordanceTemplate::setTrajectory(const std::string& trajectory_name)
 {
-  return createFromStructure(getCurrentStructure(), false, trajectory_name);
+  return setCurrentTrajectory( getCurrentStructure().ee_trajectories, trajectory_name);
 }
 
 void AffordanceTemplate::clearTrajectoryFlags()
@@ -1113,7 +1113,7 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   ROS_DEBUG("[AffordanceTemplate::setObjectScaling] setting object %s scaling to %g, %g", key.c_str(), scale_factor, ee_scale_factor);
   
   // TODO this probably needs double-checking 
-  // also, this should only happen if we want to save scaling factor
+  //      also, this should only happen if we want to save scaling factor
   // for ( auto& d : structure_.display_objects)
   // {
   //   if ( d.name == key)
