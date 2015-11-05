@@ -378,7 +378,7 @@ std::string RobotInterface::getEEName(const int id)
   return ee_name_map_[id];
 }
 
-std::string getReadableEEName(const std::string& name)
+std::string RobotInterface::getReadableEEName(const std::string& name)
 {
   std::vector<std::string> tokens;
   boost::split( tokens, name, boost::is_punct());
@@ -392,6 +392,7 @@ std::string getReadableEEName(const std::string& name)
     t.front() = std::toupper(t.front());
     readable += t + " ";
   }
+  readable.pop_back();
 
   return readable;
 }
