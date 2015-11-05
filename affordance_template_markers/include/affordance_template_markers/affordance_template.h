@@ -172,6 +172,7 @@ namespace affordance_template
     void setupSimpleMenuItem(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name, const std::string& menu_text, bool has_check_box);
     void setupTrajectoryMenu(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name);
     void setupEndEffectorPoseMenu(const std::string& name);
+    void setupAddWaypointMenuItem(affordance_template_object::AffordanceTemplateStructure, std::string, std::string);
 
     bool hasObjectFrame(std::string obj);
     bool hasWaypointFrame(std::string wp);

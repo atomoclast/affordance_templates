@@ -319,6 +319,7 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
     return false;
   }
   ROS_INFO("AffordanceTemplate::createFromStructure() -- done creating %s", template_type_.c_str());
+
   return true;
 }
  
@@ -494,7 +495,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
     int ee_id = wp_list.id;
     std::map<int, std::string> ee_name_map = robot_interface_->getEENameMap();
-    std::string ee_name = ee_name_map[ee_id];  
+    std::string ee_name = ee_name_map[ee_id];
 
     int wp_id = 0;
 
@@ -656,34 +657,25 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
 void AffordanceTemplate::setupObjectMenu(AffordanceTemplateStructure structure, DisplayObject obj)
 {
-
-  for(auto& o : object_menu_options_) {
-    if(o.first == "Choose Trajectory") {
+  for(auto& o : object_menu_options_) 
+  {
+    if(o.first == "Choose Trajectory") 
       setupTrajectoryMenu(structure, obj.name);
-    } else {
+    else if (o.first.find("Add Waypoint") != std::string::npos)
+      setupAddWaypointMenuItem(structure, obj.name, o.first);
+    else 
       setupSimpleMenuItem(structure, obj.name, o.first, o.second);
-    }
   }
-
-
-  // for m,c in self.object_menu_options :
-  //     if m == "Add Waypoint Before" or m == "Add Waypoint After":
-  //         sub_menu_handle = self.marker_menus[obj].insert(m)
-  //         for ee in self.robot_interface.end_effector_name_map.iterkeys() :
-  //             name = self.robot_interface.end_effector_name_map[ee]
-  //             self.menu_handles[(obj,m,name)] = self.marker_menus[obj].insert(name,parent=sub_menu_handle,callback=self.create_waypoint_callback)
-
-
 }
 
 void AffordanceTemplate::setupWaypointMenu(AffordanceTemplateStructure structure, std::string name)
 {
-  for(auto& o : waypoint_menu_options_) {
-    if(o.first == "Change End-Effector Pose") {
+  for(auto& o : waypoint_menu_options_) 
+  {
+    if(o.first == "Change End-Effector Pose")
       setupEndEffectorPoseMenu(name);
-    } else {
+    else
       setupSimpleMenuItem(structure, name, o.first, o.second);
-    }
   }
 }
 
@@ -697,21 +689,38 @@ void AffordanceTemplate::setupSimpleMenuItem(AffordanceTemplateStructure structu
   }
 }
 
+void AffordanceTemplate::setupAddWaypointMenuItem(AffordanceTemplateStructure structure, std::string name, std::string menu_text)
+{
+  interactive_markers::MenuHandler::EntryHandle sub_menu_handle = marker_menus_[name].insert( menu_text);
+
+  for(auto& ee: robot_interface_->getEENameMap()) 
+  {
+    std::string ee_readable = robot_interface_->getReadableEEName(ee.second);
+
+    MenuHandleKey key;
+    key[name] = {menu_text, ee.second};
+    group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, ee_readable, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );   
+    
+    ROS_DEBUG("[AffordanceTemplate::setupAddWaypointMenuItem] adding submenu text %s to menu item %s", ee_readable.c_str(), menu_text.c_str());
+  }
+}
 
 void AffordanceTemplate::setupTrajectoryMenu(AffordanceTemplateStructure structure, const std::string& name)
 {
   std::string menu_text = "Choose Trajectory";
   interactive_markers::MenuHandler::EntryHandle sub_menu_handle = marker_menus_[name].insert( menu_text );
-  for(auto &traj: structure.ee_trajectories) {
+  for(auto &traj: structure.ee_trajectories) 
+  {
     MenuHandleKey key;
-    ROS_DEBUG("[AffordanceTemplate::setupTrajectoryMenu] add menu text %s and trajectory name %s to key %s", menu_text.c_str(), traj.name.c_str(), name.c_str());
     key[name] = {menu_text, traj.name};
     group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, traj.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );   
-    if(traj.name == current_trajectory_) {
+  
+    if(traj.name == current_trajectory_) 
       marker_menus_[name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
-    } else {
+    else
       marker_menus_[name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );       
-    }
+    
+    ROS_DEBUG("[AffordanceTemplate::setupTrajectoryMenu] adding submenu text %s to menu item %s", traj.name.c_str(), menu_text.c_str());
   }
 }
 
@@ -816,46 +825,59 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       //                                                             feedback->pose.position.x, feedback->pose.position.y, feedback->pose.position.z, 
       //                                                             feedback->pose.orientation.x, feedback->pose.orientation.y, feedback->pose.orientation.z, feedback->pose.orientation.w,
       //                                                             feedback->header.frame_id.c_str());
-       
-      // FIXME I don't really understand how this works
 
-      // if(group_menu_handles_.find(wp_before_key) != std::end(group_menu_handles_)) 
-      // {
-      //   if(group_menu_handles_[wp_before_key] == feedback->menu_entry_id)
-      //   {          
-      //     Trajectory traj;
-      //     bool found = false;
-      //     if(getTrajectory(structure_.ee_trajectories, current_trajectory_, traj))
-      //     {
-      //       // look for the object the user selected in our waypoint list
-      //       for( auto& wp_list: traj.ee_waypoint_list) 
-      //       {
-      //         int wp_id = -1; // init to -1 because we pre-add
-      //         for( auto& wp: wp_list.waypoints) 
-      //         {
-      //           std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
-      //           if (wp_name == feedback->marker_name)
-      //           {
-      //             ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint Before] adding new waypoint before current waypoint %s", feedback->marker_name.c_str());  
-      //             affordance_template_object::EndEffectorWaypoint wp;
-      //             wp.insert((wp.begin() + wp_id), wp);
-      //             found = true;
-      //             break;
-      //           }
-      //         }
-      //       }
+      // FIXME : this may not be the best way to figure out if we're dealing with the object or an EE
+      if(group_menu_handles_.find(wp_before_key) != std::end(group_menu_handles_)) 
+      {
+        if(group_menu_handles_[wp_before_key] == feedback->menu_entry_id)
+        {          
+          Trajectory traj;
+          bool found = false;
+          // if(getTrajectory(structure_.ee_trajectories, current_trajectory_, traj))
+          // {
+          //   // look for the object the user selected in our waypoint list
+          //   for( auto& wp_list: traj.ee_waypoint_list) 
+          //   {
+          //     int wp_id = -1; // init to -1 because we pre-add
+          //     ROS_WARN("we're looking at trajectory %s with %d waypoint(s)", current_trajectory_.c_str(), wp_list.waypoints.size());
+          //     for( auto& wp: wp_list.waypoints) 
+          //     {
+          //       std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+          //       if (wp_name == feedback->marker_name)
+          //       {
+          //         ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint Before] adding new waypoint before current waypoint for trajectory %s", feedback->marker_name.c_str());  
+          //         affordance_template_object::EndEffectorWaypoint eewp;
+          //         eewp.ee_pose = 1; // TODO and FIXME - this is all just testing insertion
+          //         eewp.display_object = "test_object";
+          //         eewp.origin.position[0] = eewp.origin.position[1] = eewp.origin.position[2] = 1.0;
+          //         eewp.origin.orientation[0] = eewp.origin.orientation[1] = eewp.origin.orientation[2] = 0.0;
+          //         eewp.controls.translation[0] = eewp.controls.translation[1] = eewp.controls.translation[2] = true;
+          //         eewp.controls.rotation[0] = eewp.controls.rotation[1] = eewp.controls.rotation[2] = true;
+          //         eewp.controls.scale = 1.0;
+          //         wp_list.waypoints.insert(wp_list.waypoints.begin(), eewp);
+          //         found = true;
+          //         break;
+          //       }
+          //     }
+          //   }
            
-      //       // it was the object that was clicked, add to end of that trajectory list
-      //       if (!found)
-      //       {
-      //         ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint Before] adding new waypoint to beginning of trajectory %s", current_trajectory_.c_str());  
-      //         affordance_template_object::EndEffectorWaypoint wp;
-      //         ROS_INFO("[AffordanceTemplate::processFeedback]");
-      //         traj.ee_waypoint_list.insert(traj.ee_waypoint_list.begin(), wp);
-      //       }
-      //     }
-      //   }
-      // }
+          //   // it was the object that was clicked, add to end of that trajectory list
+          //   if (!found)
+          //   {
+          //     ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint Before] adding new waypoint to beginning of trajectory %s", current_trajectory_.c_str());  
+          //     affordance_template_object::EndEffectorWaypoint wp;
+          //     // wp.ee_pose = 1; // TODO and FIXME - this is all just testing insertion
+          //     // wp.display_object = "test_object";
+          //     // wp.origin.position[0] = wp.origin.position[1] = wp.origin.position[2] = 1.0;
+          //     // wp.origin.orientation[0] = wp.origin.orientation[1] = wp.origin.orientation[2] = 0.0;
+          //     // wp.controls.translation[0] = wp.controls.translation[1] = wp.controls.translation[2] = true;
+          //     // wp.controls.rotation[0] = wp.controls.rotation[1] = wp.controls.rotation[2] = true;
+          //     // wp.controls.scale = 1.0;
+          //     // traj.ee_waypoint_list.insert(traj.ee_waypoint_list.begin(), wp);
+          //   }
+          //  }
+        }
+      }
 
       if(group_menu_handles_.find(wp_after_key) != std::end(group_menu_handles_)) 
       {
