@@ -816,22 +816,52 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       //                                                             feedback->pose.position.x, feedback->pose.position.y, feedback->pose.position.z, 
       //                                                             feedback->pose.orientation.x, feedback->pose.orientation.y, feedback->pose.orientation.z, feedback->pose.orientation.w,
       //                                                             feedback->header.frame_id.c_str());
-      
+       
       // FIXME I don't really understand how this works
 
-      if(group_menu_handles_.find(wp_before_key) != std::end(group_menu_handles_)) 
-      {
-        if(group_menu_handles_[wp_before_key] == feedback->menu_entry_id)
-        {
-          ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint Before] wanting to add waypoint before current");
-        }
-      }
+      // if(group_menu_handles_.find(wp_before_key) != std::end(group_menu_handles_)) 
+      // {
+      //   if(group_menu_handles_[wp_before_key] == feedback->menu_entry_id)
+      //   {          
+      //     Trajectory traj;
+      //     bool found = false;
+      //     if(getTrajectory(structure_.ee_trajectories, current_trajectory_, traj))
+      //     {
+      //       // look for the object the user selected in our waypoint list
+      //       for( auto& wp_list: traj.ee_waypoint_list) 
+      //       {
+      //         int wp_id = -1; // init to -1 because we pre-add
+      //         for( auto& wp: wp_list.waypoints) 
+      //         {
+      //           std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+      //           if (wp_name == feedback->marker_name)
+      //           {
+      //             ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint Before] adding new waypoint before current waypoint %s", feedback->marker_name.c_str());  
+      //             affordance_template_object::EndEffectorWaypoint wp;
+      //             wp.insert((wp.begin() + wp_id), wp);
+      //             found = true;
+      //             break;
+      //           }
+      //         }
+      //       }
+           
+      //       // it was the object that was clicked, add to end of that trajectory list
+      //       if (!found)
+      //       {
+      //         ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint Before] adding new waypoint to beginning of trajectory %s", current_trajectory_.c_str());  
+      //         affordance_template_object::EndEffectorWaypoint wp;
+      //         ROS_INFO("[AffordanceTemplate::processFeedback]");
+      //         traj.ee_waypoint_list.insert(traj.ee_waypoint_list.begin(), wp);
+      //       }
+      //     }
+      //   }
+      // }
 
       if(group_menu_handles_.find(wp_after_key) != std::end(group_menu_handles_)) 
       {
         if(group_menu_handles_[wp_after_key] == feedback->menu_entry_id)
         {
-          ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint After] wanting to add waypoint after current");
+          ROS_INFO("[AffordanceTemplate::processFeedback::Add Waypoint After] wanting to add waypoint after current %s", feedback->marker_name.c_str());
         }
       }
 
