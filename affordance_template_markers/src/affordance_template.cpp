@@ -843,7 +843,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       // // DEBUG
       // // ######
 
-      
       // 
       // check for 'Add Waypoint Before' for EE objects
       if (group_menu_handles_.find(wp_before_key) != std::end(group_menu_handles_)) 
@@ -851,7 +850,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         if (group_menu_handles_[wp_before_key] == feedback->menu_entry_id)
         {
           // Trajectory traj;
-          // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj))
+          // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
           bool found = false;
           for (auto& traj : structure_.ee_trajectories)
           {
@@ -870,7 +869,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     // TODO and FIXME - this is all just testing insertion
                     affordance_template_object::EndEffectorWaypoint eewp;
                     eewp.ee_pose = 1;
-                    eewp.display_object = "test_object";
+                    eewp.display_object = "test_before_object";
                     eewp.origin.position[0] = eewp.origin.position[1] = eewp.origin.position[2] = 1.0;
                     eewp.origin.orientation[0] = eewp.origin.orientation[1] = eewp.origin.orientation[2] = 0.0;
                     eewp.controls.translation[0] = eewp.controls.translation[1] = eewp.controls.translation[2] = true;
@@ -919,7 +918,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     // TODO and FIXME - this is all just testing insertion
                     affordance_template_object::EndEffectorWaypoint wp;
                     wp.ee_pose = 1; 
-                    wp.display_object = "test_object";
+                    wp.display_object = "test_before_object";
                     wp.origin.position[0] = wp.origin.position[1] = wp.origin.position[2] = 1.0;
                     wp.origin.orientation[0] = wp.origin.orientation[1] = wp.origin.orientation[2] = 0.0;
                     wp.controls.translation[0] = wp.controls.translation[1] = wp.controls.translation[2] = true;
@@ -943,6 +942,104 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           break;
       }
 
+      // 
+      // check for 'Add Waypoint After' for EE objects
+      if (group_menu_handles_.find(wp_after_key) != std::end(group_menu_handles_)) 
+      {
+        if (group_menu_handles_[wp_after_key] == feedback->menu_entry_id)
+        {
+          // Trajectory traj;
+          // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
+          bool found = false;
+          for (auto& traj : structure_.ee_trajectories)
+          {
+            if (traj.name == current_trajectory_)
+            {
+              // look for the object the user selected in our waypoint list
+              for (auto& wp_list: traj.ee_waypoint_list) 
+              {
+                int wp_id = -1; // init to -1 because we pre-add
+                for (auto& wp: wp_list.waypoints) 
+                {
+                  std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+                  if (wp_name == feedback->marker_name)
+                  {
+                    ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint After] for EE waypoint %s", feedback->marker_name.c_str());
+                    // TODO and FIXME - this is all just testing insertion
+                    affordance_template_object::EndEffectorWaypoint eewp;
+                    eewp.ee_pose = 1;
+                    eewp.display_object = "test_after_object";
+                    eewp.origin.position[0] = eewp.origin.position[1] = eewp.origin.position[2] = 1.0;
+                    eewp.origin.orientation[0] = eewp.origin.orientation[1] = eewp.origin.orientation[2] = 0.0;
+                    eewp.controls.translation[0] = eewp.controls.translation[1] = eewp.controls.translation[2] = true;
+                    eewp.controls.rotation[0] = eewp.controls.rotation[1] = eewp.controls.rotation[2] = true;
+                    eewp.controls.scale = 1.0;
+                    wp_list.waypoints.push_back(eewp);
+
+                    found = true;
+                    break;
+                  }
+                }
+
+                if (found) // already found the object - no reason to continue the for loop
+                  break;
+              }
+            }
+
+            if (found) // already found the object - no reason to continue the for loop
+              break;
+          }
+        }
+      }
+
+      // 
+      // check for 'Add Waypoint After' for AT object (wheel, door, etc) 
+      for (auto& ee: robot_interface_->getEENameMap()) 
+      {
+        bool found = false;  
+        MenuHandleKey key;
+        key[feedback->marker_name] = {"Add Waypoint After", ee.second};
+        if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) 
+        {
+          if (group_menu_handles_[key] == feedback->menu_entry_id)
+          {
+            // Trajectory traj; 
+            // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
+            for (auto& traj : structure_.ee_trajectories)
+            {
+              if (traj.name == current_trajectory_)
+              {
+                for (auto& wp_list : traj.ee_waypoint_list) // go through our list of EE waypoints - match based on EE ID
+                {
+                  if (wp_list.id == robot_interface_->getEEID(ee.second))
+                  {
+                    ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint After] for trajectory: %s and end effector: %s", current_trajectory_.c_str(), robot_interface_->getReadableEEName(ee.second).c_str());
+                    // TODO and FIXME - this is all just testing insertion
+                    affordance_template_object::EndEffectorWaypoint wp;
+                    wp.ee_pose = 1; 
+                    wp.display_object = "test_after_object";
+                    wp.origin.position[0] = wp.origin.position[1] = wp.origin.position[2] = 1.0;
+                    wp.origin.orientation[0] = wp.origin.orientation[1] = wp.origin.orientation[2] = 0.0;
+                    wp.controls.translation[0] = wp.controls.translation[1] = wp.controls.translation[2] = true;
+                    wp.controls.rotation[0] = wp.controls.rotation[1] = wp.controls.rotation[2] = true;
+                    wp.controls.scale = 1.0;
+                    wp_list.waypoints.push_back(wp);
+
+                    found = true;
+                    break;
+                  }
+                }
+
+                if (found) // already found the object - no reason to continue the for loop
+                  break;
+              }
+            }
+          }
+        }
+
+        if (found) // already found the object - no reason to continue the for loop
+          break;
+      }
 
       // // ######
       // // DEBUG
@@ -955,8 +1052,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       // }
       // // DEBUG
       // // ######
-
-      
 
       if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) 
       {
@@ -984,7 +1079,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             ROS_ERROR("[AffordanceTemplate::processFeedback::Save] invalid filename: %s", structure_.filename.c_str());
         }
       }
-
 
       if(group_menu_handles_.find(hide_controls_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[hide_controls_key] == feedback->menu_entry_id) {
@@ -1051,7 +1145,8 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
       break;
     }
-    default : //ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
+    default : 
+      //ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
       break;
   }
   server_->applyChanges();
