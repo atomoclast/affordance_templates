@@ -42,7 +42,7 @@ namespace affordance_template_markers
     std::vector<std::string> ee_groups_;
     
     std::map<std::string, end_effector_helper::EndEffectorHelperConstPtr> ee_link_data_; 
-    std::map<int, std::string> ee_name_map_;
+    std::map<int, std::string> ee_name_map_;    
     std::map<std::string, int> ee_id_map_;
     
     // std::map<std::string, > ee_markers_;
@@ -73,6 +73,7 @@ namespace affordance_template_markers
     bool getEELinkData(std::string group_name, end_effector_helper::EndEffectorHelperConstPtr &link_data); 
     
     std::string getEEName(const int);
+    std::string getReadableEEName(const std::string&);
     int getEEID(const std::string&);
     
     std::map<std::string, int> getEEPoseIDMap(std::string name);
