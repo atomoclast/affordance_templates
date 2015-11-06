@@ -787,6 +787,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   MenuHandleKey wp_after_key;
   MenuHandleKey reset_key;
   MenuHandleKey save_key;
+  MenuHandleKey delete_key;
   MenuHandleKey hide_controls_key;
   MenuHandleKey plan_test_key;
   MenuHandleKey execute_test_key;
@@ -795,6 +796,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   wp_after_key[feedback->marker_name] = {"Add Waypoint After"};
   reset_key[feedback->marker_name] = {"Reset"};
   save_key[feedback->marker_name] = {"Save"};
+  delete_key[feedback->marker_name] = {"Delete Waypoint"};
   plan_test_key[feedback->marker_name] = {"Plan Test"};
   execute_test_key[feedback->marker_name] = {"Execute Test"};
   hide_controls_key[feedback->marker_name] = {"Hide Controls"};
@@ -829,19 +831,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       // *****
       // FIXME : this may not be the best way to figure out if we're dealing with the object or an EE
       // *****
-  
-      // // ######
-      // // DEBUG
-      // Trajectory traj;
-      // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj))
-      // {
-      //   for (auto& wp_list : traj.ee_waypoint_list) // go through our list of EE waypoints - match based on EE ID
-      //   {
-      //     ROS_WARN("BEFORE adding a wp traj has %d waypoints", wp_list.waypoints.size());
-      //   }
-      // }
-      // // DEBUG
-      // // ######
 
       // 
       // check for 'Add Waypoint Before' for EE objects
@@ -1041,22 +1030,41 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           break;
       }
 
-      // // ######
-      // // DEBUG
-      // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj))
+      // 
+      // delete waypoint
+      // if (group_menu_handles_.find(delete_key) != group_menu_handles_.end())
       // {
-      //   for (auto& wp_list : traj.ee_waypoint_list) // go through our list of EE waypoints - match based on EE ID
+      //   if (group_menu_handles_[delete_key] == feedback->menu_entry_id)
       //   {
-      //     ROS_WARN("After adding a wp traj has %d waypoints", wp_list.waypoints.size());
+      //     ROS_INFO("[AffordanceTemplate::processFeedback::Delete Waypoint] deleting waypoint: %s", feedback->marker_name.c_str());
+      //     for (auto& traj : structure_.ee_trajectories)
+      //     {
+      //       ROS_WARN("looking at trajectory %s", traj.name.c_str());
+      //       if (traj.name == current_trajectory_)
+      //       {
+      //         ROS_WARN("matched trajectory..");
+      //         // look for the object the user selected in our waypoint list
+      //         for (auto& wp_list: traj.ee_waypoint_list) 
+      //         {
+      //           int wp_id = -1; // init to -1 because we pre-add
+      //           for (auto& wp: wp_list.waypoints) 
+      //           {
+      //             std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+      //             ROS_WARN("looking at waypoint name %s", wp_name.c_str());
+      //             if (wp_name == feedback->marker_name)
+      //             {
+      //               ROS_WARN("matched waypoint name, will remove now");
+      //               wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
+      //             }
+      //           }
+      //         }
+      //       }
+      //     }
       //   }
       // }
-      // // DEBUG
-      // // ######
 
-      if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) 
-      {
-        if(group_menu_handles_[reset_key] == feedback->menu_entry_id) 
-        {
+      if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) {
+        if(group_menu_handles_[reset_key] == feedback->menu_entry_id) {
           ROS_INFO("AffordanceTemplate::processFeedback::Reset] resetting current structure to the inital structure.");
           structure_ = initial_structure_;      
           appendIDToStructure(structure_);
@@ -1066,9 +1074,9 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
-      if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) 
+      if (group_menu_handles_.find(save_key) != group_menu_handles_.end()) 
       {
-        if(group_menu_handles_[save_key] == feedback->menu_entry_id) 
+        if (group_menu_handles_[save_key] == feedback->menu_entry_id) 
         {
           ROS_DEBUG("[AffordanceTemplate::processFeedback::Save] saving file");
           std::vector<std::string> keys;
@@ -1127,14 +1135,14 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       
       //
       // switch trajectories using the context menu
-      for(auto &traj: structure_.ee_trajectories) 
+      for (auto &traj: structure_.ee_trajectories) 
       {
         MenuHandleKey key;
         key[feedback->marker_name] = {"Choose Trajectory", traj.name}; // FIXME -- can this be static like this??
-        if(group_menu_handles_.find(key) != std::end(group_menu_handles_)) 
+        if (group_menu_handles_.find(key) != group_menu_handles_.end())
         {
           marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED);
-          if(group_menu_handles_[key] == feedback->menu_entry_id) 
+          if (group_menu_handles_[key] == feedback->menu_entry_id) 
           {
             ROS_DEBUG("[AffordanceTemplate::processFeedback::Choose Trajectory] found matching trajectory name %s", traj.name.c_str());
             setTrajectory(traj.name);
@@ -1151,7 +1159,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   }
   server_->applyChanges();
   marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
-
 }
 
 bool AffordanceTemplate::isObject(const std::string& obj) {
