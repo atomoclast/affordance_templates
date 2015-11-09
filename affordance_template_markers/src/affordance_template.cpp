@@ -1032,36 +1032,45 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
       // 
       // delete waypoint
-      // if (group_menu_handles_.find(delete_key) != group_menu_handles_.end())
-      // {
-      //   if (group_menu_handles_[delete_key] == feedback->menu_entry_id)
-      //   {
-      //     ROS_INFO("[AffordanceTemplate::processFeedback::Delete Waypoint] deleting waypoint: %s", feedback->marker_name.c_str());
-      //     for (auto& traj : structure_.ee_trajectories)
-      //     {
-      //       ROS_WARN("looking at trajectory %s", traj.name.c_str());
-      //       if (traj.name == current_trajectory_)
-      //       {
-      //         ROS_WARN("matched trajectory..");
-      //         // look for the object the user selected in our waypoint list
-      //         for (auto& wp_list: traj.ee_waypoint_list) 
-      //         {
-      //           int wp_id = -1; // init to -1 because we pre-add
-      //           for (auto& wp: wp_list.waypoints) 
-      //           {
-      //             std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
-      //             ROS_WARN("looking at waypoint name %s", wp_name.c_str());
-      //             if (wp_name == feedback->marker_name)
-      //             {
-      //               ROS_WARN("matched waypoint name, will remove now");
-      //               wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
-      //             }
-      //           }
-      //         }
-      //       }
-      //     }
-      //   }
-      // }
+      if (group_menu_handles_.find(delete_key) != group_menu_handles_.end())
+      {
+        if (group_menu_handles_[delete_key] == feedback->menu_entry_id)
+        {
+          bool found = false;
+          ROS_DEBUG("[AffordanceTemplate::processFeedback::Delete Waypoint] deleting waypoint: %s", feedback->marker_name.c_str());
+          for (auto& traj : structure_.ee_trajectories)
+          {
+            if (traj.name == current_trajectory_)
+            {
+              // look for the object the user selected in our waypoint list
+              for (auto& wp_list: traj.ee_waypoint_list) 
+              {
+                int wp_id = -1; // init to -1 because we pre-add
+                for (auto& wp: wp_list.waypoints) 
+                {
+                  std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+                  if (wp_name == feedback->marker_name)
+                  {
+                    wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
+                    found = true;
+
+                    //FIXME:: is this the best way to handle methodsl ike these?? 
+                    //        should these be called at the end of the processFeedback
+                    //        or should we be using server->apply() instead??
+                    removeAllMarkers();
+                    createFromStructure(structure_, false, current_trajectory_); 
+                    break;
+                  }
+                }
+                if (found)
+                  break;
+              }
+            }
+            if (found)
+              break;
+          }
+        }
+      }
 
       if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[reset_key] == feedback->menu_entry_id) {
