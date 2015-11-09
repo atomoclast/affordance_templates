@@ -4,7 +4,7 @@ JSON parsing using [yaml-cpp](https://github.com/jbeder/yaml-cpp)
 
 ##**Quick Start:**##
 
-checkout the following repositories into your catkin package to run R2 upperbody
+checkout the following repositories into your catkin workspace to run R2 upperbody
 
 1. [r2 simulator](https://bitbucket.org/nasa_ros_pkg/nasa_r2_simulator/src/c32521004a4a8f135c4298500d6ded3ce20e0070/?at=indigo-devel) - indigo-devel
 2. [r2 common](https://bitbucket.org/nasa_ros_pkg/nasa_r2_common/src/41b52f1747bdb0b484fb1c3788716c950d8e5d0e/?at=traclabs-devel) - traclabs-devel 
