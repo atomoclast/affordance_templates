@@ -19,3 +19,7 @@ JSON parsing using [yaml-cpp](https://github.com/jbeder/yaml-cpp)
 
 
 ```
+1. add necessary topics in RViz
+    * robot model - Robot Description: robot_description
+    * interactive marker - Update Topic: /affordance_template_interactive_marker_server/update
+2. add affordance template panel by going to Panels->Add New Panel->RVizAffordanceTemplatePanel
