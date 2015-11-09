@@ -16,7 +16,10 @@ JSON parsing using [yaml-cpp](https://github.com/jbeder/yaml-cpp)
 
 ```
 #!bash
-
+    1. roslaunch r2_gazebo r2c_upperbody.launch gui:=false robodyn:=true ros_control:=true
+    2. roslaunch r2_upperbody_moveit_config move_group.launch
+    3. rosrun affordance_template_server affordance_template_server_node
+    4. rosrun rviz rviz
 
 ```
 1. add necessary topics in RViz
