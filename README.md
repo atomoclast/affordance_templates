@@ -12,14 +12,15 @@ JSON parsing using [yaml-cpp](https://github.com/jbeder/yaml-cpp)
     * current [robot interaction tools](https://bitbucket.org/traclabs/robot_interaction_tools/src/faaaa732baf71a8340dfd6a24288824a7ae05cb4/?at=cpp-devel) development - *cpp-devel*
 
 1. catkin_make at your workspace level
-1. source each terminal - you'll need four
+1. source each terminal - you'll need five
 
 ```
 #!bash
     1. roslaunch r2_gazebo r2c_upperbody.launch gui:=false robodyn:=true ros_control:=true
-    2. roslaunch r2_upperbody_moveit_config move_group.launch
-    3. rosrun affordance_template_server affordance_template_server_node
-    4. rviz
+    2. roslaunch r2_action_server r2_upperbody.launch 
+    3. roslaunch r2_upperbody_moveit_config move_group.launch
+    4. rosrun affordance_template_server affordance_template_server_node
+    5. rviz
 
 ```
 1. add necessary topics in RViz
