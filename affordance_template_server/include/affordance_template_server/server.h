@@ -66,6 +66,8 @@ namespace affordance_template_server
     bool loadRobot(const std::string&); // from file
     bool loadRobot(const affordance_template_msgs::RobotConfig&); // from msg
 
+    bool refreshTemplates() { return loadTemplates(); }
+
     bool addTemplate(const std::string&, uint8_t&);
     bool addTemplate(const std::string&, uint8_t&, geometry_msgs::PoseStamped&);
     bool removeTemplate(const std::string&, const uint8_t);
