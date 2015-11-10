@@ -155,6 +155,12 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
     boost::filesystem::copy_file(output_path, bak_path, boost::filesystem::copy_option::overwrite_if_exists);
   }
 
+  // set structure key as the new key name
+  std::vector<std::string> keys;
+  boost::split(keys, key, boost::is_any_of(":"));
+  if (keys.size())
+    structure_.name = keys.front();
+
   return at_parser_.saveToFile(output_path, structure_);
 }
 
@@ -1051,7 +1057,11 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                   std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
                   if (wp_name == feedback->marker_name)
                   {
-                    wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
+                    if (wp_list.waypoints.size() == 1)
+                      wp_list.waypoints.clear();
+                    else
+                      wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
+
                     found = true;
 
                     //FIXME:: is this the best way to handle methodsl ike these?? 
