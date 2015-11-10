@@ -26,16 +26,16 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_rob
     at_srv_map_["save_template"]           = nh.advertiseService(base_srv + "save_template", &AffordanceTemplateInterface::handleSaveTemplate, this);
     at_srv_map_["add_trajectory"]          = nh.advertiseService(base_srv + "add_trajectory", &AffordanceTemplateInterface::handleAddTrajectory, this);
     at_srv_map_["scale_object"]            = nh.advertiseService(base_srv + "scale_object", &AffordanceTemplateInterface::handleObjectScale, this);
-    at_srv_map_["get_template_status"]     = nh.advertiseService(base_srv + "get_template_status", &AffordanceTemplateInterface::handleTemplateStatus, this);
     at_srv_map_["get_status"]              = nh.advertiseService(base_srv + "get_status", &AffordanceTemplateInterface::handleServerStatus, this);
+    at_srv_map_["get_template_status"]     = nh.advertiseService(base_srv + "get_template_status", &AffordanceTemplateInterface::handleTemplateStatus, this);
     at_srv_map_["set_template_trajectory"] = nh.advertiseService(base_srv + "set_template_trajectory", &AffordanceTemplateInterface::handleSetTrajectory, this);
     at_srv_map_["set_template_pose"]       = nh.advertiseService(base_srv + "set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
+    at_srv_map_["set_object_pose"]         = nh.advertiseService(base_srv + "set_object_pose", &AffordanceTemplateInterface::handleSetObject, this);
+    at_srv_map_["get_object_pose"]         = nh.advertiseService(base_srv + "get_object_pose", &AffordanceTemplateInterface::handleGetObject, this);
 
     scale_stream_sub_ = nh.subscribe(base_srv + "scale_object_streamer", 1000, &AffordanceTemplateInterface::handleObjectScaleCallback, this);
 
-    ROS_INFO("[AffordanceTemplateInterface] services set up...");
-
-    ROS_INFO("[AffordanceTemplateInterface] robot ready!!");
+    ROS_INFO("[AffordanceTemplateInterface] services set up...robot ready!");
 }
 
 bool AffordanceTemplateInterface::handleRobotRequest(GetRobotConfigInfo::Request &req, GetRobotConfigInfo::Response &res)
@@ -363,6 +363,16 @@ bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Reque
 
     res.success = at_server_->updateTemplate(req.class_type, req.id, req.pose);
     
+    return true;
+}
+
+bool AffordanceTemplateInterface::handleSetObject(SetObjectPose::Request& req, SetObjectPose::Response& res)
+{
+    return true;
+}
+
+bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, GetObjectPose::Response& res)
+{
     return true;
 }
 

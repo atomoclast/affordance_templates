@@ -20,6 +20,8 @@
 #include <affordance_template_msgs/GetAffordanceTemplateServerStatus.h>
 #include <affordance_template_msgs/SetAffordanceTemplateTrajectory.h>
 #include <affordance_template_msgs/SetAffordanceTemplatePose.h>
+#include <affordance_template_msgs/GetObjectPose.h>
+#include <affordance_template_msgs/SetObjectPose.h>
 #include <affordance_template_msgs/ObjectInfo.h>
 #include <affordance_template_msgs/WaypointInfo.h>
 
@@ -50,6 +52,8 @@ namespace affordance_template_server
         bool handleServerStatus(GetAffordanceTemplateServerStatus::Request&, GetAffordanceTemplateServerStatus::Response&);
         bool handleSetTrajectory(SetAffordanceTemplateTrajectory::Request&, SetAffordanceTemplateTrajectory::Response&);
         bool handleSetPose(SetAffordanceTemplatePose::Request&, SetAffordanceTemplatePose::Response&);
+        bool handleSetObject(SetObjectPose::Request&, SetObjectPose::Response&);
+        bool handleGetObject(GetObjectPose::Request&, GetObjectPose::Response&);
         
         void handleObjectScaleCallback(const ScaleDisplayObjectInfo&);
         bool doesTrajectoryExist(const ATPointer&, const std::string&);

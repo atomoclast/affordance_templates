@@ -82,6 +82,8 @@ add_service_files(
   ScaleDisplayObject.srv
   SetAffordanceTemplateTrajectory.srv
   SetAffordanceTemplatePose.srv
+  GetObjectPose.srv
+  SetObjectPose.srv
 )
 
 ## Generate actions in the 'action' folder
