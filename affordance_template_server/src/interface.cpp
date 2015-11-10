@@ -373,6 +373,32 @@ bool AffordanceTemplateInterface::handleSetObject(SetObjectPose::Request& req, S
 
 bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, GetObjectPose::Response& res)
 {
+    ObjectInfo obj; 
+    if (req.name.empty()) // get all the names
+    {
+        res.objects.push_back(obj);
+    }
+    else 
+    {
+        ROS_INFO("[AffordanceTemplateInterface::handleGetObject] getting pose for object %s", req.name.c_str());
+        ATPointer at;
+        if (at_server_->getTemplateInstance(req.name, at))
+        {
+            affordance_template_object::AffordanceTemplateStructure ats = at->getCurrentStructure();
+            obj.object_name = req.name;
+            for (auto d : ats.display_objects)
+            {
+                if (d.name == req.name)
+                {
+                    geometry_msgs::PoseStamped ps;
+                    ps.pose = affordance_template_object::originToPoseMsg(d.origin);
+                    obj.object_pose = ps;
+                }
+            }
+        }
+        res.objects.push_back(obj);
+    }
+
     return true;
 }
 
