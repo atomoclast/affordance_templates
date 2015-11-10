@@ -43,7 +43,7 @@ bool AffordanceTemplateInterface::handleRobotRequest(GetRobotConfigInfo::Request
     at_server_->setStatus(false);
     
     ROS_INFO("[AffordanceTemplateInterface::handleRobotRequest] requesting robot configuration from server");
-    res.robots.push_back( at_server_->getRobotConfig());
+    res.robots.push_back(at_server_->getRobotConfig());
     if (res.robots.size() == 0)
         ROS_WARN("[AffordanceTemplateInterface::handleRobotRequest] couldn't find any robot configurations on server!!");
 
@@ -133,13 +133,13 @@ bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::R
     ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] getting names of running templates");
 
     std::vector<std::string> templates = at_server_->getRunningTemplates();
-    for ( auto t : templates)
+    for (auto t : templates)
     {
         ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] \tfound template: %s", t.c_str());
         res.templates.push_back(t);
     }
 
-    if ( templates.size() == 0)
+    if (templates.size() == 0)
         ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] no templates are currently running on server");
 
     at_server_->setStatus(true);
@@ -152,12 +152,12 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
     ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] new plan request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
 
     ATPointer at;
-    if ( !at_server_->getTemplateInstance(req.type, req.id, at))
+    if (!at_server_->getTemplateInstance(req.type, req.id, at))
         ROS_ERROR("[AffordanceTemplateInterface::handlePlanCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
     else
     {
         // check if specific trajectory was given
-        if ( req.trajectory_name.empty())
+        if (req.trajectory_name.empty())
             req.trajectory_name = at->getCurrentTrajectory();
 
         // go through all the EE waypoints in the request
@@ -166,12 +166,12 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
 
         std::vector<std::string> ee_names;
         std::map<std::string, bool> ee_path;
-        for ( auto ee : req.end_effectors)
+        for (auto ee : req.end_effectors)
         {
             ee_path[ee] = false;
             steps = req.steps[id];
             // make sure EE is in trajectory
-            if ( !doesEndEffectorExist(at, ee))
+            if (!doesEndEffectorExist(at, ee))
                 continue;
             ee_names.push_back(ee);
             ++id;
@@ -180,7 +180,7 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
         // compute path plan (returns dictionary of bools keyed off EE name)
         ee_path = at->planPathToWaypoints(ee_names, steps, req.direct, req.backwards);
         ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] planned path for %lu end-effectors:", ee_path.size());
-        for ( auto ee : ee_path)
+        for (auto ee : ee_path)
             ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] \t%s : %s", ee.first.c_str(), boolToString(ee.second).c_str());
         res.affordance_template_status = getTemplateStatus(req.type, req.id, req.trajectory_name);
     }
@@ -195,18 +195,18 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
     ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] new execution request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
 
     ATPointer at;
-    if ( !at_server_->getTemplateInstance(req.type, req.id, at))
+    if (!at_server_->getTemplateInstance(req.type, req.id, at))
         ROS_ERROR("[AffordanceTemplateInterface::handleExecuteCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
     else
     {
         // check if specific trajectory was given
-        if ( req.trajectory_name.empty())
+        if (req.trajectory_name.empty())
             req.trajectory_name = at->getCurrentTrajectory();
 
         std::vector<std::string> ee_list;
-        for ( auto ee : req.end_effectors)
+        for (auto ee : req.end_effectors)
         {
-            if ( !doesEndEffectorExist(at, ee))
+            if (!doesEndEffectorExist(at, ee))
                 ROS_WARN("[AffordanceTemplateInterface::handleExecuteCommand] %s not in trajectory, can't execute!!", ee.c_str());
             else
                 ee_list.push_back(ee);
@@ -214,7 +214,7 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
 
         res.status = at->moveToWaypoints(ee_list);
         
-        if ( res.status)
+        if (res.status)
             ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] done executing %s plan(s)", req.trajectory_name.c_str());
         else
             ROS_ERROR("[AffordanceTemplateInterface::handleExecuteCommand] execution failed for %s", req.trajectory_name.c_str());
@@ -235,12 +235,14 @@ bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Req
     std::string new_key = req.new_class_type + ":" + std::to_string(req.id);
     bool save_status = false;
     ATPointer at;
-    if ( at_server_->getTemplateInstance(req.original_class_type, req.id, at))
-        save_status = at->saveToDisk( req.filename, req.image, new_key, req.save_scale_updates);
+    if (at_server_->getTemplateInstance(req.original_class_type, req.id, at))
+        save_status = at->saveToDisk(req.filename, req.image, new_key, req.save_scale_updates);
+    if (!at_server_->refreshTemplates())
+        ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] failed to refresh templates. unexpected behavior possible!!");
     bool remove_status = at_server_->removeTemplate(req.original_class_type, req.id);
     bool add_status = at_server_->addTemplate(req.new_class_type, req.id);
-    res.status = (save_status && remove_status && add_status);
-    if ( !res.status)
+    res.status = save_status && remove_status && add_status;
+    if (!res.status)
         ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] error saving template. save to file: %s, remove: %s, adding: %s", successToString(save_status).c_str(), successToString(remove_status).c_str(), successToString(add_status).c_str());
 
     at_server_->setStatus(true);
@@ -255,11 +257,11 @@ bool AffordanceTemplateInterface::handleAddTrajectory(AddAffordanceTemplateTraje
     res.status = false;
 
     ATPointer at;
-    if ( at_server_->getTemplateInstance(req.class_type, req.id, at))
+    if (at_server_->getTemplateInstance(req.class_type, req.id, at))
         res.status = at->addTrajectory(req.trajectory_name);
     else ROS_WARN("[AffordanceTemplateInterface::handleAddTrajectory] error getting instance of AT");
 
-    if ( !res.status )
+    if (!res.status)
         ROS_ERROR("[AffordanceTemplateInterface::handleAddTrajectory] error adding trajectory to template!!");
 
     at_server_->setStatus(true);
@@ -274,10 +276,10 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
     res.status = false;
 
     ATPointer at;
-    if ( at_server_->getTemplateInstance(req.scale_info.class_type, req.scale_info.id, at))
+    if (at_server_->getTemplateInstance(req.scale_info.class_type, req.scale_info.id, at))
         res.status = at->setObjectScaling(req.scale_info.object_name, req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
 
-    if ( !res.status )
+    if (!res.status)
         ROS_ERROR("[AffordanceTemplateInterface::handleObjectScale] error scaling object!!");
 
     at_server_->setStatus(true);
@@ -289,20 +291,20 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
     at_server_->setStatus(false);
     ROS_DEBUG("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
 
-    if ( !req.name.empty())
+    if (!req.name.empty())
     {
         std::vector<std::string> keys;
         boost::split(keys, req.name, boost::is_any_of(":"));
-        if ( keys.size() >= 2)
+        if (keys.size() >= 2)
         {
             int id = std::stoi(keys[1]);
             res.affordance_template_status.push_back(getTemplateStatus(keys[0], id, req.trajectory_name, req.frame_id));
             ATPointer at;
-            if ( at_server_->getTemplateInstance(req.name, at))
+            if (at_server_->getTemplateInstance(req.name, at))
             {
                 res.current_trajectory = at->getCurrentTrajectory();
                 AffordanceTemplateStructure ats = at->getCurrentStructure();
-                for ( auto t : ats.ee_trajectories)
+                for (auto t : ats.ee_trajectories)
                     res.trajectory_names.push_back(t.name);
             }
             else
@@ -342,9 +344,9 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
         ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to %s", req.name.c_str(), req.trajectory.c_str());
 
     ATPointer at;
-    if ( at_server_->getTemplateInstance(req.name, at))
+    if (at_server_->getTemplateInstance(req.name, at))
     {
-        if ( at->setTrajectory(req.trajectory))
+        if (at->setTrajectory(req.trajectory))
             res.success = true;
         else
             ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
@@ -372,8 +374,8 @@ void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayOb
     std::string key = data.object_name + ":" + std::to_string(data.id);
 
     ATPointer at;
-    if ( at_server_->getTemplateInstance(data.class_type, data.id, at))
-        if ( !at->setObjectScaling(key, data.scale_factor, data.end_effector_scale_factor))
+    if (at_server_->getTemplateInstance(data.class_type, data.id, at))
+        if (!at->setObjectScaling(key, data.scale_factor, data.end_effector_scale_factor))
             ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
 
@@ -384,7 +386,7 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
     AffordanceTemplateStatus ats; 
 
     ATPointer at;
-    if ( !at_server_->getTemplateInstance(type, id, at))
+    if (!at_server_->getTemplateInstance(type, id, at))
     {
         ROS_ERROR("[AffordanceTemplateInterface::getTemplateStatus] %s:%d template is not currently running on server!!", type.c_str(), id);
         return ats;
@@ -392,16 +394,16 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
 
     ats.type = type;
     ats.id = id;
-    if ( trajectory.empty())
+    if (trajectory.empty())
         trajectory = at->getCurrentTrajectory();
     ats.trajectory_name = trajectory;
 
     AffordanceTemplateStructure at_struct = at->getCurrentStructure();
 
-    if ( !doesTrajectoryExist(at, ats.trajectory_name))
+    if (!doesTrajectoryExist(at, ats.trajectory_name))
         return ats;
 
-    for ( auto obj : at_struct.display_objects)
+    for (auto obj : at_struct.display_objects)
     {
         ObjectInfo oi;
         oi.object_name = obj.name;
@@ -410,7 +412,7 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
     }
 
     std::map<std::string, int> ee_names = at->getRobotInterface()->getEEIDMap();
-    for ( auto ee : ee_names)
+    for (auto ee : ee_names)
     {
         WaypointInfo wpi;
         wpi.end_effector_name = ee.first;
@@ -418,7 +420,7 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
         wpi.num_waypoints = at->getNumWaypoints(at_struct, at->getCurrentTrajectory(), wpi.id);
 
         affordance_template::PlanStatus ps;
-        if ( !at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps))
+        if (!at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps))
         // {
             // ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't have a valid plan!!", ats.trajectory_name.c_str(), ee.first.c_str());
             continue;
@@ -427,7 +429,7 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
         wpi.plan_valid = ps.plan_valid;
         wpi.execution_valid = ps.exec_valid;
         wpi.waypoint_plan_index = ps.goal_idx; // is this reversed??
-        for ( auto p : ps.sequence_poses)
+        for (auto p : ps.sequence_poses)
             wpi.waypoint_poses.push_back(p);
         // the python had ee_pose_name data struct here -- don't know if it's necessary though
 
@@ -442,16 +444,16 @@ bool AffordanceTemplateInterface::doesTrajectoryExist(const ATPointer& atp, cons
     bool found = false;
     
     AffordanceTemplateStructure ats = atp->getCurrentStructure();
-    for ( auto traj : ats.ee_trajectories)
+    for (auto traj : ats.ee_trajectories)
     {
-        if ( traj.name == trajectory)
+        if (traj.name == trajectory)
         {
             found = true;
             break;
         }
     }
 
-    if ( !found)
+    if (!found)
         ROS_WARN("[AffordanceTemplateInterface::doesTrajectoryExist] trajectory name %s not found in template", trajectory.c_str());
 
     return found;
@@ -462,9 +464,9 @@ bool AffordanceTemplateInterface::doesEndEffectorExist(const ATPointer& atp, con
     bool found = false;
 
     std::map<int, std::string> ee_map = atp->getRobotInterface()->getEENameMap();
-    for ( auto e : ee_map)
+    for (auto e : ee_map)
     {
-        if ( e.second == ee)
+        if (e.second == ee)
         {
             found = true;
             break;
