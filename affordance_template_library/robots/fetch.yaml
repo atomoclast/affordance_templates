@@ -5,7 +5,7 @@ config_file: config/fetch.srdf
 frame_id: base_link
 root_offset: [0.5,0,0.5,3.14,0,0]
 end_effector_group_map:
-  - name: arm
+  - name: gripper
     id: 0
     pose_offset: [0,0,0,0,0,0]
     tool_offset: [0,0,0,0,0,0]

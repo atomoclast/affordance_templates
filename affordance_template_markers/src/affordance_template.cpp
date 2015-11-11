@@ -1181,6 +1181,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           ROS_WARN("AffordanceTemplate::processFeedback() --   PLAN");
 
           std::vector<std::string> ee_names = {"left_hand"};
+          // std::vector<std::string> ee_names = {"gripper"};
           planPathToWaypoints(ee_names, 1, false, false); 
 
         }
@@ -1191,6 +1192,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           ROS_WARN("AffordanceTemplate::processFeedback() --   EXECUTE");
 
           std::vector<std::string> ee_names = {"left_hand"};
+          // std::vector<std::string> ee_names = {"gripper"};
           moveToWaypoints(ee_names); 
 
         }
@@ -1333,11 +1335,11 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
     int next_path_idx;
     if(computePathSequence(structure_, current_trajectory_, ee_id, current_idx, steps, backwards, sequence_ids, next_path_idx)) {    
       ROS_INFO("AffordanceTemplate::planPathToWaypoints() -- got path sequence");
-      std::cout << "path sequence: [ ";
-      for (auto i: sequence_ids) {
-        std::cout << i << " ";
-      }
-      std::cout << "]" << std::endl;      
+      // std::cout << "path sequence: [ ";
+      // for (auto i: sequence_ids) {
+      //   std::cout << i << " ";
+      // }
+      // std::cout << "]" << std::endl;      
     } else {
       ROS_ERROR("AffordanceTemplate::planPathToWaypoints() -- failed to get path sequence!!");
       return ret;
