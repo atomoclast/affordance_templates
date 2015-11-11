@@ -784,7 +784,7 @@ void AffordanceTemplate::removeAllMarkers()
 
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
-  ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
+  // ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
 
   interactive_markers::MenuHandler::CheckState state;
 
@@ -822,7 +822,31 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   switch ( feedback->event_type ) {
 
     case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :
-    {  
+    {
+      //
+      // save the current pose of the display objects if they were selected
+      for (auto& d : structure_.display_objects)
+      {
+        if (feedback->marker_name == d.name)
+        {
+          ROS_DEBUG("[AffordanceTemplate::processFeedback] saving pose for object %s", feedback->marker_name.c_str());
+        
+          d.origin.position[0] = feedback->pose.position.x;
+          d.origin.position[1] = feedback->pose.position.y;
+          d.origin.position[2] = feedback->pose.position.z;
+
+          tf::Quaternion q;
+          tf::quaternionMsgToTF(feedback->pose.orientation, q);
+          double roll, pitch, yaw;
+          tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+          d.origin.orientation[0] = roll;
+          d.origin.orientation[1] = pitch;
+          d.origin.orientation[2] = yaw;
+
+          break;
+        }
+      }
 
       //
       // save the current pose of the ee waypoint back to the structure
@@ -1217,7 +1241,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       break;
     }
     default : 
-      ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
+      // ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
       break;
   }
   server_->applyChanges();
