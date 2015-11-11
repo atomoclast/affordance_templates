@@ -373,30 +373,31 @@ bool AffordanceTemplateInterface::handleSetObject(SetObjectPose::Request& req, S
 
 bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, GetObjectPose::Response& res)
 {
-    ObjectInfo obj; 
-    if (req.name.empty()) // get all the names
+    ATPointer at;
+    if (at_server_->getTemplateInstance(req.name, at))
     {
-        res.objects.push_back(obj);
-    }
-    else 
-    {
+        affordance_template_object::AffordanceTemplateStructure ats = at->getCurrentStructure();
         ROS_INFO("[AffordanceTemplateInterface::handleGetObject] getting pose for object %s", req.name.c_str());
-        ATPointer at;
-        if (at_server_->getTemplateInstance(req.name, at))
+        for (auto d : ats.display_objects)
         {
-            affordance_template_object::AffordanceTemplateStructure ats = at->getCurrentStructure();
-            obj.object_name = req.name;
-            for (auto d : ats.display_objects)
+            ObjectInfo obj; 
+            obj.object_name = d.name;
+            geometry_msgs::PoseStamped ps;
+            if (d.parent.empty())
+                ps.header.frame_id = d.name;
+            else
+                ps.header.frame_id = d.parent;
+            ps.pose = affordance_template_object::originToPoseMsg(d.origin);
+            obj.object_pose = ps;
+
+            if (req.name.empty())
+                res.objects.push_back(obj);
+            else if (d.name == req.name)
             {
-                if (d.name == req.name)
-                {
-                    geometry_msgs::PoseStamped ps;
-                    ps.pose = affordance_template_object::originToPoseMsg(d.origin);
-                    obj.object_pose = ps;
-                }
+                res.objects.push_back(obj);
+                break;
             }
         }
-        res.objects.push_back(obj);
     }
 
     return true;
