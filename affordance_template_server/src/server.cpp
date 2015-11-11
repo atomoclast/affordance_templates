@@ -20,7 +20,7 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
     if (!loadTemplates())
         ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot JSONs!!");
 
-    status_ = true;
+    // status_ = true;
 
     ROS_INFO("[AffordanceTemplateServer] server configured. spinning...");
     // at_server_thread.join();
@@ -28,7 +28,7 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
 
 void AffordanceTemplateServer::run()
 {
-    status_ = true;
+    // status_ = true;
     ros::spin();
 }
 
@@ -288,9 +288,7 @@ bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id,
     
     affordance_template_object::AffordanceTemplateStructure structure;
     geometry_msgs::Pose p;
-    at_map_[key]->loadFromFile( at_structure_map_[type].filename, p, structure);
-
-    return true;
+    return at_map_[key]->loadFromFile( at_structure_map_[type].filename, p, structure);
 }
 
 bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uint8_t id)

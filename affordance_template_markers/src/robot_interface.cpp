@@ -378,6 +378,25 @@ std::string RobotInterface::getEEName(const int id)
   return ee_name_map_[id];
 }
 
+std::string RobotInterface::getReadableEEName(const std::string& name)
+{
+  std::vector<std::string> tokens;
+  boost::split( tokens, name, boost::is_punct());
+
+  if (tokens.size() == 0)
+    return name;
+
+  std::string readable;
+  for ( auto& t : tokens)
+  {
+    t.front() = std::toupper(t.front());
+    readable += t + " ";
+  }
+  readable.pop_back();
+
+  return readable;
+}
+
 int RobotInterface::getEEID(const std::string &name)
 {
   return ee_id_map_[name];

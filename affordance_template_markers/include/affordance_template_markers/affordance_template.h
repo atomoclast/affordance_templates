@@ -4,6 +4,9 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/filesystem.hpp>
+
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -47,8 +50,6 @@ namespace affordance_template
   { 
 
   public:
-    
-    AffordanceTemplate(){} // default constructor
     AffordanceTemplate(const ros::NodeHandle nh, 
                        boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server, 
                        std::string robot_nkame, 
@@ -60,14 +61,17 @@ namespace affordance_template
                        std::string robot_name, 
                        std::string template_type,
                        int id);
+    AffordanceTemplate(){} // default constructor
     ~AffordanceTemplate();
 
     // public methods used by server node
     void run();
     void stop();
+    bool addTrajectory(const std::string&);
+    bool moveToWaypoints(const std::vector<std::string>&);
+    bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
-    bool moveToWaypoints(const std::vector<std::string>&); // list of ee waypoints to move to, return true if all waypoints were valid
-    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool); // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
+    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool);
 
     // public getters
     inline int getID() { return id_; }
@@ -76,18 +80,15 @@ namespace affordance_template
     inline affordance_template_object::AffordanceTemplateStructure getCurrentStructure() { return structure_; }
     inline affordance_template_object::AffordanceTemplateStructure getDefaultStructure() { return initial_structure_; }
     inline boost::shared_ptr<affordance_template_markers::RobotInterface> getRobotInterface() { return robot_interface_; }
+
     int getNumWaypoints(const affordance_template_object::AffordanceTemplateStructure structure, const std::string traj_name, const int ee_id);
     bool getTrajectoryPlan(const std::string&, const std::string&, PlanStatus&);
     
     // public setters 
     bool setTrajectory(const std::string&);
+    bool setObjectScaling(const std::string&, double, double);
     void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
     
-    // TODO     
-    bool saveToDisk(const std::string&, const std::string&, const std::string&, bool) {return true;} // filename, image, new key/class name, save_scale_updates bool
-    bool validWaypointPlan(const std::vector<std::string>&, const std::string&) {return true;} //vector of ee names, trajectory name
-    bool addTrajectory(const std::string&) {return true;} // trajectory name    
-    bool scaleObject(const std::string&, double, double) {return true;} // object name, scale factor, ee scale factor
 
   private:
     
@@ -147,7 +148,7 @@ namespace affordance_template
 
     bool isValidTrajectory(affordance_template_object::Trajectory traj);
     bool setCurrentTrajectory(affordance_template_object::TrajectoryList traj_list, std::string traj); 
-    bool getTrajectory(affordance_template_object::TrajectoryList traj_list, std::string traj_name, affordance_template_object::Trajectory &traj);
+    bool getTrajectory(affordance_template_object::TrajectoryList& traj_list, std::string traj_name, affordance_template_object::Trajectory &traj);
 
     void clearTrajectoryFlags();
     void setTrajectoryFlags(affordance_template_object::Trajectory traj);
@@ -171,6 +172,7 @@ namespace affordance_template
     void setupSimpleMenuItem(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name, const std::string& menu_text, bool has_check_box);
     void setupTrajectoryMenu(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name);
     void setupEndEffectorPoseMenu(const std::string& name);
+    void setupAddWaypointMenuItem(affordance_template_object::AffordanceTemplateStructure, std::string, std::string);
 
     bool hasObjectFrame(std::string obj);
     bool hasWaypointFrame(std::string wp);
@@ -180,11 +182,9 @@ namespace affordance_template
 
     geometry_msgs::Pose originToPose(affordance_template_object::Origin origin);
 
-
     bool computePathSequence(affordance_template_object::AffordanceTemplateStructure structure, std::string traj_name, int ee_id, int idx, int steps, bool backwards, std::vector<int> &sequence_ids, int &next_path_idx);
 
     void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
-
 
   };
 }

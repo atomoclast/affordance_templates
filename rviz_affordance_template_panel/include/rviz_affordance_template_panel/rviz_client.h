@@ -16,18 +16,18 @@
 #include <QSlider>
 
 /* Project Include */
-#include "Affordance.hpp"
-#include "RecognitionObject.hpp"
-#include "RobotConfig.hpp"
-#include "Controls.hpp"
-#include "util.hpp"
+#include <rviz_affordance_template_panel/affordance.h>
+#include <rviz_affordance_template_panel/RecognitionObject.hpp>
+#include <rviz_affordance_template_panel/robot_config.h>
+#include <rviz_affordance_template_panel/controls.h>
+#include <rviz_affordance_template_panel/util.h>
 #include "ui_rviz_affordance_template_panel.h"
 
 #include <geometry_msgs/Pose.h>
 
-#include "AffordanceTemplateMsgHeaders.hpp"
-#include "AffordanceTemplateStatusInfo.hpp"
-#include "AffordanceTemplateServerStatusMonitor.hpp"
+#include <rviz_affordance_template_panel/msg_headers.h>
+#include <rviz_affordance_template_panel/template_status_info.h>
+#include <rviz_affordance_template_panel/server_status_monitor.h>
 
 namespace Ui {
 class RVizAffordanceTemplatePanel;
@@ -148,6 +148,10 @@ namespace rviz_affordance_template_panel
         void sendScaleInfo();
         void setupDisplayObjectSliders(TemplateInstanceID template_instance);
         bool endEffectorInTrajectory(AffordanceTemplateStatusInfo::EndEffectorInfo ee_info);
+
+        std::string createShortName(const std::string&);
+        std::string getLongName(const std::string&);
+        std::map<std::string, std::string> robot_name_map_; 
                 
         std::string getRobotFromDescription();
         std::vector<std::string> getSelectedEndEffectors();

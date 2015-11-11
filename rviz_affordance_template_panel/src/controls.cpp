@@ -1,4 +1,4 @@
-#include "Controls.hpp"
+#include <rviz_affordance_template_panel/controls.h>
 
 using namespace rviz_affordance_template_panel;
 using namespace std;

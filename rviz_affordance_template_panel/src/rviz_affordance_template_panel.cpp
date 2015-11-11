@@ -1,4 +1,4 @@
-#include "rviz_affordance_template_panel.hpp"
+#include <rviz_affordance_template_panel/rviz_affordance_template_panel.h>
 
 using namespace rviz_affordance_template_panel;
 using namespace std;
@@ -32,7 +32,7 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     ui_->affordanceTemplateGraphicsView->setScene(affordanceTemplateGraphicsScene_);
 
     recognitionObjectGraphicsScene_ = new QGraphicsScene(this);
-    ui_->recognitionObjectGraphicsView->setScene(recognitionObjectGraphicsScene_);
+    // ui_->recognitionObjectGraphicsView->setScene(recognitionObjectGraphicsScene_);
 
     QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
     QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));
@@ -87,8 +87,6 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     QObject::connect(ui_->end_effector_adjustment_slider, SIGNAL(valueChanged(int)), this, SLOT(updateEndEffectorScaleAdjustment(int)));
     QObject::connect(ui_->reset_scale_button, SIGNAL(clicked()), this, SLOT(resetScale()));
     QObject::connect(ui_->object_scale_combo_box, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(selectScaleObject(const QString&)));
-
-
 }
 
 #include <pluginlib/class_list_macros.h>

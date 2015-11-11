@@ -1,4 +1,4 @@
-#include "rviz_affordance_template_panel.hpp"
+#include <rviz_affordance_template_panel/rviz_affordance_template_panel.h>
 
 // TODO: don't like these
 #define PIXMAP_SIZE 100
@@ -31,14 +31,14 @@ AffordanceTemplateRVizClient::AffordanceTemplateRVizClient(ros::NodeHandle &nh, 
 
     // setup service clients
     add_template_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplate>("/affordance_template_server/add_template");
-    add_object_client_ = nh_.serviceClient<affordance_template_msgs::AddRecognitionObject>("/affordance_template_server/add_recognition_object");
+    // add_object_client_ = nh_.serviceClient<affordance_template_msgs::AddRecognitionObject>("/affordance_template_server/add_recognition_object");
     add_trajectory_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplateTrajectory>("/affordance_template_server/add_trajectory");
     plan_command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplatePlanCommand>("/affordance_template_server/plan_command");
     execute_command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplateExecuteCommand>("/affordance_template_server/execute_command");
     delete_template_client_ = nh_.serviceClient<affordance_template_msgs::DeleteAffordanceTemplate>("/affordance_template_server/delete_template");
-    delete_object_client_ = nh_.serviceClient<affordance_template_msgs::DeleteRecognitionObject>("/affordance_template_server/delete_recognition_object");
+    // delete_object_client_ = nh_.serviceClient<affordance_template_msgs::DeleteRecognitionObject>("/affordance_template_server/delete_recognition_object");
     get_robots_client_ = nh_.serviceClient<affordance_template_msgs::GetRobotConfigInfo>("/affordance_template_server/get_robots");
-    get_objects_client_ = nh_.serviceClient<affordance_template_msgs::GetRecognitionObjectConfigInfo>("/affordance_template_server/get_recognition_objects");
+    // get_objects_client_ = nh_.serviceClient<affordance_template_msgs::GetRecognitionObjectConfigInfo>("/affordance_template_server/get_recognition_objects");
     get_running_client_ = nh_.serviceClient<affordance_template_msgs::GetRunningAffordanceTemplates>("/affordance_template_server/get_running");
     get_templates_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateConfigInfo>("/affordance_template_server/get_templates");
     get_template_status_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateStatus>("/affordance_template_server/get_template_status");
@@ -59,7 +59,7 @@ AffordanceTemplateRVizClient::AffordanceTemplateRVizClient(ros::NodeHandle &nh, 
     label_palette_ = new QPalette();// ui_->server_status_label->palette();
 
     // start up server monitor thread
-    server_monitor_ = new AffordanceTemplateServerStatusMonitor(nh_, std::string("/affordance_template_server/status"), 1);
+    server_monitor_ = new AffordanceTemplateServerStatusMonitor(nh_, std::string("/affordance_template_server/get_status"), 1);
 
 }
 
@@ -107,6 +107,7 @@ void AffordanceTemplateRVizClient::run_function() {
         ros::Duration(0.1).sleep();
         updateServerStatus();
         if(server_monitor_->isReady()) {
+            
             controlStatusUpdate();
             //printTemplateStatus();
         }
@@ -162,19 +163,25 @@ bool AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() {
         }
     }
 
-    if(yamlRobotCandidate!="") {
+    if(yamlRobotCandidate!="") 
+    {
         ROS_INFO("AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() -- searching for Robot: %s", yamlRobotCandidate.c_str());
         map<string,RobotConfigSharedPtr>::const_iterator it = robotMap_.find(yamlRobotCandidate);
-        if (it != robotMap_.end() ) {
-            int idx= ui_->robot_select->findText(QString(yamlRobotCandidate.c_str()));
+        if (it != robotMap_.end() ) 
+        {
+            int idx = ui_->robot_select->findText(QString(robot_name_map_[yamlRobotCandidate].c_str()), Qt::MatchEndsWith);
             ui_->robot_select->setCurrentIndex(idx);
             setupRobotPanel(yamlRobotCandidate);
             loadConfig();
-        } else {
+        } 
+        else 
+        {
             ROS_WARN("AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() -- no robot yaml found in database of name: %s", yamlRobotCandidate.c_str());
             return false;
         }
-    } else {
+    } 
+    else 
+    {
         ROS_WARN("AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() -- not able to construct a candidate robot yaml");
         return false;
     }
@@ -186,9 +193,9 @@ bool AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() {
 void AffordanceTemplateRVizClient::updateRobotConfig(const QString& text) {
 
     // get currently selected robot key
-    string key = ui_->robot_select->currentText().toUtf8().constData();
+    string key = getLongName(ui_->robot_select->currentText().toUtf8().constData());
     // now update robotMap with current values
-    (*robotMap_[key]).name(ui_->robot_select->currentText().toUtf8().constData());
+    (*robotMap_[key]).name(getLongName(ui_->robot_select->currentText().toUtf8().constData()));
     (*robotMap_[key]).config_package(ui_->config_package->text().toUtf8().constData());
     (*robotMap_[key]).config_file(ui_->config_file->text().toUtf8().constData());
     (*robotMap_[key]).planner_type(ui_->planner_type->text().toUtf8().constData());
@@ -217,7 +224,7 @@ void AffordanceTemplateRVizClient::updateRobotConfig(const QString& text) {
 }
 
 void AffordanceTemplateRVizClient::updateEndEffectorGroupMap(const QString& text) {
-    string robot_key = ui_->robot_select->currentText().toUtf8().constData();
+    string robot_key = getLongName(ui_->robot_select->currentText().toUtf8().constData());
     string key = ui_->end_effector_select->currentText().toUtf8().constData();
     for (auto& e: (*robotMap_[robot_key]).endeffectorMap) {
         if (e.second->name() == key) {
@@ -362,15 +369,14 @@ void AffordanceTemplateRVizClient::getAvailableRobots() {
     affordance_template_msgs::GetRobotConfigInfo srv;
     if (get_robots_client_.call(srv))
     {
-
         // load stuff for robot config sub panel
         ui_->robot_select->disconnect(SIGNAL(currentIndexChanged(int)));
         ui_->end_effector_select->disconnect(SIGNAL(currentIndexChanged(int)));
         ui_->robot_select->clear();
         ui_->end_effector_select->clear();
        
-        for (auto& r: srv.response.robots) {
-
+        for (auto& r: srv.response.robots) 
+        {
             RobotConfigSharedPtr pitem(new RobotConfig(r.filename));
             pitem->uid(r.filename);
             pitem->name(r.name);
@@ -383,9 +389,8 @@ void AffordanceTemplateRVizClient::getAvailableRobots() {
             vector<float> root_offset = util::poseMsgToVector(r.root_offset);
             pitem->root_offset(root_offset);
 
-
-            for (auto& e: r.end_effectors) {
-
+            for (auto& e: r.end_effectors) 
+            {
                 EndEffectorConfigSharedPtr eitem(new EndEffectorConfig(e.name));
                 eitem->id(int(e.id));
 
@@ -396,21 +401,18 @@ void AffordanceTemplateRVizClient::getAvailableRobots() {
                 vector<float> tool_offset = util::poseMsgToVector(e.tool_offset);
                 eitem->tool_offset(tool_offset);
                 pitem->endeffectorMap[e.name] = eitem;
-
             }
 
-            for (auto& p: r.end_effector_pose_data) {
+            for (auto& p: r.end_effector_pose_data) 
+            {
                 EndEffectorPoseIDConfigSharedPtr piditem(new EndEffectorPoseConfig(p.name));
                 piditem->id(int(p.id))  ;
                 piditem->group(p.group);
                 pitem->endeffectorPoseMap[p.name] = piditem;
             }
 
-
             addRobot(pitem);
-
-            ui_->robot_select->addItem(QString(pitem->uid().c_str()));
-
+            ui_->robot_select->addItem(QString(robot_name_map_[pitem->uid()].c_str()));
         }
 
 
@@ -467,7 +469,7 @@ void AffordanceTemplateRVizClient::setupRobotPanel(const string& key) {
 
 void AffordanceTemplateRVizClient::setupEndEffectorConfigPanel(const string& key) {
 
-    string robot_key = ui_->robot_select->currentText().toUtf8().constData();
+    string robot_key = getLongName(ui_->robot_select->currentText().toUtf8().constData());
 
     for (auto& e: (*robotMap_[robot_key]).endeffectorMap) {
         if (e.second->name() == key) {
@@ -508,7 +510,7 @@ void AffordanceTemplateRVizClient::setupEndEffectorConfigPanel(const string& key
 
 void AffordanceTemplateRVizClient::changeRobot(int id) {
     QString r = ui_->robot_select->itemText(id);
-    setupRobotPanel(r.toUtf8().constData());
+    setupRobotPanel(getLongName(r.toUtf8().constData()));
 }
 
 void AffordanceTemplateRVizClient::changeEndEffector(int id) {
@@ -781,7 +783,7 @@ void AffordanceTemplateRVizClient::updateObjectScale(int value) {
     display_object_scale_map[object_info] = value;
     if(ui_->stream_scale_check_box->isChecked()) {
         sendScaleInfo();
-    }    
+    }
 }
 
 void AffordanceTemplateRVizClient::updateEndEffectorScaleAdjustment(int value) {
@@ -790,7 +792,7 @@ void AffordanceTemplateRVizClient::updateEndEffectorScaleAdjustment(int value) {
     end_effector_adjustment_map[object_info] = value;
     if(ui_->stream_scale_check_box->isChecked()) {
         sendScaleInfo();
-    }    
+    }
 }
 
 void AffordanceTemplateRVizClient::scaleSliderReleased() {
@@ -801,8 +803,8 @@ void AffordanceTemplateRVizClient::scaleSliderReleased() {
     sendScaleInfo();
 }
 
-void AffordanceTemplateRVizClient::sendScaleInfo() {
-
+void AffordanceTemplateRVizClient::sendScaleInfo() 
+{
     string current_template_class = selected_template.first;
     int current_template_id = selected_template.second;
 
@@ -830,7 +832,7 @@ void AffordanceTemplateRVizClient::sendScaleInfo() {
     msg.object_name = current_scale_object;
     msg.scale_factor = obj_scale_value;
     msg.end_effector_scale_factor = ee_adj_value;
-
+    
     ROS_DEBUG("sending scale to template[%s:%d].%s  with scales(%2.2f,%2.2f) " , current_template_class.c_str(), current_template_id, current_scale_object.c_str(), obj_scale_value, ee_adj_value);
     streamObjectScale(msg);
 }
@@ -858,13 +860,9 @@ void AffordanceTemplateRVizClient::sendObjectScale(affordance_template_msgs::Sca
     affordance_template_msgs::ScaleDisplayObject srv;
     srv.request.scale_info = scale_info;
     if (scale_object_client_.call(srv))
-    {
         ROS_INFO("Scale successful");
-    }
     else
-    {
         ROS_ERROR("Failed to scale objectd");
-    }  
 }
 
 void AffordanceTemplateRVizClient::streamObjectScale(affordance_template_msgs::ScaleDisplayObjectInfo scale_info) {  
@@ -966,6 +964,7 @@ void AffordanceTemplateRVizClient::getRunningItems() {
     {
         ui_->server_output_status->clear();
         ui_->control_template_box->clear();
+        ui_->control_trajectory_box->clear();
         for (int i=0; i < srv.response.templates.size(); i++) {
             string t = srv.response.templates[i];
             ROS_INFO("Found running template: %s", t.c_str());
@@ -999,7 +998,7 @@ void AffordanceTemplateRVizClient::loadConfig() {
 
     affordance_template_msgs::LoadRobotConfig srv;
 
-    string key = ui_->robot_select->currentText().toUtf8().constData();
+    string key = getLongName(ui_->robot_select->currentText().toUtf8().constData());
 
     string name = (*robotMap_[key]).name();
     string pkg = (*robotMap_[key]).config_package();
@@ -1128,7 +1127,7 @@ void AffordanceTemplateRVizClient::addAffordanceDisplayItem() {
 
         //cout << "AffordanceTemplateRVizClient::addAffordanceDisplayItem() -- retrieving waypoint info" << endl;
         for (auto& c: list.at(i)->data(TRAJECTORY_DATA).toMap().toStdMap()) {
-            string robot_key = ui_->robot_select->currentText().toUtf8().constData();
+            string robot_key = getLongName(ui_->robot_select->currentText().toUtf8().constData());
             for (auto& e: (*robotMap_[robot_name_]).endeffectorMap) {
                 for (int r=0; r<ui_->end_effector_table->rowCount(); r++ ) {
                     if (e.second->name() == ui_->end_effector_table->item(r,0)->text().toStdString() ) {
@@ -1209,6 +1208,7 @@ bool AffordanceTemplateRVizClient::addRobot(const RobotConfigSharedPtr& obj) {
     // check if robot is in our map
     if (!checkRobot(obj)) {
         robotMap_[(*obj).uid()] = obj;
+        robot_name_map_[(*obj).uid()] = createShortName((*obj).uid());
         return true;
     }
     return false;
@@ -1218,6 +1218,7 @@ bool AffordanceTemplateRVizClient::removeRobot(const RobotConfigSharedPtr& obj) 
     // check if robot is in our map
     if (checkRobot(obj)) {
         robotMap_.erase((*obj).uid());
+        robot_name_map_.erase((*obj).uid());
         return true;
     }
     return false;
@@ -1247,7 +1248,7 @@ void AffordanceTemplateRVizClient::doCommand(Controls::CommandType command_type)
 
     string key = ui_->control_template_box->currentText().toUtf8().constData();
     if(key=="") return;
-    
+    ROS_INFO("being called from docommand");
     controlStatusUpdate(); // this is probably inefficient. we could store whether things have been updated, but this is safer.
 
     bool ret = controls_->requestPlan(command_type); 
@@ -1296,16 +1297,19 @@ void AffordanceTemplateRVizClient::executePlan() {
     updateStatusFromControls();
 }
  
-void AffordanceTemplateRVizClient::controlStatusUpdate() { 
-    
+void AffordanceTemplateRVizClient::controlStatusUpdate() 
+{    
+    if (ui_->control_template_box->currentText().toStdString().empty())
+        return;
+  
     affordance_template_msgs::GetAffordanceTemplateStatus srv;
-
     srv.request.name = ui_->control_template_box->currentText().toStdString();  
     srv.request.trajectory_name = "";
     
     if (get_template_status_client_.call(srv))
     {
-        ROS_DEBUG("Got Info for %d Templates", (int)(srv.response.affordance_template_status.size()));
+        //TODO@DEBUG??? 
+        ROS_DEBUG("Got info for template %s", srv.request.name.c_str());//(int)(srv.response.affordance_template_status.size()));
        
         if(srv.response.affordance_template_status.size() == 0) {
             return;
@@ -1324,22 +1328,18 @@ void AffordanceTemplateRVizClient::controlStatusUpdate() {
             }
             affordance_template_msgs::AffordanceTemplateStatusConstPtr ptr(new affordance_template_msgs::AffordanceTemplateStatus(srv.response.affordance_template_status[i]));
             template_status_info[full_name]->updateTrajectoryStatus(ptr);
-
         }
 
-        if(srv.response.trajectory_names.size() == 0) {
+        if(srv.response.trajectory_names.size() == 0)
             return;
-        }
         
+        //TODO@DEBUG???
         ROS_DEBUG("Current Trajectory: %s", srv.response.current_trajectory.c_str());
         template_status_info[srv.request.name]->setCurrentTrajectory(srv.response.current_trajectory);
 
-        for(int t=0; t<srv.response.trajectory_names.size(); t++) {
-            std::string s = srv.response.trajectory_names[t];
-            if(ui_->control_trajectory_box->findText(QString(s.c_str())) == -1) {
-                ui_->control_trajectory_box->addItem(QString(s.c_str()));
-            }       
-        }
+        for(int t=0; t<srv.response.trajectory_names.size(); ++t)
+            if(ui_->control_trajectory_box->findText(QString(srv.response.trajectory_names[t].c_str())) == -1)
+                ui_->control_trajectory_box->addItem(QString(srv.response.trajectory_names[t].c_str()));
 
         int id = ui_->control_trajectory_box->findText(QString(srv.response.current_trajectory.c_str()));
         ui_->control_trajectory_box->setCurrentIndex(id);
@@ -1347,7 +1347,6 @@ void AffordanceTemplateRVizClient::controlStatusUpdate() {
         updateTable(srv.request.name, srv.response.current_trajectory);
         
         controls_->setTemplateStatusInfo(template_status_info[srv.request.name]);
-
     }   
     else
     {
@@ -1454,4 +1453,17 @@ void AffordanceTemplateRVizClient::printTemplateStatus() {
         }
     }
 
+}
+
+std::string AffordanceTemplateRVizClient::createShortName(const std::string& long_name)
+{
+    QStringList split_name = QString(long_name.c_str()).split("/");
+    return split_name.back().toStdString();
+}
+
+std::string AffordanceTemplateRVizClient::getLongName(const std::string& short_name)
+{
+    for (auto n : robot_name_map_)
+        if (n.second == short_name)
+            return n.first;
 }

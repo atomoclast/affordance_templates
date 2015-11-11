@@ -30,6 +30,9 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_rob
     at_srv_map_["get_status"]              = nh.advertiseService(base_srv + "get_status", &AffordanceTemplateInterface::handleServerStatus, this);
     at_srv_map_["set_template_trajectory"] = nh.advertiseService(base_srv + "set_template_trajectory", &AffordanceTemplateInterface::handleSetTrajectory, this);
     at_srv_map_["set_template_pose"]       = nh.advertiseService(base_srv + "set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
+
+    scale_stream_sub_ = nh.subscribe(base_srv + "scale_object_streamer", 1000, &AffordanceTemplateInterface::handleObjectScaleCallback, this);
+
     ROS_INFO("[AffordanceTemplateInterface] services set up...");
 
     ROS_INFO("[AffordanceTemplateInterface] robot ready!!");
@@ -100,10 +103,11 @@ bool AffordanceTemplateInterface::handleAddTemplate(AddAffordanceTemplate::Reque
     ROS_INFO("[AffordanceTemplateInterface::handleAddTemplate] adding template: %s", req.class_type.c_str());
 
     res.status = at_server_->addTemplate(req.class_type, res.id, req.pose);
-    ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory] added template: %s",(req.class_type+":"+std::to_string(res.id)).c_str());
 
     if (!res.status)
         ROS_ERROR("[AffordanceTemplateInterface::handleAddTemplate] error adding template!!");
+    else
+        ROS_INFO("[AffordanceTemplateInterface::handleAddTemplate] added template: %s",(req.class_type+":"+std::to_string(res.id)).c_str());
 
     at_server_->setStatus(true);
     return true;
@@ -126,17 +130,17 @@ bool AffordanceTemplateInterface::handleDeleteTemplate(DeleteAffordanceTemplate:
 bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::Request &req, GetRunningAffordanceTemplates::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleRunning] gathering names of running templates");
+    ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] getting names of running templates");
 
     std::vector<std::string> templates = at_server_->getRunningTemplates();
     for ( auto t : templates)
     {
-        ROS_INFO("[AffordanceTemplateInterface::handleRunning] \tfound template: %s", t.c_str());
+        ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] \tfound template: %s", t.c_str());
         res.templates.push_back(t);
     }
 
     if ( templates.size() == 0)
-        ROS_INFO("[AffordanceTemplateInterface::handleRunning] no templates are currently running on server");
+        ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] no templates are currently running on server");
 
     at_server_->setStatus(true);
     return true;
@@ -190,8 +194,6 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
     at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] new execution request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
 
-    res.status = false;
-
     ATPointer at;
     if ( !at_server_->getTemplateInstance(req.type, req.id, at))
         ROS_ERROR("[AffordanceTemplateInterface::handleExecuteCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
@@ -210,19 +212,12 @@ bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecute
                 ee_list.push_back(ee);
         }
 
-        // if the AT has prevously computed a valid plan (can't execute unless this is True) 
-        if ( at->validWaypointPlan(ee_list, req.trajectory_name))
-        {
-            if ( at->moveToWaypoints(ee_list))
-            {
-                res.status = true; // only try if all plans valid
-                ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] done executing %s plan(s)", req.trajectory_name.c_str());
-            }
-        }
+        res.status = at->moveToWaypoints(ee_list);
+        
+        if ( res.status)
+            ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] done executing %s plan(s)", req.trajectory_name.c_str());
         else
-        {
-            ROS_WARN("[AffordanceTemplateInterface::handleExecuteCommand] no valid plan found for %s", req.trajectory_name.c_str());
-        }
+            ROS_ERROR("[AffordanceTemplateInterface::handleExecuteCommand] execution failed for %s", req.trajectory_name.c_str());
         res.affordance_template_status = getTemplateStatus(req.type, req.id, req.trajectory_name);
     }
 
@@ -241,12 +236,12 @@ bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Req
     bool save_status = false;
     ATPointer at;
     if ( at_server_->getTemplateInstance(req.original_class_type, req.id, at))
-        save_status = at->saveToDisk(req.filename, req.image, new_key, req.save_scale_updates);
+        save_status = at->saveToDisk( req.filename, req.image, new_key, req.save_scale_updates);
     bool remove_status = at_server_->removeTemplate(req.original_class_type, req.id);
     bool add_status = at_server_->addTemplate(req.new_class_type, req.id);
     res.status = (save_status && remove_status && add_status);
     if ( !res.status)
-        ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] error saving template. save to file was: %s, remove was: %s, adding was: %s", successToString(save_status).c_str(), successToString(remove_status).c_str(), successToString(add_status).c_str());
+        ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] error saving template. save to file: %s, remove: %s, adding: %s", successToString(save_status).c_str(), successToString(remove_status).c_str(), successToString(add_status).c_str());
 
     at_server_->setStatus(true);
     return true;
@@ -255,13 +250,14 @@ bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Req
 bool AffordanceTemplateInterface::handleAddTrajectory(AddAffordanceTemplateTrajectory::Request &req, AddAffordanceTemplateTrajectory::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory] adding [%s] to template %s:%d", req.trajectory_name.c_str(), req.class_type.c_str(), req.id);
+    ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory] adding new trajectory \'%s\' to template %s:%d", req.trajectory_name.c_str(), req.class_type.c_str(), req.id);
 
     res.status = false;
 
     ATPointer at;
     if ( at_server_->getTemplateInstance(req.class_type, req.id, at))
         res.status = at->addTrajectory(req.trajectory_name);
+    else ROS_WARN("[AffordanceTemplateInterface::handleAddTrajectory] error getting instance of AT");
 
     if ( !res.status )
         ROS_ERROR("[AffordanceTemplateInterface::handleAddTrajectory] error adding trajectory to template!!");
@@ -279,7 +275,7 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
 
     ATPointer at;
     if ( at_server_->getTemplateInstance(req.scale_info.class_type, req.scale_info.id, at))
-        res.status = at->scaleObject(req.scale_info.object_name, req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
+        res.status = at->setObjectScaling(req.scale_info.object_name, req.scale_info.scale_factor, req.scale_info.end_effector_scale_factor);
 
     if ( !res.status )
         ROS_ERROR("[AffordanceTemplateInterface::handleObjectScale] error scaling object!!");
@@ -291,7 +287,7 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
 bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStatus::Request &req, GetAffordanceTemplateStatus::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
+    ROS_DEBUG("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
 
     if ( !req.name.empty())
     {
@@ -324,21 +320,23 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
 
 bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServerStatus::Request &req, GetAffordanceTemplateServerStatus::Response &res)
 {
-    at_server_->setStatus(false);
-    ROS_INFO("[AffordanceTemplateInterface::handleServerStatus] getting server status...");
-    
     res.ready = at_server_->getStatus();
-    
-    at_server_->setStatus(true);
+
+    ROS_DEBUG_STREAM("[AffordanceTemplateInterface::handleServerStatus] getting server status..."<<boolToString(res.ready));
+
     return true;
 }
 
 bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTrajectory::Request &req, SetAffordanceTemplateTrajectory::Response &res)
 {
-    at_server_->setStatus(false);
     res.success = false;
+    if (req.name.empty())
+    {
+        ROS_WARN("[AffordanceTemplateInterface::handleSetTrajectory] no template provided, ignoring.");
+        return true;
+    }
 
-    if ( req.trajectory.empty())
+    if (req.trajectory.empty())
         ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to current trajectory", req.name.c_str());
     else
         ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to %s", req.name.c_str(), req.trajectory.c_str());
@@ -346,7 +344,7 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     ATPointer at;
     if ( at_server_->getTemplateInstance(req.name, at))
     {
-        if ( !at->setTrajectory(req.name))
+        if ( at->setTrajectory(req.trajectory))
             res.success = true;
         else
             ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
@@ -354,29 +352,28 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     else
         ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on server!!", req.name.c_str());        
     
-    at_server_->setStatus(true);
-    return res.success;
+    return true;
 }
 
 bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Request &req, SetAffordanceTemplatePose::Response &res)
 {
-    at_server_->setStatus(false);
     ROS_INFO("[AffordanceTemplateInterface::handleSetPose] setting pose for %s:%d", req.class_type.c_str(), req.id);
 
     res.success = at_server_->updateTemplate(req.class_type, req.id, req.pose);
     
-    at_server_->setStatus(true);
     return true;
 }
 
 
 void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayObjectInfo &data)
 {
-    ROS_INFO_STREAM("[AffordanceTemplateInterface::handleObjectScaleCallback] scale "<<data.class_type<<":"<<data.id<<"->object["<<data.object_name<<"] by ("<<data.scale_factor<<", "<<data.end_effector_scale_factor<<")");
+    ROS_DEBUG("[AffordanceTemplateInterface::handleObjectScaleCallback] scale %s:%d->object[%s] by: %g, %g", data.class_type.c_str(), data.id, data.object_name.c_str(), data.scale_factor, data.end_effector_scale_factor);
+
+    std::string key = data.object_name + ":" + std::to_string(data.id);
 
     ATPointer at;
     if ( at_server_->getTemplateInstance(data.class_type, data.id, at))
-        if ( !at->scaleObject(data.object_name, data.scale_factor, data.end_effector_scale_factor))
+        if ( !at->setObjectScaling(key, data.scale_factor, data.end_effector_scale_factor))
             ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
 
@@ -422,10 +419,10 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
 
         affordance_template::PlanStatus ps;
         if ( !at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps))
-        {
-            ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't exist!!", ats.trajectory_name.c_str(), ee.first.c_str());
+        // {
+            // ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't have a valid plan!!", ats.trajectory_name.c_str(), ee.first.c_str());
             continue;
-        }
+        // }
         wpi.waypoint_index = ps.current_idx; // is this reversed??
         wpi.plan_valid = ps.plan_valid;
         wpi.execution_valid = ps.exec_valid;

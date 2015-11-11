@@ -7,7 +7,7 @@
 #include <ros/package.h>
 
 #include "ui_rviz_affordance_template_panel.h"
-#include "AffordanceTemplateRVizClient.hpp"
+#include <rviz_affordance_template_panel/rviz_client.h>
 
 namespace Ui {
 class RVizAffordanceTemplatePanel;

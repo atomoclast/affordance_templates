@@ -8,13 +8,14 @@
 
 #include <QTableWidgetItem>
 
-#include "RobotConfig.hpp"
-#include "util.hpp"
+#include <rviz_affordance_template_panel/robot_config.h>
+#include <rviz_affordance_template_panel/util.h>
+#include <rviz_affordance_template_panel/template_status_info.h>
+
 #include "ui_rviz_affordance_template_panel.h"
 
 #include <affordance_template_msgs/AffordanceTemplatePlanCommand.h>
 #include <affordance_template_msgs/AffordanceTemplateExecuteCommand.h>
-#include "AffordanceTemplateStatusInfo.hpp"
 
 namespace Ui {
 class RVizAffordanceTemplatePanel;

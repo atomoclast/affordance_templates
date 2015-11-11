@@ -22,15 +22,15 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   ROS_INFO("AffordanceTemplate::init() -- Done Creating new AffordanceTemplate of type %s for robot: %s", template_type_.c_str(), robot_name_.c_str());
   name_ = template_type_ + ":" + std::to_string(id);
 
-  boost::thread spin_thread_(boost::bind(&AffordanceTemplate::run, this));
-
   ros::AsyncSpinner spinner(1.0/loop_rate_);
   spinner.start();
 
   setupMenuOptions();
 
-  // set to false when template gets destroyed
+  // set to false when template gets destroyed, otherwise we can get a dangling pointer
   running_ = true;
+  
+  boost::thread spin_thread_(boost::bind(&AffordanceTemplate::run, this));
 }
 
 
@@ -83,17 +83,79 @@ void AffordanceTemplate::setupMenuOptions()
 
 bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose pose, AffordanceTemplateStructure &structure)
 {
-
   at_parser_.loadFromFile(filename, structure);
 
   // store copies in class, one as backup to reset/restore later
   initial_structure_ = structure;
   structure_ = structure;
 
-  appendIDToStructure(structure_);
-  createFromStructure(structure_);
+  bool append = appendIDToStructure(structure_);
+  bool created = createFromStructure(structure_);
 
-  return true;
+  return (append && created);
+}
+
+bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& image, const std::string& key, bool save_scale_updates)
+{
+  std::string class_type = template_type_;
+  if (filename.empty())
+    filename = template_type_ + ".json";
+  else
+  {
+    std::vector<std::string> keys;
+    boost::split(keys, filename, boost::is_any_of("."));
+    if (keys.size())
+      class_type = keys.front();
+  }
+
+  std::string root = ros::package::getPath("affordance_template_library");
+  if (root.empty())
+      return false;
+  root += "/templates";
+  std::string output_path = root + "/" + filename;
+
+  // if filename given is actually directory, return
+  if (boost::filesystem::is_directory(output_path))
+  {
+    ROS_ERROR("[AffordanceTemplate::saveToDisk] error formatting filename!!");
+    return false;
+  }
+
+  ROS_INFO("[AffordanceTemplate::saveToDisk] writing template to file: %s", output_path.c_str());
+
+  if (!boost::filesystem::exists(output_path))
+    ROS_WARN("[AffordanceTemplate::saveToDisk] no file found with name: %s. cannot create backup.", filename.c_str());
+  else
+  {
+    // count how many bak files we have for this particular template type
+    boost::filesystem::recursive_directory_iterator dir_it(root);
+    boost::filesystem::recursive_directory_iterator end_it;
+    int bak_counter = 0;
+    while (dir_it != end_it)
+    {
+
+      if (std::string(dir_it->path().string()).find(".bak") != std::string::npos
+          && std::string(dir_it->path().string()).find(class_type) != std::string::npos)
+        ++bak_counter;
+      ++dir_it;
+    }
+
+    // copy current class_type.json into .bak
+    std::string bak_path = "";
+    if (bak_counter > 0)
+    {
+      ROS_INFO("[AffordanceTemplate::saveToDisk] creating backup file: %s.bak%d", filename.c_str(), bak_counter);
+      bak_path = output_path + ".bak" + std::to_string(bak_counter);
+    }
+    else
+    {
+      ROS_INFO("[AffordanceTemplate::saveToDisk] creating backup file: %s.bak", filename.c_str());
+      bak_path = output_path + ".bak";
+    }
+    boost::filesystem::copy_file(output_path, bak_path, boost::filesystem::copy_option::overwrite_if_exists);
+  }
+
+  return at_parser_.saveToFile(output_path, structure_);
 }
 
 bool AffordanceTemplate::appendIDToStructure(AffordanceTemplateStructure &structure) 
@@ -122,7 +184,17 @@ std::string AffordanceTemplate::appendID(std::string s)
   return s + ":" + std::to_string(id_);
 } 
 
-bool AffordanceTemplate::getTrajectory(TrajectoryList traj_list, std::string traj_name, Trajectory &traj) 
+bool AffordanceTemplate::addTrajectory(const std::string& trajectory_name) 
+{
+  affordance_template_object::Trajectory traj;
+  traj.name = trajectory_name;
+  structure_.ee_trajectories.push_back(traj);
+  setTrajectory(trajectory_name);
+  setupTrajectoryMenu(structure_, trajectory_name);
+  return createFromStructure( structure_, false, trajectory_name);
+}
+
+bool AffordanceTemplate::getTrajectory(TrajectoryList& traj_list, std::string traj_name, Trajectory& traj) 
 {
   for (auto &t: traj_list) {
     if(t.name == traj_name) {
@@ -149,7 +221,7 @@ bool AffordanceTemplate::getTrajectoryPlan(const std::string& trajectory, const 
 
 bool AffordanceTemplate::setTrajectory(const std::string& trajectory_name)
 {
-  return createFromStructure(getCurrentStructure(), false, trajectory_name);
+  return setCurrentTrajectory( getCurrentStructure().ee_trajectories, trajectory_name);
 }
 
 void AffordanceTemplate::clearTrajectoryFlags()
@@ -158,7 +230,7 @@ void AffordanceTemplate::clearTrajectoryFlags()
 }
 
 void AffordanceTemplate::setTrajectoryFlags(Trajectory traj) 
-{
+{  
   if(waypoint_flags_.find(traj.name) == std::end(waypoint_flags_)) {
     WaypointTrajectoryFlags wp_flags;
 
@@ -191,14 +263,14 @@ bool AffordanceTemplate::isValidTrajectory(Trajectory traj)
  return valid_trajectory;
 } 
 
+// set the default (current) traj to the input one.
+// if no input request, find the first valid one
 bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::string traj) 
 {
-  
-  // set the default (current) traj to the input one.
-  // if no input request, find the first valid one
+  ROS_DEBUG("[AffordanceTemplate::setCurrentTrajectory] will attempt to set current trajectory to %s", traj.c_str());
 
   current_trajectory_ = "";
-  if(traj!="") {
+  if ( !traj.empty()) {
     for (auto &t: traj_list) {
       if(t.name == traj) {
         if(isValidTrajectory(t)) {
@@ -209,7 +281,7 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
       }
     }
   } 
-  if(current_trajectory_=="") {
+  if ( current_trajectory_.empty()) {
     for (auto &t: traj_list) {
       if(isValidTrajectory(t)) {
         current_trajectory_ = t.name;
@@ -222,8 +294,9 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
       }
     }
   } 
-  // still no valid traj found
-  if(current_trajectory_=="") {
+  
+  if (current_trajectory_.empty()) // still no valid traj found
+  {
     ROS_ERROR("AffordanceTemplate::createDisplayObjectsFromStructure() -- no valid trajectory found");
     return false;
   }
@@ -245,6 +318,8 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
     ROS_ERROR("AffordanceTemplate::createFromStructure() -- couldn't set the current trajectory");
     return false;
   }
+  ROS_INFO("AffordanceTemplate::createFromStructure() -- done creating %s", template_type_.c_str());
+
   return true;
 }
  
@@ -277,10 +352,11 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     if(object_scale_factor_.find(obj.name) == std::end(object_scale_factor_)) {
       object_scale_factor_[obj.name] = 1.0;
       ee_scale_factor_[obj.name] = 1.0;
-      ROS_WARN("Setting scale factor for %s", obj.name.c_str());
-    } else {
-      ROS_WARN("huh %s", obj.name.c_str());
-    }
+      ROS_DEBUG("[AffordanceTemplate::createDisplayObjectsFromStructure] setting scale factor for %s to default 1.0", obj.name.c_str());
+    } //TODO deubg??
+    // else {
+    //   ROS_WARN("huh %s", obj.name.c_str());
+    // }
 
     //   object_scale_factor_[obj.name] = 1.0;
     //   ee_scale_factor_[obj.name] = 1.0;
@@ -298,7 +374,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
     visualization_msgs::Marker marker;
     marker.ns = obj.name;
-    marker.id = idx;    
+    marker.id = idx++;
   
     if(!keep_poses || !hasObjectFrame(obj.name) ) {
       geometry_msgs::PoseStamped ps;
@@ -395,11 +471,8 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     }
 
     marker_menus_[obj.name].apply( *server_, obj.name );
-    server_->applyChanges();
-
-    idx += 1;
-
   }
+  server_->applyChanges();
 
   return true;
 }
@@ -407,7 +480,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
 bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses) 
 {
-
+  // DEBUG statements -- TODO
   ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- trajectory: %s", current_trajectory_.c_str());
 
   int wp_ids = 0;
@@ -422,7 +495,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
     int ee_id = wp_list.id;
     std::map<int, std::string> ee_name_map = robot_interface_->getEENameMap();
-    std::string ee_name = ee_name_map[ee_id];  
+    std::string ee_name = ee_name_map[ee_id];
 
     int wp_id = 0;
 
@@ -439,7 +512,6 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       geometry_msgs::Pose display_pose = originToPoseMsg(wp.origin);  
 
       std::string parent_obj = appendID(wp.display_object);
-      // std::cout << "Display Pose in frame: " << parent_obj << ":\n" << display_pose << std::endl;
       double parent_scale = object_scale_factor_[parent_obj]*ee_scale_factor_[parent_obj];  
 
       display_pose.position.x *= parent_scale;
@@ -585,61 +657,70 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
 void AffordanceTemplate::setupObjectMenu(AffordanceTemplateStructure structure, DisplayObject obj)
 {
-
-  for(auto& o : object_menu_options_) {
-    if(o.first == "Choose Trajectory") {
+  for(auto& o : object_menu_options_) 
+  {
+    if(o.first == "Choose Trajectory") 
       setupTrajectoryMenu(structure, obj.name);
-    } else {
+    else if (o.first.find("Add Waypoint") != std::string::npos)
+      setupAddWaypointMenuItem(structure, obj.name, o.first);
+    else 
       setupSimpleMenuItem(structure, obj.name, o.first, o.second);
-    }
   }
-
-
-  // for m,c in self.object_menu_options :
-  //     if m == "Add Waypoint Before" or m == "Add Waypoint After":
-  //         sub_menu_handle = self.marker_menus[obj].insert(m)
-  //         for ee in self.robot_interface.end_effector_name_map.iterkeys() :
-  //             name = self.robot_interface.end_effector_name_map[ee]
-  //             self.menu_handles[(obj,m,name)] = self.marker_menus[obj].insert(name,parent=sub_menu_handle,callback=self.create_waypoint_callback)
-
-
 }
 
 void AffordanceTemplate::setupWaypointMenu(AffordanceTemplateStructure structure, std::string name)
 {
-  for(auto& o : waypoint_menu_options_) {
-    if(o.first == "Change End-Effector Pose") {
+  for(auto& o : waypoint_menu_options_) 
+  {
+    if(o.first == "Change End-Effector Pose")
       setupEndEffectorPoseMenu(name);
-    } else {
+    else
       setupSimpleMenuItem(structure, name, o.first, o.second);
-    }
   }
 }
 
 void AffordanceTemplate::setupSimpleMenuItem(AffordanceTemplateStructure structure, const std::string& name, const std::string& menu_text, bool has_check_box)
 {
   MenuHandleKey key;
-  key[name] = {menu_text};
-  group_menu_handles_[key] = marker_menus_[name].insert( menu_text, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );
+  key[name] = {menu_text};  
+  group_menu_handles_[key] = marker_menus_[name].insert( menu_text, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );  
   if(has_check_box) {
     marker_menus_[name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
   }
 }
 
+void AffordanceTemplate::setupAddWaypointMenuItem(AffordanceTemplateStructure structure, std::string name, std::string menu_text)
+{
+  interactive_markers::MenuHandler::EntryHandle sub_menu_handle = marker_menus_[name].insert( menu_text);
+
+  for(auto& ee: robot_interface_->getEENameMap()) 
+  {
+    std::string ee_readable = robot_interface_->getReadableEEName(ee.second);
+
+    MenuHandleKey key;
+    key[name] = {menu_text, ee.second};
+    group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, ee_readable, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );   
+    
+    ROS_DEBUG("[AffordanceTemplate::setupAddWaypointMenuItem] adding submenu text %s to menu item %s", ee_readable.c_str(), menu_text.c_str());
+  }
+}
 
 void AffordanceTemplate::setupTrajectoryMenu(AffordanceTemplateStructure structure, const std::string& name)
 {
   std::string menu_text = "Choose Trajectory";
   interactive_markers::MenuHandler::EntryHandle sub_menu_handle = marker_menus_[name].insert( menu_text );
-  for(auto &traj: structure.ee_trajectories) {
+  for(auto &traj: structure.ee_trajectories) 
+  {
     MenuHandleKey key;
     key[name] = {menu_text, traj.name};
     group_menu_handles_[key] = marker_menus_[name].insert( sub_menu_handle, traj.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ) );   
-    if(traj.name == current_trajectory_) {
+  
+    if(traj.name == current_trajectory_) 
       marker_menus_[name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
-    } else {
+    else
       marker_menus_[name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );       
-    }
+    
+    ROS_DEBUG("[AffordanceTemplate::setupTrajectoryMenu] adding submenu text %s to menu item %s", traj.name.c_str(), menu_text.c_str());
   }
 }
 
@@ -671,8 +752,8 @@ int AffordanceTemplate::getEEIDfromWaypointName(const std::string wp_name)
 
 void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMarker m)
 {
-  std::string name = m.name;
   ROS_INFO("AffordanceTemplate::addInteractiveMarker() -- %s with frame: %s", m.name.c_str(), m.header.frame_id.c_str());
+  std::string name = m.name;
   int_markers_[m.name] = m;
   server_->insert(m);
   server_->setCallback(m.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ));
@@ -680,14 +761,15 @@ void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMar
 
 void AffordanceTemplate::removeInteractiveMarker(std::string marker_name) 
 {
+  ROS_INFO("[AffordanceTemplate::removeInteractiveMarker] removing marker %s", marker_name.c_str());
   server_->erase(marker_name);
   server_->applyChanges();
 }
 
-void AffordanceTemplate::removeAllMarkers() {
-  for(auto &m: int_markers_) {
+void AffordanceTemplate::removeAllMarkers() 
+{
+  for(auto &m: int_markers_)
     removeInteractiveMarker(m.first);
-  }
   group_menu_handles_.clear();
   int_markers_.clear();
   marker_menus_.clear();
@@ -696,20 +778,25 @@ void AffordanceTemplate::removeAllMarkers() {
 
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
-
-  ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
+  // ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
 
   interactive_markers::MenuHandler::CheckState state;
 
   // set up key maps for easy comparison to menu handler ID
+  MenuHandleKey wp_before_key;
+  MenuHandleKey wp_after_key;
   MenuHandleKey reset_key;
   MenuHandleKey save_key;
+  MenuHandleKey delete_key;
   MenuHandleKey hide_controls_key;
   MenuHandleKey plan_test_key;
   MenuHandleKey execute_test_key;
   
+  wp_before_key[feedback->marker_name] = {"Add Waypoint Before"};
+  wp_after_key[feedback->marker_name] = {"Add Waypoint After"};
   reset_key[feedback->marker_name] = {"Reset"};
   save_key[feedback->marker_name] = {"Save"};
+  delete_key[feedback->marker_name] = {"Delete Waypoint"};
   plan_test_key[feedback->marker_name] = {"Plan Test"};
   execute_test_key[feedback->marker_name] = {"Execute Test"};
   hide_controls_key[feedback->marker_name] = {"Hide Controls"};
@@ -728,24 +815,266 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   
   switch ( feedback->event_type ) {
 
-    ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
-
-    case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :      
-      ROS_DEBUG("AffordanceTemplate::processFeedback() --   MOUSE_UP");
+    case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :
+      ROS_INFO("[AffordanceTemplate::processFeedback] %s mouse up", feedback->marker_name.c_str());
       break;
 
-    case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT :
-
-      ROS_DEBUG("AffordanceTemplate::processFeedback() -- MENU_SELECT");
-      ROS_DEBUG("AffordanceTemplate::processFeedback() --   menu id: %d", feedback->menu_entry_id);
+    case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT : {
+      ROS_INFO("[AffordanceTemplate::processFeedback] %s selected menu entry: %d", feedback->marker_name.c_str(), feedback->menu_entry_id);
+      // ROS_DEBUG("AffordanceTemplate::processFeedback() -- MENU_SELECT");
+      // ROS_DEBUG("AffordanceTemplate::processFeedback() --   menu id: %d", feedback->menu_entry_id);
       // ROS_DEBUG("AffordanceTemplate::processFeedback() --   pose: (%.3f, %.3f, %.3f), (%.3f, %.3f, %.3f, %.3f), frame_id: %s", 
       //                                                             feedback->pose.position.x, feedback->pose.position.y, feedback->pose.position.z, 
       //                                                             feedback->pose.orientation.x, feedback->pose.orientation.y, feedback->pose.orientation.z, feedback->pose.orientation.w,
       //                                                             feedback->header.frame_id.c_str());
 
+      // *****
+      // FIXME : this may not be the best way to figure out if we're dealing with the object or an EE
+      // *****
+
+      // 
+      // check for 'Add Waypoint Before' for EE objects
+      if (group_menu_handles_.find(wp_before_key) != std::end(group_menu_handles_)) 
+      {
+        if (group_menu_handles_[wp_before_key] == feedback->menu_entry_id)
+        {
+          // Trajectory traj;
+          // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
+          bool found = false;
+          for (auto& traj : structure_.ee_trajectories)
+          {
+            if (traj.name == current_trajectory_)
+            {
+              // look for the object the user selected in our waypoint list
+              for (auto& wp_list: traj.ee_waypoint_list) 
+              {
+                int wp_id = -1; // init to -1 because we pre-add
+                for (auto& wp: wp_list.waypoints) 
+                {
+                  std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+                  if (wp_name == feedback->marker_name)
+                  {
+                    ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint Before] for EE waypoint %s", feedback->marker_name.c_str());
+                    // TODO and FIXME - this is all just testing insertion
+                    affordance_template_object::EndEffectorWaypoint eewp;
+                    eewp.ee_pose = 1;
+                    eewp.display_object = "test_before_object";
+                    eewp.origin.position[0] = eewp.origin.position[1] = eewp.origin.position[2] = 1.0;
+                    eewp.origin.orientation[0] = eewp.origin.orientation[1] = eewp.origin.orientation[2] = 0.0;
+                    eewp.controls.translation[0] = eewp.controls.translation[1] = eewp.controls.translation[2] = true;
+                    eewp.controls.rotation[0] = eewp.controls.rotation[1] = eewp.controls.rotation[2] = true;
+                    eewp.controls.scale = 1.0;
+                    wp_list.waypoints.insert(wp_list.waypoints.begin(), eewp);
+
+                    found = true;
+                    break;
+                  }
+                }
+
+                if (found) // already found the object - no reason to continue the for loop
+                  break;
+              }
+            }
+
+            if (found) // already found the object - no reason to continue the for loop
+              break;
+          }
+        }
+      }
+
+      // 
+      // check for 'Add Waypoint Before' for AT object (wheel, door, etc) 
+      for (auto& ee: robot_interface_->getEENameMap()) 
+      {
+        bool found = false;  
+        MenuHandleKey key;
+        key[feedback->marker_name] = {"Add Waypoint Before", ee.second};
+        if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) 
+        {
+          if (group_menu_handles_[key] == feedback->menu_entry_id)
+          {
+            // Trajectory traj; 
+            // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
+            for (auto& traj : structure_.ee_trajectories)
+            {
+              if (traj.name == current_trajectory_)
+              {
+                for (auto& wp_list : traj.ee_waypoint_list) // go through our list of EE waypoints - match based on EE ID
+                {
+                  if (wp_list.id == robot_interface_->getEEID(ee.second))
+                  {
+                    ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint Before] for trajectory: %s and end effector: %s", current_trajectory_.c_str(), robot_interface_->getReadableEEName(ee.second).c_str());
+                    // TODO and FIXME - this is all just testing insertion
+                    affordance_template_object::EndEffectorWaypoint wp;
+                    wp.ee_pose = 1; 
+                    wp.display_object = "test_before_object";
+                    wp.origin.position[0] = wp.origin.position[1] = wp.origin.position[2] = 1.0;
+                    wp.origin.orientation[0] = wp.origin.orientation[1] = wp.origin.orientation[2] = 0.0;
+                    wp.controls.translation[0] = wp.controls.translation[1] = wp.controls.translation[2] = true;
+                    wp.controls.rotation[0] = wp.controls.rotation[1] = wp.controls.rotation[2] = true;
+                    wp.controls.scale = 1.0;
+                    wp_list.waypoints.insert(wp_list.waypoints.begin(), wp);
+
+                    found = true;
+                    break;
+                  }
+                }
+
+                if (found) // already found the object - no reason to continue the for loop
+                  break;
+              }
+            }
+          }
+        }
+
+        if (found) // already found the object - no reason to continue the for loop
+          break;
+      }
+
+      // 
+      // check for 'Add Waypoint After' for EE objects
+      if (group_menu_handles_.find(wp_after_key) != std::end(group_menu_handles_)) 
+      {
+        if (group_menu_handles_[wp_after_key] == feedback->menu_entry_id)
+        {
+          // Trajectory traj;
+          // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
+          bool found = false;
+          for (auto& traj : structure_.ee_trajectories)
+          {
+            if (traj.name == current_trajectory_)
+            {
+              // look for the object the user selected in our waypoint list
+              for (auto& wp_list: traj.ee_waypoint_list) 
+              {
+                int wp_id = -1; // init to -1 because we pre-add
+                for (auto& wp: wp_list.waypoints) 
+                {
+                  std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+                  if (wp_name == feedback->marker_name)
+                  {
+                    ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint After] for EE waypoint %s", feedback->marker_name.c_str());
+                    // TODO and FIXME - this is all just testing insertion
+                    affordance_template_object::EndEffectorWaypoint eewp;
+                    eewp.ee_pose = 1;
+                    eewp.display_object = "test_after_object";
+                    eewp.origin.position[0] = eewp.origin.position[1] = eewp.origin.position[2] = 1.0;
+                    eewp.origin.orientation[0] = eewp.origin.orientation[1] = eewp.origin.orientation[2] = 0.0;
+                    eewp.controls.translation[0] = eewp.controls.translation[1] = eewp.controls.translation[2] = true;
+                    eewp.controls.rotation[0] = eewp.controls.rotation[1] = eewp.controls.rotation[2] = true;
+                    eewp.controls.scale = 1.0;
+                    wp_list.waypoints.push_back(eewp);
+
+                    found = true;
+                    break;
+                  }
+                }
+
+                if (found) // already found the object - no reason to continue the for loop
+                  break;
+              }
+            }
+
+            if (found) // already found the object - no reason to continue the for loop
+              break;
+          }
+        }
+      }
+
+      // 
+      // check for 'Add Waypoint After' for AT object (wheel, door, etc) 
+      for (auto& ee: robot_interface_->getEENameMap()) 
+      {
+        bool found = false;  
+        MenuHandleKey key;
+        key[feedback->marker_name] = {"Add Waypoint After", ee.second};
+        if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) 
+        {
+          if (group_menu_handles_[key] == feedback->menu_entry_id)
+          {
+            // Trajectory traj; 
+            // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
+            for (auto& traj : structure_.ee_trajectories)
+            {
+              if (traj.name == current_trajectory_)
+              {
+                for (auto& wp_list : traj.ee_waypoint_list) // go through our list of EE waypoints - match based on EE ID
+                {
+                  if (wp_list.id == robot_interface_->getEEID(ee.second))
+                  {
+                    ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint After] for trajectory: %s and end effector: %s", current_trajectory_.c_str(), robot_interface_->getReadableEEName(ee.second).c_str());
+                    // TODO and FIXME - this is all just testing insertion
+                    affordance_template_object::EndEffectorWaypoint wp;
+                    wp.ee_pose = 1; 
+                    wp.display_object = "test_after_object";
+                    wp.origin.position[0] = wp.origin.position[1] = wp.origin.position[2] = 1.0;
+                    wp.origin.orientation[0] = wp.origin.orientation[1] = wp.origin.orientation[2] = 0.0;
+                    wp.controls.translation[0] = wp.controls.translation[1] = wp.controls.translation[2] = true;
+                    wp.controls.rotation[0] = wp.controls.rotation[1] = wp.controls.rotation[2] = true;
+                    wp.controls.scale = 1.0;
+                    wp_list.waypoints.push_back(wp);
+
+                    found = true;
+                    break;
+                  }
+                }
+
+                if (found) // already found the object - no reason to continue the for loop
+                  break;
+              }
+            }
+          }
+        }
+
+        if (found) // already found the object - no reason to continue the for loop
+          break;
+      }
+
+      // 
+      // delete waypoint
+      if (group_menu_handles_.find(delete_key) != group_menu_handles_.end())
+      {
+        if (group_menu_handles_[delete_key] == feedback->menu_entry_id)
+        {
+          bool found = false;
+          ROS_DEBUG("[AffordanceTemplate::processFeedback::Delete Waypoint] deleting waypoint: %s", feedback->marker_name.c_str());
+          for (auto& traj : structure_.ee_trajectories)
+          {
+            if (traj.name == current_trajectory_)
+            {
+              // look for the object the user selected in our waypoint list
+              for (auto& wp_list: traj.ee_waypoint_list) 
+              {
+                int wp_id = -1; // init to -1 because we pre-add
+                for (auto& wp: wp_list.waypoints) 
+                {
+                  std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+                  if (wp_name == feedback->marker_name)
+                  {
+                    wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
+                    found = true;
+
+                    //FIXME:: is this the best way to handle methodsl ike these?? 
+                    //        should these be called at the end of the processFeedback
+                    //        or should we be using server->apply() instead??
+                    removeAllMarkers();
+                    createFromStructure(structure_, false, current_trajectory_); 
+                    break;
+                  }
+                }
+                if (found)
+                  break;
+              }
+            }
+            if (found)
+              break;
+          }
+        }
+      }
+
       if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[reset_key] == feedback->menu_entry_id) {
-          ROS_DEBUG("AffordanceTemplate::processFeedback() --   RESET");
+          ROS_INFO("AffordanceTemplate::processFeedback::Reset] resetting current structure to the inital structure.");
           structure_ = initial_structure_;      
           appendIDToStructure(structure_);
           removeAllMarkers();
@@ -754,15 +1083,23 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
-      if(group_menu_handles_.find(save_key) != std::end(group_menu_handles_)) {
-        if(group_menu_handles_[save_key] == feedback->menu_entry_id) {
-          ROS_DEBUG("AffordanceTemplate::processFeedback() --   SAVE");
+      if (group_menu_handles_.find(save_key) != group_menu_handles_.end()) 
+      {
+        if (group_menu_handles_[save_key] == feedback->menu_entry_id) 
+        {
+          ROS_DEBUG("[AffordanceTemplate::processFeedback::Save] saving file");
+          std::vector<std::string> keys;
+          boost::split(keys, structure_.filename, boost::is_any_of("/"));
+          if (keys.size())
+            saveToDisk(keys.back(), structure_.image, feedback->marker_name, true);
+          else
+            ROS_ERROR("[AffordanceTemplate::processFeedback::Save] invalid filename: %s", structure_.filename.c_str());
         }
       }
 
       if(group_menu_handles_.find(hide_controls_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[hide_controls_key] == feedback->menu_entry_id) {
-          ROS_DEBUG("AffordanceTemplate::processFeedback() --   CONTROLS TOGGLE");
+          ROS_INFO("AffordanceTemplate::processFeedback() --   CONTROLS TOGGLE");
           if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) {
             if(state == interactive_markers::MenuHandler::CHECKED) {
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );
@@ -804,14 +1141,33 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
         }
       }
+      
+      //
+      // switch trajectories using the context menu
+      for (auto &traj: structure_.ee_trajectories) 
+      {
+        MenuHandleKey key;
+        key[feedback->marker_name] = {"Choose Trajectory", traj.name}; // FIXME -- can this be static like this??
+        if (group_menu_handles_.find(key) != group_menu_handles_.end())
+        {
+          marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED);
+          if (group_menu_handles_[key] == feedback->menu_entry_id) 
+          {
+            ROS_DEBUG("[AffordanceTemplate::processFeedback::Choose Trajectory] found matching trajectory name %s", traj.name.c_str());
+            setTrajectory(traj.name);
+            marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED);
+          }
+        }
+      }
 
       break;
-
-    default :
+    }
+    default : 
+      //ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
       break;
   }
   server_->applyChanges();
-
+  marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
 }
 
 bool AffordanceTemplate::isObject(const std::string& obj) {
@@ -892,6 +1248,7 @@ bool AffordanceTemplate::computePathSequence(AffordanceTemplateStructure structu
   return true;
 }
 
+ // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
 std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::vector<std::string>& ee_names, int steps, bool direct, bool backwards)
 {
 
@@ -972,9 +1329,9 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
   return ret;
 }
 
+ // list of ee waypoints to move to, return true if all waypoints were valid
 bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_names) 
 {
-
   ROS_INFO("AffordanceTemplate::moveToWaypoints()");
   std::vector<std::string> valid_ee_plans;
   std::vector<std::string> m_names;
@@ -1001,64 +1358,54 @@ bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_name
 
 void AffordanceTemplate::run()
 {
- 
   ros::Rate loop_rate(loop_rate_);
   tf::Transform transform;
   FrameInfo fi;
 
-  // ROS_INFO("%s spinning.", nh_.getNamespace().c_str());
+  ROS_INFO("[AffordanceTemplate] spinning...");
   while(ros::ok() && running_)
   {
-    for(auto &f: frame_store_) {
+    for(auto &f: frame_store_) 
+    {
       fi = f.second;
       tf::poseMsgToTF(fi.second.pose, transform);
       tf_broadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), fi.second.header.frame_id, fi.first));
     }
     loop_rate.sleep();
   }
+  ROS_INFO("[AffordanceTemplate] leaving spin thread. template must be shutting down...");
 }
 
 void AffordanceTemplate::stop()
 {
+  ROS_WARN("[AffordanceTemplate::stop] %s being asked to stop..", name_.c_str());
   running_ = false;
   removeAllMarkers();
 }
 
-int main(int argc, char **argv)
-{
- 
-  ros::init(argc, argv, "affordance_template_test");
-  ros::NodeHandle nh("~");
- 
-  std::string robot_name, template_type;
+bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_factor, double ee_scale_factor)
+{ 
+  ROS_DEBUG("[AffordanceTemplate::setObjectScaling] setting object %s scaling to %g, %g", key.c_str(), scale_factor, ee_scale_factor);
   
-  if (nh.hasParam("robot_name")) {
-    nh.getParam("robot_name", robot_name); 
-  } else {
-    robot_name = "r2_upperbody";
-  }
+  // TODO this probably needs double-checking 
+  //      also, this should only happen if we want to save scaling factor
+  // for ( auto& d : structure_.display_objects)
+  // {
+  //   if ( d.name == key)
+  //     d.controls.scale = scale_factor;
+  // }
+  // for ( auto& t : structure_.ee_trajectories)
+  // {
+  //   for ( auto& e : t.ee_waypoint_list)
+  //   {
+  //     for ( auto& w : e.waypoints)
+  //       w.controls.scale = ee_scale_factor;
+  //   }
+  // }
 
-  if (nh.hasParam("template_type")) {
-    nh.getParam("template_type", template_type); 
-  } else {
-    template_type = "wheel";
-  }
+  object_scale_factor_[key] = scale_factor;
+  ee_scale_factor_[key] = ee_scale_factor;
 
-  boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface;
-  robot_interface.reset(new affordance_template_markers::RobotInterface());
-  robot_interface->load("r2_upperbody.yaml");
-  robot_interface->configure();
-
-  boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server;
-  server.reset( new interactive_markers::InteractiveMarkerServer(std::string(robot_name + "_affordance_template_server"),"",false) );
-
-  AffordanceTemplate at(nh, server, robot_interface, robot_name, template_type, 0);
-  
-  AffordanceTemplateStructure structure;
-  geometry_msgs::Pose p;
-  at.loadFromFile("/home/seth/catkin/src/affordance_templates/affordance_template_library/templates/wheel.json", p, structure);
-
-  at.run();
- 
-  return 0;
+  removeAllMarkers();
+  return createFromStructure(structure_);
 }

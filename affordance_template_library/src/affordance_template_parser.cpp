@@ -3,10 +3,7 @@
 
 using namespace affordance_template_object;
 
-AffordanceTemplateParser::AffordanceTemplateParser() {}
-AffordanceTemplateParser::~AffordanceTemplateParser() {}
-
-bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemplateStructure &at)
+bool AffordanceTemplateParser::loadFromFile(const std::string& filename, AffordanceTemplateStructure &at)
 {
 
   char *cstr = new char[filename.length() + 1];
@@ -99,6 +96,7 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", org.position[0], org.position[1], org.position[2], org.orientation[0], org.orientation[1], org.orientation[2]);
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
               ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
+              ROS_INFO("[AffordanceTemplateParser::loadFromFile] \twaypoint is scaled to %g", ctrl.scale);
           }
           ee_trajectory.ee_waypoint_list.push_back(ee);
         }
@@ -162,32 +160,220 @@ bool AffordanceTemplateParser::loadFromFile(std::string filename, AffordanceTemp
           DisplayObject display_object;
           display_object.name = objects[i]["name"].GetString();
 
-          if(objects[i].HasMember("parent")) {  
+          if(objects[i].HasMember("parent"))
             display_object.parent = objects[i]["parent"].GetString();
-          } else {
+          else
             display_object.parent = "";
-          }
           display_object.origin = orig;
           display_object.shape = shp;
           display_object.controls = ctrl;
 
           ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] display object "<<i+1<<" has name: "<<display_object.name);
-          if(display_object.parent != "") {
+          if(display_object.parent != "")
             ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tparent object: %s", display_object.parent.c_str());
-          }
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", orig.position[0], orig.position[1], orig.position[2], orig.orientation[0], orig.orientation[1], orig.orientation[2]);
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
+          ROS_INFO("[AffordanceTemplateParser::loadFromFile] \t%s is scaled to %g", display_object.name.c_str(), ctrl.scale);
           ROS_INFO("[AffordanceTemplateParser::loadFromFile] \t%s", shape_str.c_str());
 
           at.display_objects.push_back(display_object);
       }
-
       std::cout<<std::endl;
-
-      // at_collection_[at.name] = at;
   }
   std::fclose(f_pnt);
+
+  return true;
+}
+
+bool AffordanceTemplateParser::saveToFile(const std::string& filepath, const AffordanceTemplateStructure& at)
+{
+  ROS_INFO("[AffordanceTemplateParser::saveToFile] opening file for JSON saving: %s", filepath.c_str());
+
+  // create writer doc
+  rapidjson::StringBuffer json;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(json);
+  writer.StartObject();
+  writer.SetIndent(' ', 2);
+
+  // extract the template type out of the name
+  std::vector<std::string> names;
+  boost::split(names, at.name, boost::is_any_of(":"));
+  assert(names.size());
+
+  writer.Key("name");  writer.String(names.front().c_str());
+  writer.Key("image"); writer.String(at.image.c_str());
+
+  writer.Key("display_objects"); 
+  writer.StartArray();
+  for ( auto d : at.display_objects)
+  {
+    writer.StartObject();
+
+    // NAME, PARENT if available
+    names.clear();
+    boost::split(names, d.name, boost::is_any_of(":"));
+    assert(names.size());
+    writer.Key("name");  writer.String(names.front().c_str());
+    if (!d.parent.empty()) 
+    {
+      writer.Key("parent");
+      writer.String(d.parent.c_str());
+    }
+
+    // SHAPE
+    writer.Key("shape");
+    writer.StartObject();
+    writer.Key("type"); writer.String(d.shape.type.c_str());
+    if (d.shape.type == "mesh" || d.shape.type == "box")
+    {
+      if (d.shape.type == "mesh")
+      {
+        writer.Key("data"); writer.String(d.shape.mesh.c_str());
+      }
+      else
+      {
+        writer.Key("material");
+        writer.StartObject();
+        writer.Key("color"); writer.String(d.shape.color.c_str());
+        writer.Key("rgba");
+        writer.StartArray();
+        writer.Double(d.shape.rgba[0]);
+        writer.Double(d.shape.rgba[1]);
+        writer.Double(d.shape.rgba[2]);
+        writer.Double(d.shape.rgba[3]);
+        writer.EndArray();
+        writer.EndObject();
+      }
+      writer.Key("size");
+      writer.StartArray();
+      writer.Double(d.shape.size[0]);
+      writer.Double(d.shape.size[1]);
+      writer.Double(d.shape.size[2]);
+      writer.EndArray();
+    }
+    else ROS_FATAL("[AffordanceTemplateParser::saveToFile] shape %s has not be formatted to write to file!! contact developer.", d.shape.type.c_str());
+    writer.EndObject();
+
+    // ORIGIN 
+    writer.Key("origin");
+    writer.StartObject();
+    writer.Key("xyz");
+    writer.StartArray();
+    writer.Double(d.origin.position[0]);
+    writer.Double(d.origin.position[1]);
+    writer.Double(d.origin.position[2]);
+    writer.EndArray();
+    writer.Key("rpy");
+    writer.StartArray();
+    writer.Double(d.origin.orientation[0]);
+    writer.Double(d.origin.orientation[1]);
+    writer.Double(d.origin.orientation[2]);
+    writer.EndArray();
+    writer.EndObject();
+
+    // CONTROLS
+    writer.Key("controls");
+    writer.StartObject();
+    writer.Key("xyz");
+    writer.StartArray();
+    writer.Bool(d.controls.translation[0]);
+    writer.Bool(d.controls.translation[1]);
+    writer.Bool(d.controls.translation[2]);
+    writer.EndArray();
+    writer.Key("rpy");
+    writer.StartArray();
+    writer.Bool(d.controls.rotation[0]);
+    writer.Bool(d.controls.rotation[1]);
+    writer.Bool(d.controls.rotation[2]);
+    writer.EndArray();
+    writer.Key("scale"); writer.Double(d.controls.scale);
+    writer.EndObject();
+
+    writer.EndObject(); // end of each display object
+  }
+  writer.EndArray();
+
+  writer.Key("end_effector_trajectory"); 
+  writer.StartArray();
+  for ( auto ee : at.ee_trajectories)
+  {
+    writer.StartObject();
+    
+    writer.Key("name"); writer.String(ee.name.c_str());
+
+    writer.Key("end_effector_group");
+    writer.StartArray();
+    for ( auto grp : ee.ee_waypoint_list)
+    {
+      writer.StartObject(); 
+
+      writer.Key("id"); writer.Int(grp.id);
+
+      writer.Key("end_effector_waypoint");
+      writer.StartArray();
+      for ( auto wp : grp.waypoints)
+      {
+        writer.StartObject();
+
+        writer.Key("ee_pose"); writer.Int(wp.ee_pose);
+        writer.Key("display_object"); writer.String(wp.display_object.c_str());
+
+        // ORIGIN 
+        writer.Key("origin");
+        writer.StartObject();
+        writer.Key("xyz");
+        writer.StartArray();
+        writer.Double(wp.origin.position[0]);
+        writer.Double(wp.origin.position[1]);
+        writer.Double(wp.origin.position[2]);
+        writer.EndArray();
+        writer.Key("rpy");
+        writer.StartArray();
+        writer.Double(wp.origin.orientation[0]);
+        writer.Double(wp.origin.orientation[1]);
+        writer.Double(wp.origin.orientation[2]);
+        writer.EndArray();
+        writer.EndObject();
+
+        // CONTROLS
+        writer.Key("controls");
+        writer.StartObject();
+        writer.Key("xyz");
+        writer.StartArray();
+        writer.Bool(wp.controls.translation[0]);
+        writer.Bool(wp.controls.translation[1]);
+        writer.Bool(wp.controls.translation[2]);
+        writer.EndArray();
+        writer.Key("rpy");
+        writer.StartArray();
+        writer.Bool(wp.controls.rotation[0]);
+        writer.Bool(wp.controls.rotation[1]);
+        writer.Bool(wp.controls.rotation[2]);
+        writer.EndArray();
+        writer.Key("scale"); writer.Double(wp.controls.scale);
+        writer.EndObject();
+
+        writer.EndObject(); // each waypoint struct
+      }
+      writer.EndArray(); // waypoints vector
+
+      writer.EndObject(); // each ee group struct
+    }
+    writer.EndArray(); // ee groups vector
+
+    writer.EndObject(); // end of each ee trajectory struct
+  }
+  writer.EndArray();
+
+  writer.EndObject(); // end of json object
+  
+  std::ofstream file(filepath.c_str(), std::ios::trunc);
+  file << json.GetString() << std::endl;
+  file.close();
+
+
+  ROS_INFO("[AffordanceTemplateParser::saveToFile] successfully wrote template %s to file", at.name.c_str());
 
   return true;
 }

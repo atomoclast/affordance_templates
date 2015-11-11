@@ -4,10 +4,15 @@
 #include <ros/ros.h>
 
 #include <iostream>
-#include <boost/filesystem.hpp>
+#include <fstream>
+
 #include <boost/thread.hpp>
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <rapidjson/document.h>
+#include <rapidjson/prettywriter.h>
 #include <rapidjson/filereadstream.h>
 
 #include <affordance_template_library/affordance_template_structure.h>
@@ -19,13 +24,12 @@ namespace affordance_template_object
 {
     class AffordanceTemplateParser
     {
-
     public: 
-			AffordanceTemplateParser();
-			~AffordanceTemplateParser();
+        AffordanceTemplateParser(){}
+        ~AffordanceTemplateParser(){}
 
-			bool loadFromFile(std::string filename, AffordanceTemplateStructure &at);
-
+        bool loadFromFile(const std::string&, AffordanceTemplateStructure &at);
+        bool saveToFile(const std::string&, const AffordanceTemplateStructure&);
     };
 }
 

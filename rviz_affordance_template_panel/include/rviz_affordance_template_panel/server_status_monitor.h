@@ -6,7 +6,7 @@
 #include <boost/thread.hpp> 
 #include <boost/thread/mutex.hpp>
 
-#include "AffordanceTemplateMsgHeaders.hpp"
+#include <rviz_affordance_template_panel/msg_headers.h>
 
 namespace Ui {
 class RVizAffordanceTemplatePanel;

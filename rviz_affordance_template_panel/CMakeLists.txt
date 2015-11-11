@@ -15,25 +15,25 @@ set(QT_FORMS ${PROJECT_SOURCE_DIR}/ui/rviz_affordance_template_panel.ui)
 set(QT_RESS ${PROJECT_SOURCE_DIR}/resources/images.qrc)
 
 qt4_wrap_cpp(MOC_FILES
-    src/AffordanceTemplateMsgHeaders.hpp
-    src/AffordanceTemplateServerStatusMonitor.hpp
-    src/AffordanceTemplateRVizClient.hpp  
-    src/Affordance.hpp
-    src/RecognitionObject.hpp
-    src/RobotConfig.hpp
-    src/Controls.hpp
-    src/util.hpp
-    src/rviz_affordance_template_panel.hpp
+    include/${PROJECT_NAME}/msg_headers.h
+    include/${PROJECT_NAME}/server_status_monitor.h
+    include/${PROJECT_NAME}/rviz_client.h
+    include/${PROJECT_NAME}/affordance.h
+    include/${PROJECT_NAME}/RecognitionObject.hpp
+    include/${PROJECT_NAME}/robot_config.h
+    include/${PROJECT_NAME}/controls.h
+    include/${PROJECT_NAME}/util.h
+    include/${PROJECT_NAME}/rviz_affordance_template_panel.h
 )
 qt4_wrap_ui(QT_FORMS_HPP ${QT_FORMS})
 qt4_add_resources(QT_RESOURCES ${QT_RESS})
 
 set(SRC_FILES
-    src/AffordanceTemplateServerStatusMonitor.cpp
-    src/AffordanceTemplateRVizClient.cpp  
-    src/Affordance.cpp
+    src/server_status_monitor.cpp
+    src/rviz_client.cpp  
+    src/affordance.cpp
     src/RecognitionObject.cpp
-    src/Controls.cpp
+    src/controls.cpp
     src/util.cpp
     src/rviz_affordance_template_panel.cpp
     ${MOC_FILES}
@@ -54,43 +54,22 @@ find_package(orocos_kdl REQUIRED)
 link_directories(${orocos_kdl_LIBRARY_DIRS})
 find_library(KDL_LIBRARY REQUIRED NAMES orocos-kdl HINTS ${orocos_kdl_LIBRARY_DIRS})
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  # INCLUDE_DIRS include
+  INCLUDE_DIRS include
   LIBRARIES rviz_affordance_template_panel ${KDL_LIBRARY}
   CATKIN_DEPENDS geometry_msgs interactive_markers roscpp roslib rviz affordance_template_server visualization_msgs affordance_template_msgs
   DEPENDS system_lib orocos_kdl
 )
 
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-# include_directories(include)
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-#set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-## Declare a cpp library
 add_library(${PROJECT_NAME} ${SRC_FILES} ${QT_FORMS_HPP} ${QT_RESOURCES})
-
-# Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
