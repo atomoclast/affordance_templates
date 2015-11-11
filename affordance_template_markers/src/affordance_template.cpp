@@ -1463,3 +1463,33 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   removeAllMarkers();
   return createFromStructure(structure_);
 }
+
+bool AffordanceTemplate::setObjectPose(const affordance_template_msgs::DisplayObjectInfo& obj)
+{
+  bool found = false;
+  
+  ROS_WARN("[AffordanceTemplate::setObjectPose] setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
+  for (auto& d : structure_.display_objects)
+  {
+    if (d.name == obj.name)
+    {
+      ROS_WARN("[AffordanceTemplate::setObjectPose] matched object %s", obj.name.c_str());
+      found = true;
+
+      d.origin.position[0] = obj.stamped_pose.pose.position.x;
+      d.origin.position[1] = obj.stamped_pose.pose.position.y;
+      d.origin.position[2] = obj.stamped_pose.pose.position.z;
+
+      tf::Quaternion q;
+      tf::quaternionMsgToTF(obj.stamped_pose.pose.orientation, q);
+      double roll, pitch, yaw;
+      tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+      d.origin.orientation[0] = roll;
+      d.origin.orientation[1] = pitch;
+      d.origin.orientation[2] = yaw;
+    }
+  }
+
+  return found;
+}

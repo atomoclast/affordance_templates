@@ -368,6 +368,28 @@ bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Reque
 
 bool AffordanceTemplateInterface::handleSetObject(SetObjectPose::Request& req, SetObjectPose::Response& res)
 {
+    res.status = true;
+
+    for (auto& o : req.objects)
+    {
+        ATPointer at;
+        if (at_server_->getTemplateInstance(o.type, o.id, at))
+        {
+            ROS_WARN("[AffordanceTemplateInterface::handleSetObject] will call AT %s:%d method to set pose for object %s", o.type.c_str(), o.id, o.name.c_str());
+            if (!at->setObjectPose(o))
+            {
+                ROS_ERROR("[AffordanceTemplateInterface::handleSetObject] failed to set pose for object %s most likely couldn't find object in structure", o.name.c_str());
+                res.status = false;
+                break;
+            }
+        }
+        else
+        {
+            ROS_ERROR("[AffordanceTemplateInterface::handleSetObject] failed to find template %s:%d -- won't be able to set pose for object %s", o.type.c_str(), o.id, o.name.c_str());
+            res.status = false;
+        }
+    }
+
     return true;
 }
 

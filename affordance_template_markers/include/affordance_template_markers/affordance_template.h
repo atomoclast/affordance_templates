@@ -23,6 +23,8 @@
 #include <affordance_template_library/affordance_template_structure.h>
 #include <affordance_template_library/affordance_template_parser.h>
 
+#include <affordance_template_msgs/DisplayObjectInfo.h>
+
 
 namespace affordance_template 
 {
@@ -88,7 +90,7 @@ namespace affordance_template
     bool setTrajectory(const std::string&);
     bool setObjectScaling(const std::string&, double, double);
     void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
-    
+    bool setObjectPose(const affordance_template_msgs::DisplayObjectInfo&);
 
   private:
     

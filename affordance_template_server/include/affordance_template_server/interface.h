@@ -22,6 +22,7 @@
 #include <affordance_template_msgs/SetAffordanceTemplatePose.h>
 #include <affordance_template_msgs/GetObjectPose.h>
 #include <affordance_template_msgs/SetObjectPose.h>
+#include <affordance_template_msgs/DisplayObjectInfo.h>
 #include <affordance_template_msgs/ObjectInfo.h>
 #include <affordance_template_msgs/WaypointInfo.h>
 
