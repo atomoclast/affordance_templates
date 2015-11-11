@@ -23,6 +23,12 @@ end_effector_pose_map:
   - name: Right Hand Close
     group: right_hand
     id: 2
+  - name: Right Hand Point
+    group: right_hand
+    id: 3
+  - name: Right Hand Two Finger Prism
+    group: right_hand
+    id: 4
   - name: Left Hand Open
     group: left_hand
     id: 0
@@ -32,3 +38,9 @@ end_effector_pose_map:
   - name: Left Hand Close
     group: left_hand
     id: 2
+  - name: Left Hand Point
+    group: left_hand
+    id: 3
+  - name: Left Hand Two Finger Prism
+    group: left_hand
+    id: 4

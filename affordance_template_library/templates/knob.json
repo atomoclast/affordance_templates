@@ -28,7 +28,7 @@
           "id": 0,
           "end_effector_waypoint" : [
             {
-              "ee_pose": 0,
+              "ee_pose": 4,
               "display_object": "knob",
               "origin": {
                 "xyz": [-0.04, -0.31, 0.03],
