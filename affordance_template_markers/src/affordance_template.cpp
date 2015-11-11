@@ -155,6 +155,12 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
     boost::filesystem::copy_file(output_path, bak_path, boost::filesystem::copy_option::overwrite_if_exists);
   }
 
+  // set structure key as the new key name
+  std::vector<std::string> keys;
+  boost::split(keys, key, boost::is_any_of(":"));
+  if (keys.size())
+    structure_.name = keys.front();
+
   return at_parser_.saveToFile(output_path, structure_);
 }
 
@@ -778,7 +784,7 @@ void AffordanceTemplate::removeAllMarkers()
 
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
-  // ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
+  ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
 
   interactive_markers::MenuHandler::CheckState state;
 
@@ -816,9 +822,53 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   switch ( feedback->event_type ) {
 
     case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :
-      ROS_INFO("[AffordanceTemplate::processFeedback] %s mouse up", feedback->marker_name.c_str());
-      break;
+    {  
 
+      //
+      // save the current pose of the ee waypoint back to the structure
+      bool found = false;
+      for (auto& traj : structure_.ee_trajectories)
+      {
+        if (traj.name == current_trajectory_)
+        {
+          // look for the object the user selected in our waypoint list
+          for (auto& wp_list: traj.ee_waypoint_list) 
+          {
+            int wp_id = -1; // init to -1 because we pre-add
+            for (auto& wp: wp_list.waypoints) 
+            {
+              std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+              if (wp_name == feedback->marker_name)
+              {
+                ROS_DEBUG("[AffordanceTemplate::processFeedback] saving pose for EE waypoint %s", feedback->marker_name.c_str());
+
+                wp.origin.position[0] = feedback->pose.position.x;
+                wp.origin.position[1] = feedback->pose.position.y;
+                wp.origin.position[2] = feedback->pose.position.z;
+
+                tf::Quaternion q;
+                tf::quaternionMsgToTF(feedback->pose.orientation, q);
+                double roll, pitch, yaw;
+                tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+                wp.origin.orientation[0] = roll;
+                wp.origin.orientation[1] = pitch;
+                wp.origin.orientation[2] = yaw;
+
+                found = true;
+                break;
+              }
+            }
+            if (found)
+              break;
+          }
+        }
+        if (found)
+          break;
+      }
+
+      break;
+    }
     case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT : {
       ROS_INFO("[AffordanceTemplate::processFeedback] %s selected menu entry: %d", feedback->marker_name.c_str(), feedback->menu_entry_id);
       // ROS_DEBUG("AffordanceTemplate::processFeedback() -- MENU_SELECT");
@@ -1051,7 +1101,11 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                   std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
                   if (wp_name == feedback->marker_name)
                   {
-                    wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
+                    if (wp_list.waypoints.size() == 1)
+                      wp_list.waypoints.clear();
+                    else
+                      wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
+
                     found = true;
 
                     //FIXME:: is this the best way to handle methodsl ike these?? 
@@ -1163,7 +1217,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       break;
     }
     default : 
-      //ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
+      ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
       break;
   }
   server_->applyChanges();

@@ -277,7 +277,7 @@ bool AffordanceTemplateServer::addTemplate(const std::string& type, uint8_t& id)
 bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id, geometry_msgs::PoseStamped &pose)
 {
     if (type.empty())
-        return false;
+      return false;
 
     id = getNextID(type);
     std::string key = type + ":" + std::to_string(id);
