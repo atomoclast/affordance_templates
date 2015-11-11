@@ -1,6 +1,6 @@
 {
   "name": "PickAndPlace",
-  "image": "package://affordance_template_library/images/pickandplace.png",
+  "image": "package://affordance_template_library/images/robot.png",
   "display_objects": [
     {
       "name": "pick",

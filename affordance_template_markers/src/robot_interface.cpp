@@ -233,7 +233,7 @@ void RobotInterface::jointStateCallback(const sensor_msgs::JointState &state)
 bool RobotInterface::configure() // TODO
 {
   ROS_INFO("[RobotInterface::configure] robot name: %s", robot_config_.name.c_str());
-  ROS_INFO("[RobotInterface::configure] package: %s", config_file_.c_str());
+  //ROS_INFO("[RobotInterface::configure] package: %s", config_file_.c_str());
   ROS_INFO("[RobotInterface::configure] using planner type: %s", robot_config_.planner_type.c_str());
 
   if (robot_config_.planner_type == "moveit")
@@ -438,6 +438,7 @@ bool RobotInterface::getEELinkData(std::string group_name, end_effector_helper::
   // for(auto g: ee_link_data_) {
   //   std::cout << "has link data for " << g.first << std::endl;
   // }
+  std::cout << "getEELinkData link data for " << group_name << std::endl;
   if(ee_link_data_.find(group_name) != std::end(ee_link_data_)) {
     link_data = ee_link_data_[group_name];
   } else{

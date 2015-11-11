@@ -501,7 +501,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       } catch(...) {
         ee_pose_name = "current";
       }
-      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure()   ee_pose_name: %s", ee_pose_name.c_str());
+      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure()   ee_pose_name[%d]: %s", wp.ee_pose, ee_pose_name.c_str());
                
       visualization_msgs::MarkerArray markers;
       end_effector_helper::EndEffectorHelperConstPtr ee_link_data;

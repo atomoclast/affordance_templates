@@ -1,0 +1,50 @@
+{
+  "name": "Knob",
+  "image": "package://affordance_template_library/images/knob.png",
+  "display_objects": [
+    {
+      "name": "knob",
+      "shape": {
+        "type": "mesh",
+        "data": "package://affordance_template_library/models/knob.dae",
+        "size": [1,1,1]
+      },
+      "origin" : {
+        "xyz": [0,0,0],
+        "rpy": [-1.57,0,1.57]
+      },
+      "controls": {
+        "xyz": [true, true, true],
+        "rpy": [true, true, true],
+        "scale": 0.2
+      }
+    }
+  ],
+  "end_effector_trajectory": [
+    {
+      "name": "Left Hand Grasp",
+      "end_effector_group" : [
+        { 
+          "id": 0,
+          "end_effector_waypoint" : [
+            {
+              "ee_pose": 0,
+              "display_object": "knob",
+              "origin": {
+                "xyz": [-0.04, -0.31, 0.03],
+                "rpy": [0.29, 0.15, 1.79]
+              },
+              "controls": {
+                "xyz": [true, true, true],
+                "rpy": [true, true, true],
+                "scale": 0.25
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+
