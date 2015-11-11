@@ -59,6 +59,7 @@ add_message_files(
   RecognitionObjectConfig.msg
   ScaleDisplayObjectInfo.msg
   GripperActionMap.msg
+  DisplayObjectInfo.msg
 )
 
 ## Generate services in the 'srv' folder
