@@ -45,4 +45,4 @@ target_link_libraries(affordance_template ${catkin_LIBRARIES} yaml-cpp robot_int
 
 ## tester
 add_executable(test_action_server src/affordance_template_planning.cpp)
-target_link_libraries(test_action_server ${catkin_LIBRARIES})
+target_link_libraries(test_action_server ${catkin_LIBRARIES} ${Boost_FILESYSTEM_LIBRARY} robot_interface)
