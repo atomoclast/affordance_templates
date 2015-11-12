@@ -1,0 +1,18 @@
+uint8 CARTESIAN=0
+uint8 JOINT=1
+
+#goal
+string[] ee
+int32 steps
+uint8 planning # cartesian or joint
+bool execute_on_plan
+
+---
+
+#result
+bool temp_result
+
+---
+
+#feedback
+bool temp_feedback

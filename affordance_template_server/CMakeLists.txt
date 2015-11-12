@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
     affordance_template_markers
     affordance_template_library
     interactive_markers
+    actionlib_msgs
 )
 
 find_package(Boost REQUIRED COMPONENTS thread)
