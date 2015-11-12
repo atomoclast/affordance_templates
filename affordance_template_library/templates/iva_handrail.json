@@ -1,6 +1,6 @@
 {
   "name": "IVA_Handrail",
-  "image": "package://affordance_template_library/images/handrail.png", 
+  "image": "package://affordance_template_library/images/iva_handrail.jpg", 
   "display_objects": [
     {
       "name": "handrail", 
