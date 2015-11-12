@@ -14,7 +14,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
       str = std::strtok(NULL, "/");
 
   std::string template_name(str);
-  ROS_INFO("[AffordanceTemplateParser::loadFromFile] Found template name: %s", template_name.c_str());
+  ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] Found template name: %s", template_name.c_str());
   
   delete [] cstr;
 
@@ -30,21 +30,21 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
   }
   else
   {
-      ROS_INFO("[AffordanceTemplateParser::loadFromFile] parsing template: %s", template_name.c_str());
+      ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] parsing template: %s", template_name.c_str());
 
       at.name = jdoc["name"].GetString();
-      ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] name is "<<at.name);
+      ROS_DEBUG_STREAM("[AffordanceTemplateParser::loadFromFile] name is "<<at.name);
       at.image = jdoc["image"].GetString();
-      ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] img is "<<at.image);
+      ROS_DEBUG_STREAM("[AffordanceTemplateParser::loadFromFile] img is "<<at.image);
       at.filename = filename;
-      ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] filename is "<<at.filename);
+      ROS_DEBUG_STREAM("[AffordanceTemplateParser::loadFromFile] filename is "<<at.filename);
 
       const rapidjson::Value& traj = jdoc["end_effector_trajectory"];     
       for (rapidjson::SizeType t = 0; t < traj.Size(); ++t)
       {
         Trajectory ee_trajectory;
         ee_trajectory.name = traj[t]["name"].GetString();
-        ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] found trajectory with name: "<<ee_trajectory.name);
+        ROS_DEBUG_STREAM("[AffordanceTemplateParser::loadFromFile] found trajectory with name: "<<ee_trajectory.name);
         
         const rapidjson::Value& ee_group = traj[t]["end_effector_group"];
         for (rapidjson::SizeType g = 0; g < ee_group.Size(); ++g)
@@ -53,7 +53,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
           EndEffectorWaypointList ee;
           ee.id = ee_group[g]["id"].GetInt();
 
-          ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile]    found EE group for ID: "<<ee.id);
+          ROS_DEBUG_STREAM("[AffordanceTemplateParser::loadFromFile]    found EE group for ID: "<<ee.id);
 
           const rapidjson::Value& waypoints = ee_group[g]["end_effector_waypoint"];
           for (rapidjson::SizeType w = 0; w < waypoints.Size(); ++w)
@@ -92,11 +92,11 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
 
               ee.waypoints.push_back(wp);
               
-              ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile]     waypoint "<<w+1<<" has ee_pose: "<<wp.ee_pose<<" and display_object: "<<wp.display_object);
-              ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", org.position[0], org.position[1], org.position[2], org.orientation[0], org.orientation[1], org.orientation[2]);
-              ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
-              ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
-              ROS_INFO("[AffordanceTemplateParser::loadFromFile] \twaypoint is scaled to %g", ctrl.scale);
+              ROS_DEBUG_STREAM("[AffordanceTemplateParser::loadFromFile]     waypoint "<<w+1<<" has ee_pose: "<<wp.ee_pose<<" and display_object: "<<wp.display_object);
+              ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", org.position[0], org.position[1], org.position[2], org.orientation[0], org.orientation[1], org.orientation[2]);
+              ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
+              ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
+              ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \twaypoint is scaled to %g", ctrl.scale);
           }
           ee_trajectory.ee_waypoint_list.push_back(ee);
         }
@@ -168,18 +168,18 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
           display_object.shape = shp;
           display_object.controls = ctrl;
 
-          ROS_INFO_STREAM("[AffordanceTemplateParser::loadFromFile] display object "<<i+1<<" has name: "<<display_object.name);
+          ROS_DEBUG_STREAM("[AffordanceTemplateParser::loadFromFile] display object "<<i+1<<" has name: "<<display_object.name);
           if(display_object.parent != "")
-            ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tparent object: %s", display_object.parent.c_str());
-          ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", orig.position[0], orig.position[1], orig.position[2], orig.orientation[0], orig.orientation[1], orig.orientation[2]);
-          ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
-          ROS_INFO("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
-          ROS_INFO("[AffordanceTemplateParser::loadFromFile] \t%s is scaled to %g", display_object.name.c_str(), ctrl.scale);
-          ROS_INFO("[AffordanceTemplateParser::loadFromFile] \t%s", shape_str.c_str());
+            ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tparent object: %s", display_object.parent.c_str());
+          ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", orig.position[0], orig.position[1], orig.position[2], orig.orientation[0], orig.orientation[1], orig.orientation[2]);
+          ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
+          ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
+          ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \t%s is scaled to %g", display_object.name.c_str(), ctrl.scale);
+          ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \t%s", shape_str.c_str());
 
           at.display_objects.push_back(display_object);
       }
-      std::cout<<std::endl;
+      // std::cout<<std::endl;
   }
   std::fclose(f_pnt);
 
@@ -188,7 +188,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
 
 bool AffordanceTemplateParser::saveToFile(const std::string& filepath, const AffordanceTemplateStructure& at)
 {
-  ROS_INFO("[AffordanceTemplateParser::saveToFile] opening file for JSON saving: %s", filepath.c_str());
+  ROS_DEBUG("[AffordanceTemplateParser::saveToFile] opening file for JSON saving: %s", filepath.c_str());
 
   // create writer doc
   rapidjson::StringBuffer json;
@@ -373,7 +373,7 @@ bool AffordanceTemplateParser::saveToFile(const std::string& filepath, const Aff
   file.close();
 
 
-  ROS_INFO("[AffordanceTemplateParser::saveToFile] successfully wrote template %s to file", at.name.c_str());
+  ROS_DEBUG("[AffordanceTemplateParser::saveToFile] successfully wrote template %s to file", at.name.c_str());
 
   return true;
 }

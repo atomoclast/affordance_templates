@@ -233,7 +233,7 @@ void RobotInterface::jointStateCallback(const sensor_msgs::JointState &state)
 bool RobotInterface::configure() // TODO
 {
   ROS_INFO("[RobotInterface::configure] robot name: %s", robot_config_.name.c_str());
-  ROS_INFO("[RobotInterface::configure] package: %s", config_file_.c_str());
+  //ROS_INFO("[RobotInterface::configure] package: %s", config_file_.c_str());
   ROS_INFO("[RobotInterface::configure] using planner type: %s", robot_config_.planner_type.c_str());
 
   if (robot_config_.planner_type == "moveit")
@@ -278,7 +278,7 @@ bool RobotInterface::configure() // TODO
   }
   for (auto g : ee_planning_groups)
   {
-    ROS_INFO("[RobotInterface::configure] setting up ee group: %s", g.c_str());
+    ROS_WARN("[RobotInterface::configure] setting up ee group: %s", g.c_str());
     try
     {
       std::vector<double> pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
@@ -454,9 +454,6 @@ std::map<int, std::string> RobotInterface::getEEPoseNameMap(std::string name)
 
 bool RobotInterface::getEELinkData(std::string group_name, end_effector_helper::EndEffectorHelperConstPtr &link_data) 
 {
-  // for(auto g: ee_link_data_) {
-  //   std::cout << "has link data for " << g.first << std::endl;
-  // }
   if(ee_link_data_.find(group_name) != std::end(ee_link_data_)) {
     link_data = ee_link_data_[group_name];
   } else{

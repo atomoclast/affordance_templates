@@ -1,6 +1,6 @@
 {
   "name": "Drill",
-  "image": "package://affordance_template_library/images/drill.png",
+  "image": "package://affordance_template_library/images/drill.jpg",
   "display_objects": [
     {
       "name": "drill",

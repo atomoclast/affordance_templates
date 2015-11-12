@@ -1,0 +1,229 @@
+{
+  "name": "Knob",
+  "image": "package://affordance_template_library/images/knob.png",
+  "display_objects": [
+    {
+      "name": "knob",
+      "shape": {
+        "type": "mesh",
+        "data": "package://affordance_template_library/models/knob.dae",
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "origin": {
+        "xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rpy": [
+          -1.57,
+          0.0,
+          1.57
+        ]
+      },
+      "controls": {
+        "xyz": [
+          true,
+          true,
+          true
+        ],
+        "rpy": [
+          true,
+          true,
+          true
+        ],
+        "scale": 0.2
+      }
+    }
+  ],
+  "end_effector_trajectory": [
+    {
+      "name": "Left Hand Clockwise 90 Turn",
+      "end_effector_group": [
+        {
+          "id": 0,
+          "end_effector_waypoint": [
+            {
+              "ee_pose": 4,
+              "display_object": "knob",
+              "origin": {
+                "xyz": [
+                  0.011493435129523278,
+                  -0.015926597639918329,
+                  0.11422854661941529
+                ],
+                "rpy": [
+                  3.008997430802041,
+                  1.4968798632814045,
+                  -0.02664373915582493
+                ]
+              },
+              "controls": {
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  true,
+                  true,
+                  true
+                ],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 4,
+              "display_object": "knob",
+              "origin": {
+                "xyz": [
+                  0.01099911518394947,
+                  -0.015913423150777818,
+                  0.05667777732014656
+                ],
+                "rpy": [
+                  3.008997430802041,
+                  1.4968798632814045,
+                  -0.02664373915582493
+                ]
+              },
+              "controls": {
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  true,
+                  true,
+                  true
+                ],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 5,
+              "display_object": "knob",
+              "origin": {
+                "xyz": [
+                  0.01099911518394947,
+                  -0.015913423150777818,
+                  0.05
+                ],
+                "rpy": [
+                  3.008997430802041,
+                  1.4968798632814045,
+                  -0.026643739155824927
+                ]
+              },
+              "controls": {
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  true,
+                  true,
+                  true
+                ],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 5,
+              "display_object": "knob",
+              "origin": {
+                "xyz": [
+                  0.017878755927085878,
+                  0.003343358635902405,
+                  0.04786666855216026
+                ],
+                "rpy": [
+                  3.073774844048939,
+                  1.282194754967202,
+                  1.3625902798783154
+                ]
+              },
+              "controls": {
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  true,
+                  true,
+                  true
+                ],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 4,
+              "display_object": "knob",
+              "origin": {
+                "xyz": [
+                  0.017878755927085878,
+                  0.003343358635902405,
+                  0.04786666855216026
+                ],
+                "rpy": [
+                  3.073774844048939,
+                  1.282194754967202,
+                  1.3625902798783154
+                ]
+              },
+              "controls": {
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  true,
+                  true,
+                  true
+                ],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 4,
+              "display_object": "knob",
+              "origin": {
+                "xyz": [
+                  0.011493435129523278,
+                  -0.015926597639918329,
+                  0.11422854661941529
+                ],
+                "rpy": [
+                  3.073774844048939,
+                  1.282194754967202,
+                  1.3625902798783154
+                ]
+              },
+              "controls": {
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  true,
+                  true,
+                  true
+                ],
+                "scale": 0.25
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
