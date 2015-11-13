@@ -5,6 +5,7 @@ uint8 JOINT=1
 string[] ee
 int32 steps
 uint8 planning # cartesian or joint
+bool backwards
 bool execute_on_plan
 ---
 #result
