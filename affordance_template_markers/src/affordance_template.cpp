@@ -1310,12 +1310,47 @@ bool AffordanceTemplate::computePathSequence(AffordanceTemplateStructure structu
 void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalConstPtr& goal)
 {
   ROS_WARN("[AffordanceTemplate::planRequest] planning");
+
+  affordance_template_msgs::PlanFeedback planning;
+  affordance_template_msgs::PlanResult result;
+
+  planning.progress = 1;
+  action_server_.publishFeedback(planning);
+
+  std::map<std::string, bool> plan_result = planPathToWaypoints(goal->ee, 1, false, goal->backwards);
+
+  if (plan_result.size() == 0)
+  {
+    planning.progress = -1;
+    action_server_.publishFeedback(planning);
+
+    result.succeeded = false;
+    action_server_.setSucceeded(result);
+    return;
+  }
+
+  ++planning.progress;
+  action_server_.publishFeedback(planning);
+
+  for (auto p : plan_result)
+  {
+    ++planning.progress;
+    action_server_.publishFeedback(planning);
+    if (!p.second)
+    {
+      planning.progress = -1;
+      action_server_.publishFeedback(planning);
+
+      result.succeeded = false;
+      action_server_.setSucceeded(result);
+      return;
+    }
+  }
 }
 
  // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
 std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::vector<std::string>& ee_names, int steps, bool direct, bool backwards)
 {
-
   ROS_INFO("AffordanceTemplate::planPathToWaypoints()");
 
   std::map<std::string, bool> ret;
