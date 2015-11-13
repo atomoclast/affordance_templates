@@ -15,16 +15,17 @@
 #include <interactive_markers/menu_handler.h>
 #include <utils/marker_helper.h>
 
-#include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
+#include <sensor_msgs/JointState.h>
+#include <actionlib/server/simple_action_server.h>
 
 #include <affordance_template_markers/robot_interface.h>
 
 #include <affordance_template_library/affordance_template_structure.h>
 #include <affordance_template_library/affordance_template_parser.h>
 
+#include <affordance_template_msgs/PlanAction.h>
 #include <affordance_template_msgs/DisplayObjectInfo.h>
-
 
 namespace affordance_template 
 {
@@ -63,7 +64,7 @@ namespace affordance_template
                        std::string robot_name, 
                        std::string template_type,
                        int id);
-    AffordanceTemplate(){} // default constructor
+    // AffordanceTemplate(){} // default constructor
     ~AffordanceTemplate();
 
     // public methods used by server node
@@ -109,6 +110,8 @@ namespace affordance_template
     ros::NodeHandle nh_;
     tf::TransformListener tf_listener_;
     tf::TransformBroadcaster tf_broadcaster_;
+
+    actionlib::SimpleActionServer<affordance_template_msgs::PlanAction> action_server_;
 
     // bookkeeping and IDs
     std::string robot_name_;
@@ -187,6 +190,8 @@ namespace affordance_template
     bool computePathSequence(affordance_template_object::AffordanceTemplateStructure structure, std::string traj_name, int ee_id, int idx, int steps, bool backwards, std::vector<int> &sequence_ids, int &next_path_idx);
 
     void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
+    void planRequest(const affordance_template_msgs::PlanGoalConstPtr&);
 
   };
 }

@@ -17,7 +17,8 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   id_(id),
   root_object_(""),
   loop_rate_(50.0),
-  object_controls_display_on_(true)
+  object_controls_display_on_(true),
+  action_server_(nh, ("affordance_template/" + template_type + "_" + std::to_string(id) + "/planning_server"), boost::bind(&AffordanceTemplate::planRequest, this, _1), false)
 {
   ROS_INFO("AffordanceTemplate::init() -- Done Creating new AffordanceTemplate of type %s for robot: %s", template_type_.c_str(), robot_name_.c_str());
   name_ = template_type_ + ":" + std::to_string(id);
@@ -29,6 +30,8 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
 
   // set to false when template gets destroyed, otherwise we can get a dangling pointer
   running_ = true;
+
+  action_server_.start();
   
   boost::thread spin_thread_(boost::bind(&AffordanceTemplate::run, this));
 }
@@ -1302,6 +1305,11 @@ bool AffordanceTemplate::computePathSequence(AffordanceTemplateStructure structu
     next_path_idx = sequence_ids.back();
   }
   return true;
+}
+
+void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalConstPtr& goal)
+{
+  ROS_WARN("[AffordanceTemplate::planRequest] planning");
 }
 
  // list of ee names, steps, direct, backwards; return map of bools keyed on EE name

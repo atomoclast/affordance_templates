@@ -39,10 +39,3 @@ target_link_libraries(robot_interface ${catkin_LIBRARIES} yaml-cpp end_effector_
 
 add_library(affordance_template src/affordance_template.cpp)
 target_link_libraries(affordance_template ${catkin_LIBRARIES} yaml-cpp robot_interface affordance_template_library ${Boost_FILESYSTEM_LIBRARY})
-
-#add_library(affordance_template_action src/affordance_template_action.cpp)
-#target_link_libraries(affordance_template_action ${catkin_LIBRARIES} robot_interface affordance_template_library})
-
-## tester
-add_executable(test_action_server src/affordance_template_planning.cpp)
-target_link_libraries(test_action_server ${catkin_LIBRARIES} ${Boost_FILESYSTEM_LIBRARY} robot_interface)
