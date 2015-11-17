@@ -1318,6 +1318,9 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
 
   for (auto ee : goal->ee) 
   {
+    ++planning.progress;
+    action_server_.publishFeedback(planning);
+
     plan_status_[current_trajectory_][ee].direct     = false;
     plan_status_[current_trajectory_][ee].plan_valid = false;
     plan_status_[current_trajectory_][ee].exec_valid = false;
@@ -1347,6 +1350,9 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
     // now loop through waypoints setting new start state to the last planned joint values
     for ( unsigned int idx = 0; idx < max_idx; ++idx)
     {
+      ++planning.progress;
+      action_server_.publishFeedback(planning);
+
       std::string next_path_str = createWaypointID(ee_id, idx);
 
       ROS_INFO("[AffordanceTemplate::planPathToWaypoints] configuring plan goal for waypoint %s [%d/%d] for %s[%d] on manipulator=%s", next_path_str.c_str(), idx+1, max_idx, ee.c_str(), ee_id,manipulator_name.c_str());
@@ -1370,6 +1376,8 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
       if (robot_interface_->getPlanner()->planCartesianPaths(goals, false, true)) 
       {
         ROS_INFO("[AffordanceTemplate::planPathToWaypoints] planning for %s succeeded", next_path_str.c_str());
+        ++planning.progress;
+        action_server_.publishFeedback(planning);
     
         moveit::planning_interface::MoveGroup::Plan plan;
         if (!robot_interface_->getPlanner()->getPlan(manipulator_name, plan))
@@ -1419,15 +1427,6 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
   // @todos get rid of this
   result.succeeded = true;
   action_server_.setSucceeded(result);
-
-  // if (plan_result.size() == 0)
-  // {
-  //   planning.progress = -1;
-  //   action_server_.publishFeedback(planning);
-  //   result.succeeded = true;
-  //   action_server_.setSucceeded(result);
-  //   return;
-  // }
 
   // ++planning.progress;
   // action_server_.publishFeedback(planning);
