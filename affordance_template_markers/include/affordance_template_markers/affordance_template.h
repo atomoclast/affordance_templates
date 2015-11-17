@@ -11,12 +11,16 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
+#include <utils/marker_helper.h>
+
 #include <interactive_markers/interactive_marker_server.h>
 #include <interactive_markers/menu_handler.h>
-#include <utils/marker_helper.h>
 
 #include <geometry_msgs/Pose.h>
 #include <sensor_msgs/JointState.h>
+#include <moveit_msgs/RobotState.h>
+// #include <moveit/robot_state/robot_state.h>
+// #include <moveit/robot_state/conversions.h>
 #include <actionlib/server/simple_action_server.h>
 
 #include <affordance_template_markers/robot_interface.h>
@@ -48,7 +52,6 @@ namespace affordance_template
     int goal_idx = -1;
   };
 
-
   class AffordanceTemplate
   { 
 
@@ -74,7 +77,7 @@ namespace affordance_template
     bool moveToWaypoints(const std::vector<std::string>&);
     bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
-    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool);
+    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool, bool use_current=true);
 
     // public getters
     inline int getID() { return id_; }

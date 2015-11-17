@@ -34,3 +34,6 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} affordance_template)
 
 add_executable(${PROJECT_NAME}_node src/interface.cpp src/server.cpp src/main.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} affordance_template)
+
+add_executable(tester src/test.cpp)
+target_link_libraries(tester ${catkin_LIBRARIES} affordance_template)
