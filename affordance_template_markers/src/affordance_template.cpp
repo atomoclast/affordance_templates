@@ -78,6 +78,7 @@ void AffordanceTemplate::setupMenuOptions()
   object_menu_options_.push_back(MenuConfig("Choose Trajectory", false));
   object_menu_options_.push_back(MenuConfig("Plan Test", false));
   object_menu_options_.push_back(MenuConfig("Execute Test", false));
+  object_menu_options_.push_back(MenuConfig("Plan & Execute Test", false));
   object_menu_options_.push_back(MenuConfig("Knob Test", false));
 
 }
@@ -789,6 +790,9 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
   interactive_markers::MenuHandler::CheckState state;
 
+  // std::string dummy_ee_name = "left_hand";
+  std::string dummy_ee_name = "gripper";
+
   // set up key maps for easy comparison to menu handler ID
   MenuHandleKey wp_before_key;
   MenuHandleKey wp_after_key;
@@ -798,6 +802,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   MenuHandleKey hide_controls_key;
   MenuHandleKey plan_test_key;
   MenuHandleKey execute_test_key;
+  MenuHandleKey plan_and_execute_test_key;
   MenuHandleKey knob_test_key;
   
   wp_before_key[feedback->marker_name] = {"Add Waypoint Before"};
@@ -808,6 +813,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   hide_controls_key[feedback->marker_name] = {"Hide Controls"};
   plan_test_key[feedback->marker_name] = {"Plan Test"};
   execute_test_key[feedback->marker_name] = {"Execute Test"};
+  plan_and_execute_test_key[feedback->marker_name] = {"Plan & Execute Test"};
   knob_test_key[feedback->marker_name] = {"Knob Test"};
 
   if(hasObjectFrame(feedback->marker_name) || hasWaypointFrame(feedback->marker_name)) {
@@ -1182,7 +1188,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       if(group_menu_handles_.find(plan_test_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[plan_test_key] == feedback->menu_entry_id) {
           ROS_WARN("AffordanceTemplate::processFeedback() --   PLAN");
-          std::vector<std::string> ee_names = {"left_hand"};
+          std::vector<std::string> ee_names = {dummy_ee_name};
           planPathToWaypoints(ee_names, 1, false, false); 
         }
       }
@@ -1190,7 +1196,17 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       if(group_menu_handles_.find(execute_test_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[execute_test_key] == feedback->menu_entry_id) {
           ROS_WARN("AffordanceTemplate::processFeedback() --   EXECUTE");
-          std::vector<std::string> ee_names = {"left_hand"};
+          std::vector<std::string> ee_names = {dummy_ee_name};
+          moveToWaypoints(ee_names); 
+        }
+      }
+
+      if(group_menu_handles_.find(plan_and_execute_test_key) != std::end(group_menu_handles_)) {
+        if(group_menu_handles_[plan_and_execute_test_key] == feedback->menu_entry_id) {
+          ROS_WARN("AffordanceTemplate::processFeedback() --   PLAN & EXECUTE");
+          std::vector<std::string> ee_names = {dummy_ee_name};
+          planPathToWaypoints(ee_names, 1, false, false); 
+          ros::Duration(.5).sleep();
           moveToWaypoints(ee_names); 
         }
       }
@@ -1198,7 +1214,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       if(group_menu_handles_.find(knob_test_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[knob_test_key] == feedback->menu_entry_id) {
           ROS_WARN("AffordanceTemplate::processFeedback() --   KNOB TEST");
-          std::vector<std::string> ee_names = {"left_hand"};
+          std::vector<std::string> ee_names = {dummy_ee_name};
 
           planPathToWaypoints(ee_names, 1, false, false); 
           moveToWaypoints(ee_names); 
