@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 
   if (robot_name.empty())
     // robot_name = "fetch.yaml";
-   robot_name = "r2_upperbody.yaml";
+   robot_name = "r2_roscontrol.yaml";
 
   affordance_template_server::AffordanceTemplateInterface ati(robot_name);
 
