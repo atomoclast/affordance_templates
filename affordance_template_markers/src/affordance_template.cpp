@@ -78,7 +78,7 @@ void AffordanceTemplate::setupMenuOptions()
   object_menu_options_.push_back(MenuConfig("Choose Trajectory", false));
   object_menu_options_.push_back(MenuConfig("Plan Test", false));
   object_menu_options_.push_back(MenuConfig("Execute Test", false));
-  object_menu_options_.push_back(MenuConfig("Plan & Execute Test", false));
+  object_menu_options_.push_back(MenuConfig("Plan and Execute Test", false));
   object_menu_options_.push_back(MenuConfig("Knob Test", false));
 
 }
@@ -813,7 +813,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   hide_controls_key[feedback->marker_name] = {"Hide Controls"};
   plan_test_key[feedback->marker_name] = {"Plan Test"};
   execute_test_key[feedback->marker_name] = {"Execute Test"};
-  plan_and_execute_test_key[feedback->marker_name] = {"Plan & Execute Test"};
+  plan_and_execute_test_key[feedback->marker_name] = {"Plan and Execute Test"};
   knob_test_key[feedback->marker_name] = {"Knob Test"};
 
   if(hasObjectFrame(feedback->marker_name) || hasWaypointFrame(feedback->marker_name)) {
