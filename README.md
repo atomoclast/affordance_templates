@@ -1,5 +1,12 @@
 ##**Quick Start:**##
 
+
+```
+#!c++
+
+$ sudo apt-get install ros-indigo-moveit* ros-indigo-control* ros-indigo-ros-control* ros-indigo-gazebo-ros-control*
+```
+
 1. checkout the following repositories into your catkin workspace to run R2 upperbody and switch to the specified branches.
 
     * [r2 simulator](https://bitbucket.org/nasa_ros_pkg/nasa_r2_simulator/src/c32521004a4a8f135c4298500d6ded3ce20e0070/?at=indigo-devel) - *traclabs-devel*
