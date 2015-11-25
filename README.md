@@ -1,7 +1,7 @@
 ##**Quick Start:**##
 
 
-#**Dependencies:**#
+###**Dependencies:**###
 ```
 #!bash
 $ sudo apt-get install ros-indigo-simulators ros-indigo-moveit* ros-indigo-control* ros-indigo-ros-control* ros-indigo-gazebo-ros-control*
