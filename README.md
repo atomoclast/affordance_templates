@@ -1,10 +1,10 @@
 ##**Quick Start:**##
 
 
+#**Dependencies:**#
 ```
-#!c++
-
-$ sudo apt-get install ros-indigo-moveit* ros-indigo-control* ros-indigo-ros-control* ros-indigo-gazebo-ros-control*
+#!bash
+$ sudo apt-get install ros-indigo-simulators ros-indigo-moveit* ros-indigo-control* ros-indigo-ros-control* ros-indigo-gazebo-ros-control*
 ```
 
 1. checkout the following repositories into your catkin workspace to run R2 upperbody and switch to the specified branches.
