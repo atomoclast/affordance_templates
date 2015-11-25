@@ -1,7 +1,3 @@
-Please see the the Affordance Template Project wikie here: [https://github.com/swhart115/affordance_templates/wiki](https://github.com/swhart115/affordance_templates/wiki)
-
-JSON parsing using [yaml-cpp](https://github.com/jbeder/yaml-cpp)
-
 ##**Quick Start:**##
 
 1. checkout the following repositories into your catkin workspace to run R2 upperbody and switch to the specified branches.
