@@ -1442,6 +1442,11 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
       else
       {
         ROS_INFO("[AffordanceTemplate::planRequest] setting EE goal pose to %s", ee_pose_map[wp_vec[idx].ee_pose].c_str());
+        sensor_msgs::JointState ee_js;
+        if (!robot_interface_->getPlanner()->getRDFModel()->getGroupState( ee, ee_pose_map[wp_vec[idx].ee_pose], ee_js)) //@TODO need to put error stuff in here in case getPlanner or getRDFModel fails
+        {
+          ROS_ERROR("couldn't get group state!!");
+        }
       }
     
       if (robot_interface_->getPlanner()->planCartesianPaths(goals, false, true)) 
