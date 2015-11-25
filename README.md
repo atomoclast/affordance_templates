@@ -13,9 +13,9 @@
 ```
 #!bash
     1. roslaunch r2_gazebo r2_gazebo.launch
-    3. roslaunch r2_moveit_config move_group.launch
-    4. rosrun affordance_template_server affordance_template_server_node
-    5. rviz
+    2. roslaunch r2_moveit_config move_group.launch
+    3. rosrun affordance_template_server affordance_template_server_node
+    4. rviz
 
 ```
 1. add necessary topics in RViz
