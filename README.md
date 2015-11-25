@@ -12,7 +12,7 @@
 
 ```
 #!bash
-    1. roslaunch r2_gazebo r2c_upperbody.launch gui:=false robodyn:=true ros_control:=true
+    1. roslaunch r2_gazebo r2_gazebo.launch
     2. roslaunch r2_action_server r2_upperbody.launch 
     3. roslaunch r2_upperbody_moveit_config move_group.launch
     4. rosrun affordance_template_server affordance_template_server_node
