@@ -30,6 +30,8 @@
 
 #include <affordance_template_msgs/PlanAction.h>
 #include <affordance_template_msgs/DisplayObjectInfo.h>
+#include <affordance_template_msgs/WaypointViewMode.h>
+
 
 namespace affordance_template 
 {
@@ -39,6 +41,7 @@ namespace affordance_template
     bool auto_execute;
     bool loop;
     std::map<std::string, bool> controls_on;
+    std::map<std::string, bool> compact_view;
   };
 
   struct PlanStatus {

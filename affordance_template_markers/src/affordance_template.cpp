@@ -3,6 +3,7 @@
 using namespace affordance_template;
 using namespace affordance_template_object;
 using namespace affordance_template_markers;
+using namespace affordance_template_msgs;
 
 AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh, 
                                         boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server,  
@@ -65,6 +66,7 @@ void AffordanceTemplate::setupMenuOptions()
   waypoint_menu_options_.clear();
   waypoint_menu_options_.push_back(MenuConfig("Change End-Effector Pose", false));
   waypoint_menu_options_.push_back(MenuConfig("Hide Controls", true));
+  waypoint_menu_options_.push_back(MenuConfig("Compact View", true));
   waypoint_menu_options_.push_back(MenuConfig("Add Waypoint Before", false));
   waypoint_menu_options_.push_back(MenuConfig("Add Waypoint After", false));
   waypoint_menu_options_.push_back(MenuConfig("Delete Waypoint", false));
@@ -251,6 +253,7 @@ void AffordanceTemplate::setTrajectoryFlags(Trajectory traj)
       for(size_t idx=0; idx<ee.waypoints.size(); idx++) {
         std::string wp_name = createWaypointID(ee.id,idx);
         wp_flags.controls_on[wp_name] = false;
+        wp_flags.compact_view[wp_name] = false;
       }
     }
     waypoint_flags_[traj.name] = wp_flags;
@@ -575,6 +578,13 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         key[wp_name] = {"Hide Controls"};
         marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
       }
+      if(waypoint_flags_[current_trajectory_].compact_view[wp_name]) {
+        key[wp_name] = {"Compact View"};
+        marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
+      }  else {
+        key[wp_name] = {"Compact View"};
+        marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
+      }
 
       std::string ee_pose_name;;
       try {
@@ -622,17 +632,35 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         ROS_ERROR("AffordanceTemplate::createWaypointsFromStructure() -- error getting transforms for %s", ee_name.c_str());
       }
 
-      for(auto &m: markers.markers) {
-        visualization_msgs::Marker ee_m = m;
-        ee_m.header.frame_id = tf_frame_name;
-        ee_m.ns = name_;
-        ee_m.pose = m.pose;
-        menu_control.markers.push_back( ee_m );
+      if(waypoint_flags_[current_trajectory_].compact_view[wp_name]) {
+        int N = getNumWaypoints(structure, current_trajectory_, ee_id);
+        ROS_WARN("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in COMPACT mode", wp_name.c_str());
+        visualization_msgs::Marker m;
+        m.header.frame_id = tf_frame_name;
+        m.ns = name_;
+        m.type = visualization_msgs::Marker::SPHERE;
+        m.scale.x = 0.02;
+        m.scale.y = 0.02;
+        m.scale.z = 0.02;
+        m.color.r = 0.5;
+        m.color.g = 0.0;
+        m.color.b = wp_id/(N-1.0);
+        m.color.a = 0.5;
+        m.pose.orientation.w = 1;
+        menu_control.markers.push_back( m );
+      } else {
+        ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in FULL mode", wp_name.c_str());
+        for(auto &m: markers.markers) {
+          visualization_msgs::Marker ee_m = m;
+          ee_m.header.frame_id = tf_frame_name;
+          ee_m.ns = name_;
+          ee_m.pose = m.pose;
+          menu_control.markers.push_back( ee_m );
+        }
+        // scale = 1.0
+        // if wp in self.waypoint_controls[trajectory] :
+        //     scale = self.waypoint_controls[trajectory][wp]['scale']
       }
-      // scale = 1.0
-      // if wp in self.waypoint_controls[trajectory] :
-      //     scale = self.waypoint_controls[trajectory][wp]['scale']
-
 
       int_marker.controls.push_back(menu_control);
       if(waypoint_flags_[current_trajectory_].controls_on[wp_name]) {
@@ -801,13 +829,15 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   MenuHandleKey plan_test_key;
   MenuHandleKey execute_test_key;
   MenuHandleKey knob_test_key;
-  
+  MenuHandleKey view_mode_key;
+
   wp_before_key[feedback->marker_name] = {"Add Waypoint Before"};
   wp_after_key[feedback->marker_name] = {"Add Waypoint After"};
   reset_key[feedback->marker_name] = {"Reset"};
   save_key[feedback->marker_name] = {"Save"};
   delete_key[feedback->marker_name] = {"Delete Waypoint"};
   hide_controls_key[feedback->marker_name] = {"Hide Controls"};
+  view_mode_key[feedback->marker_name] = {"Compact View"};
   plan_test_key[feedback->marker_name] = {"Plan Test"};
   execute_test_key[feedback->marker_name] = {"Execute Test"};
   knob_test_key[feedback->marker_name] = {"Knob Test"};
@@ -1180,6 +1210,28 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           createFromStructure(structure_, true, current_trajectory_);
         }
       }
+
+      if(group_menu_handles_.find(view_mode_key) != std::end(group_menu_handles_)) {
+        if(group_menu_handles_[view_mode_key] == feedback->menu_entry_id) {
+          ROS_INFO("AffordanceTemplate::processFeedback() --   VIEW MODE TOGGLE");
+          if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) {
+            if(state == interactive_markers::MenuHandler::UNCHECKED) {
+              marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );
+              if(!isObject(feedback->marker_name)) {
+                waypoint_flags_[current_trajectory_].compact_view[feedback->marker_name] = true;
+              }
+            } else {
+              marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
+              if(!isObject(feedback->marker_name)) {
+                waypoint_flags_[current_trajectory_].compact_view[feedback->marker_name] = false;
+              }
+            }
+          }
+          removeAllMarkers();
+          createFromStructure(structure_, true, current_trajectory_);
+        }
+      }
+
       
       if(group_menu_handles_.find(plan_test_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[plan_test_key] == feedback->menu_entry_id) {
@@ -1335,12 +1387,12 @@ bool AffordanceTemplate::computePathSequence(AffordanceTemplateStructure structu
   return true;
 }
 
-void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalConstPtr& goal)
+void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 {
   ROS_WARN("[AffordanceTemplate::planRequest] planning");
 
-  affordance_template_msgs::PlanResult result;
-  affordance_template_msgs::PlanFeedback planning;
+  PlanResult result;
+  PlanFeedback planning;
 
   planning.progress = 1;
   action_server_.publishFeedback(planning);
@@ -1705,7 +1757,7 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   return createFromStructure(structure_);
 }
 
-bool AffordanceTemplate::setObjectPose(const affordance_template_msgs::DisplayObjectInfo& obj)
+bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 {
   bool found = false;
   

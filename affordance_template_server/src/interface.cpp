@@ -32,6 +32,7 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_rob
     at_srv_map_["set_template_pose"]       = nh.advertiseService(base_srv + "set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
     at_srv_map_["set_object_pose"]         = nh.advertiseService(base_srv + "set_object_pose", &AffordanceTemplateInterface::handleSetObject, this);
     at_srv_map_["get_object_pose"]         = nh.advertiseService(base_srv + "get_object_pose", &AffordanceTemplateInterface::handleGetObject, this);
+    at_srv_map_["set_waypoint_view"]       = nh.advertiseService(base_srv + "set_waypoint_view", &AffordanceTemplateInterface::handleSetWaypointViews, this);
 
     scale_stream_sub_ = nh.subscribe(base_srv + "scale_object_streamer", 1000, &AffordanceTemplateInterface::handleObjectScaleCallback, this);
 
@@ -425,6 +426,50 @@ bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, G
     return true;
 }
 
+bool AffordanceTemplateInterface::handleSetWaypointViews(SetWaypointViewModes::Request& req, SetWaypointViewModes::Response& res)
+{
+
+    ROS_DEBUG("[AffordanceTemplateInterface::handleSetWaypointViews] setting waypoint view modes...");
+
+    std::vector<std::string> at_keys, wp_keys;
+    int at_id, wp_id, ee_id;
+    std::string at_class;
+
+    if (!req.waypoint_names.empty()) {
+      for(auto &wp : req.waypoint_names) {
+        boost::split(at_keys, wp, boost::is_any_of(":"));
+        if (at_keys.size() == 3) {
+          at_class = at_keys[1];
+          at_id = std::stoi(at_keys[2]);
+          boost::split(wp_keys, at_keys[0], boost::is_any_of("."));
+          if (wp_keys.size() == 2) {
+            ee_id = std::stoi(wp_keys[0]);
+            wp_id = std::stoi(wp_keys[1]);
+            // std::cout << "waypoint: " << wp << std::endl; 
+            // std::cout << "  AT Type: " << at_class << std::endl; 
+            // std::cout << "  AT ID:   " << at_id << std::endl; 
+            // std::cout << "  EE ID:   " << ee_id << std::endl; 
+            // std::cout << "  WP ID:   " << wp_id << std::endl; 
+
+            ATPointer at;
+            if (at_server_->getTemplateInstance(at_class, at_id, at)) {
+              
+            }
+
+          } else {
+            ROS_ERROR("[AffordanceTemplateInterface::handleSetWaypointViews] error parsing wp details");
+            return false;
+          }
+        } else {
+          ROS_ERROR("[AffordanceTemplateInterface::handleSetWaypointViews] error parsing wp");
+          return false;
+        }
+      }
+    } else {
+      ROS_INFO("[AffordanceTemplateInterface::handleSetWaypointViews] setting mode for all waypoints");
+    }
+    return true;
+}
 
 void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayObjectInfo &data)
 {
@@ -437,6 +482,9 @@ void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayOb
         if (!at->setObjectScaling(key, data.scale_factor, data.end_effector_scale_factor))
             ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
+
+
+
 
 // @seth 10/28/2015 -- may not be complete??
 // should be double checked by @swhart
