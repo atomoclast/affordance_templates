@@ -98,6 +98,7 @@ namespace affordance_template
     bool setObjectScaling(const std::string&, double, double);
     void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
     bool setObjectPose(const affordance_template_msgs::DisplayObjectInfo&);
+    bool setWaypointViewMode(int ee, int wp, bool m);
 
   private:
     

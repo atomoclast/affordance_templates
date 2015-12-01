@@ -315,7 +315,17 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
   return true;
 }
 
-
+bool AffordanceTemplate::setWaypointViewMode(int ee, int wp, bool m)
+{
+  std::string wp_name = createWaypointID(ee, wp);
+  waypoint_flags_[current_trajectory_].compact_view[wp_name] = m;
+  ROS_DEBUG("AffordanceTemplate::setWaypointViewMode() -- setting compact_view for [%s] to %d", wp_name.c_str(), (int)m);
+  removeAllMarkers();
+  createFromStructure(structure_, true, current_trajectory_);
+  server_->applyChanges();
+  return true;
+}
+    
 bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structure, bool keep_poses, std::string traj) 
 {
   ROS_INFO("AffordanceTemplate::createFromStructure() -- %s", template_type_.c_str());
@@ -636,7 +646,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         int N = getNumWaypoints(structure, current_trajectory_, ee_id);
         ROS_WARN("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in COMPACT mode", wp_name.c_str());
         visualization_msgs::Marker m;
-        m.header.frame_id = tf_frame_name;
+        m.header.frame_id = ee_frame_name;
         m.ns = name_;
         m.type = visualization_msgs::Marker::SPHERE;
         m.scale.x = 0.02;
@@ -1583,7 +1593,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
  // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
 std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::vector<std::string>& ee_names, int steps, bool direct, bool backwards, bool use_current)
 {
-  ROS_INFO("AffordanceTemplate::planPathToWaypoints() planning for %d ee's", ee_names.size());
+  ROS_INFO("AffordanceTemplate::planPathToWaypoints() planning for %d ee's", (int)ee_names.size());
 
   std::map<std::string, bool> ret;
   std::map<std::string, std::vector<geometry_msgs::PoseStamped> > goals;

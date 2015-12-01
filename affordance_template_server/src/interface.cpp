@@ -432,10 +432,15 @@ bool AffordanceTemplateInterface::handleSetWaypointViews(SetWaypointViewModes::R
     ROS_DEBUG("[AffordanceTemplateInterface::handleSetWaypointViews] setting waypoint view modes...");
 
     std::vector<std::string> at_keys, wp_keys;
-    int at_id, wp_id, ee_id;
+    int at_id, wp_id, ee_id, idx;
     std::string at_class;
 
+    idx=0;
     if (!req.waypoint_names.empty()) {
+      if(req.waypoint_names.size() != req.compact_view.size()) {
+        ROS_ERROR("[AffordanceTemplateInterface::handleSetWaypointViews] size mismatch between names and vals");
+        return false;
+      }
       for(auto &wp : req.waypoint_names) {
         boost::split(at_keys, wp, boost::is_any_of(":"));
         if (at_keys.size() == 3) {
@@ -445,25 +450,27 @@ bool AffordanceTemplateInterface::handleSetWaypointViews(SetWaypointViewModes::R
           if (wp_keys.size() == 2) {
             ee_id = std::stoi(wp_keys[0]);
             wp_id = std::stoi(wp_keys[1]);
-            // std::cout << "waypoint: " << wp << std::endl; 
+            //std::cout << "waypoint[" << idx << "]: " << wp << std::endl; 
             // std::cout << "  AT Type: " << at_class << std::endl; 
             // std::cout << "  AT ID:   " << at_id << std::endl; 
             // std::cout << "  EE ID:   " << ee_id << std::endl; 
             // std::cout << "  WP ID:   " << wp_id << std::endl; 
+            //std::cout << "  mode:   " << (int)req.compact_view[idx] << std::endl; 
 
             ATPointer at;
             if (at_server_->getTemplateInstance(at_class, at_id, at)) {
-              
+              at->setWaypointViewMode(ee_id, wp_id, req.compact_view[idx]);
             }
 
           } else {
             ROS_ERROR("[AffordanceTemplateInterface::handleSetWaypointViews] error parsing wp details");
             return false;
-          }
+          }  
         } else {
           ROS_ERROR("[AffordanceTemplateInterface::handleSetWaypointViews] error parsing wp");
           return false;
         }
+        idx++;
       }
     } else {
       ROS_INFO("[AffordanceTemplateInterface::handleSetWaypointViews] setting mode for all waypoints");
