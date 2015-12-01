@@ -18,7 +18,7 @@ int main(int argc, char **argv)
   
   affordance_template_msgs::PlanGoal goal;
   goal.ee.push_back("left_hand");
-  goal.steps = 1;
+  goal.steps = 0; // 0 to plan for all steps
   goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN;
   goal.backwards = false;
   goal.execute_on_plan = false;
