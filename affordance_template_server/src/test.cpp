@@ -30,12 +30,12 @@ int main(int argc, char **argv)
   if (finished_before_timeout)
   {
     actionlib::SimpleClientGoalState state = ac.getState();
-    ROS_ERROR("Action finished: %s",state.toString().c_str());
+    ROS_INFO("Action finished: %s",state.toString().c_str());
   }
   else
     ROS_ERROR("Action did not finish before the time out.");
 
-  ros::spin();
+  ros::spinOnce();
 
   return 0;
 }

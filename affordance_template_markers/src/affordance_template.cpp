@@ -1433,28 +1433,68 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
       geometry_msgs::PoseStamped pt = frame_store_[next_path_str + "/tf"].second;    
       goals[manipulator_name].push_back(pt);
       plan_status_[current_trajectory_][ee].sequence_poses.push_back(pt);
-
-      // find and add EE joint state to goal
-      if (ee_pose_map.find(wp_vec[idx].ee_pose) == ee_pose_map.end())
-      {
-        ROS_WARN("[AffordanceTemplate::planRequest] couldn't find EE Pose ID %d in robot interface map!!", idx);
-      }
-      else
-      {
-        ROS_INFO("[AffordanceTemplate::planRequest] setting EE goal pose to %s", ee_pose_map[wp_vec[idx].ee_pose].c_str());
-        sensor_msgs::JointState ee_js;
-        if (!robot_interface_->getPlanner()->getRDFModel()->getGroupState( ee, ee_pose_map[wp_vec[idx].ee_pose], ee_js)) //@TODO need to put error stuff in here in case getPlanner or getRDFModel fails
-        {
-          ROS_ERROR("couldn't get group state!!");
-        }
-      }
     
       if (robot_interface_->getPlanner()->planCartesianPaths(goals, false, true)) 
       {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         ++planning.progress;
         action_server_.publishFeedback(planning);
-        // 11/24/2015: TODO still need to work the EE grasp poses in here somewhere
+        
+        // find and add EE joint state to goal
+        if (ee_pose_map.find(wp_vec[idx].ee_pose) == ee_pose_map.end())
+        {
+          ROS_WARN("[AffordanceTemplate::planRequest] couldn't find EE Pose ID %d in robot interface map!!", idx);
+        }
+        else
+        {
+          ++planning.progress;
+          action_server_.publishFeedback(planning);
+
+          ROS_INFO("[AffordanceTemplate::planRequest] setting EE goal pose to %s", ee_pose_map[wp_vec[idx].ee_pose].c_str());
+          sensor_msgs::JointState ee_js;
+          try 
+          {
+            if (!robot_interface_->getPlanner()->getRDFModel()->getGroupState( ee, ee_pose_map[wp_vec[idx].ee_pose], ee_js))
+            {
+              ROS_ERROR("[AffordanceTemplate::planRequest] couldn't get group state!!");
+              planning.progress = -1;
+              action_server_.publishFeedback(planning);
+              result.succeeded = false;
+              action_server_.setSucceeded(result);
+              return;
+            }
+            else
+            {
+              ++planning.progress;
+              action_server_.publishFeedback(planning);
+
+              // std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
+              // ee_goals[ee_name].push_back(ee_js); // FIXME -- need group name, not sure this is right
+              // if (!robot_interface_->getPlanner()->planJointPath( ee_goals, true, false))
+              // {
+              //   ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
+              //   planning.progress = -1;
+              //   action_server_.publishFeedback(planning);
+              //   result.succeeded = false;
+              //   action_server_.setSucceeded(result);
+              //   return;
+              // }
+            }
+          } 
+          catch(...)
+          {
+            ROS_ERROR("[AffordanceTemplate::planRequest] couldn't get planner or RDF model -- bad pointer somewhere!!");
+            planning.progress = -1;
+            action_server_.publishFeedback(planning);
+            result.succeeded = false;
+            action_server_.setSucceeded(result);
+            return;
+          }
+        }
+
+        ++planning.progress;
+        action_server_.publishFeedback(planning);
+
         moveit::planning_interface::MoveGroup::Plan plan;
         if (!robot_interface_->getPlanner()->getPlan(manipulator_name, plan))
         {
@@ -1465,6 +1505,9 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
           action_server_.setSucceeded(result);
           return;
         }
+
+        ++planning.progress;
+        action_server_.publishFeedback(planning);
 
         //
         // make a state out of the plan for the next iteration
@@ -1500,32 +1543,30 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
     } // waypoint loop
   } // ee loop
 
-  // @todos get rid of this
+  ++planning.progress;
+  action_server_.publishFeedback(planning);
+
+  if (goal->execute_on_plan)
+  {
+    ++planning.progress;
+    action_server_.publishFeedback(planning);
+
+    if (!moveToWaypoints(goal->ee))
+    {
+      ROS_ERROR("[AffordanceTemplate::planRequest] execution of plan failed!!");
+      planning.progress = -1;
+      action_server_.publishFeedback(planning);
+      result.succeeded = false;
+      action_server_.setSucceeded(result);
+      return;
+    }
+  }
+
+  ++planning.progress;
+  action_server_.publishFeedback(planning);
+  
   result.succeeded = true;
   action_server_.setSucceeded(result);
-
-  // ++planning.progress;
-  // action_server_.publishFeedback(planning);
-
-  // for (auto p : plan_result)
-  // {
-  //   ++planning.progress;
-  //   action_server_.publishFeedback(planning);
-  //   if (!p.second)
-  //   {
-  //     planning.progress = -1;
-  //     action_server_.publishFeedback(planning);
-
-  //     result.succeeded = false;
-  //     action_server_.setSucceeded(result);
-  //     return;
-  //   } 
-  // }
-
-  // if (goal->execute_on_plan)
-  // {
-  //   moveToWaypoints(goal->ee);
-  // }
 }
 
  // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
