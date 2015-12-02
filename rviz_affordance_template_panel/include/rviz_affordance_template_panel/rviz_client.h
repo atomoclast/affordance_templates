@@ -17,9 +17,9 @@
 
 /* Project Include */
 #include <rviz_affordance_template_panel/affordance.h>
-#include <rviz_affordance_template_panel/RecognitionObject.hpp>
 #include <rviz_affordance_template_panel/robot_config.h>
 #include <rviz_affordance_template_panel/controls.h>
+#include <rviz_affordance_template_panel/waypoint_display.h>
 #include <rviz_affordance_template_panel/util.h>
 #include "ui_rviz_affordance_template_panel.h"
 
@@ -37,19 +37,20 @@ namespace rviz_affordance_template_panel
 {
     class AffordanceTemplateRVizClient 
     {
+
     public:
 
         // typedefs
         typedef boost::shared_ptr<Affordance> AffordanceSharedPtr;
-        typedef boost::shared_ptr<RecognitionObject> RecognitionObjectSharedPtr;
         typedef boost::shared_ptr<RobotConfig> RobotConfigSharedPtr;
         typedef boost::shared_ptr<EndEffectorConfig> EndEffectorConfigSharedPtr;
         typedef boost::shared_ptr<EndEffectorPoseConfig> EndEffectorPoseIDConfigSharedPtr;
         typedef boost::shared_ptr<Controls> ControlsSharedPtr;
+        typedef boost::shared_ptr<WaypointDisplay> WaypointDisplaySharedPtr;
         typedef std::pair<std::string, int> TemplateInstanceID;
 
         // Constructors
-        AffordanceTemplateRVizClient(ros::NodeHandle &nh, Ui::RVizAffordanceTemplatePanel* ui, QGraphicsScene *at_scene, QGraphicsScene *ro_scene);
+        AffordanceTemplateRVizClient(ros::NodeHandle &nh, Ui::RVizAffordanceTemplatePanel* ui, QGraphicsScene *at_scene);
         ~AffordanceTemplateRVizClient();
 
         // init function
@@ -65,18 +66,15 @@ namespace rviz_affordance_template_panel
         // helper functions for front-end widgets
         void getAvailableInfo();
         void getAvailableTemplates();
-        void getAvailableRecognitionObjects();
         void getAvailableRobots();
         void getRunningItems();
 
         void addAffordanceDisplayItem();
-        void addObjectDisplayItem();
         void addTrajectory();
 
         void selectAffordanceTemplate(QListWidgetItem* item);
         void deleteAffordanceTemplate();
         void killAffordanceTemplate(QListWidgetItem* item);
-        void killRecognitionObject(QListWidgetItem* item);
 
         void saveAffordanceTemplate();
         void refreshCallback();
@@ -123,17 +121,9 @@ namespace rviz_affordance_template_panel
         void sendObjectScale(affordance_template_msgs::ScaleDisplayObjectInfo scale_info);
         void streamObjectScale(affordance_template_msgs::ScaleDisplayObjectInfo scale_info);
 
-        void removeRecognitionObjects();
-        void sendRecognitionObjectAdd(const string& object_name);
-        void sendRecognitionObjectKill(const string& object_name, int id);
-
         bool addAffordance(const AffordanceSharedPtr& obj);
         bool removeAffordance(const AffordanceSharedPtr& obj);
         bool checkAffordance(const AffordanceSharedPtr& obj);
-
-        bool addRecognitionObject(const RecognitionObjectSharedPtr& obj);
-        bool removeRecognitionObject(const RecognitionObjectSharedPtr& obj);
-        bool checkRecognitionObject(const RecognitionObjectSharedPtr& obj);
 
         bool addRobot(const RobotConfigSharedPtr& obj);
         bool removeRobot(const RobotConfigSharedPtr& obj);
@@ -143,7 +133,11 @@ namespace rviz_affordance_template_panel
         void setLabelText(QColor color, std::string text);
 
         void updateStatusFromControls();   
-        void updateTable(std::string name, std::string trajectory);
+
+        void updateTables(std::string name, std::string trajectory);
+        void updateControlsTable(std::string name, std::string trajectory);
+        void updateWaypointDisplayTable(std::string name, std::string trajectory);
+
         void doCommand(Controls::CommandType command_type);
         void sendScaleInfo();
         void setupDisplayObjectSliders(TemplateInstanceID template_instance);
@@ -172,42 +166,42 @@ namespace rviz_affordance_template_panel
 
         // GUI Widgets
         QGraphicsScene* affordanceTemplateGraphicsScene_;
-        QGraphicsScene* recognitionObjectGraphicsScene_;
 
         // server status monitor thread
         AffordanceTemplateServerStatusMonitor *server_monitor_;
 
         // map to track instantiated object templates
         std::map<std::string, AffordanceSharedPtr> affordanceMap_;
-        std::map<std::string, RecognitionObjectSharedPtr> recognitionObjectMap_;
         std::map<std::string, RobotConfigSharedPtr> robotMap_;
         std::string descriptionRobot_;
         std::string robot_name_;
         bool robot_configured_;
-        
+        bool waypoint_display_configured_;
+
         // affordance template services
         ros::ServiceClient add_template_client_;
         ros::ServiceClient delete_template_client_;
         ros::ServiceClient add_trajectory_client_;
-        ros::ServiceClient add_object_client_;
-        ros::ServiceClient delete_object_client_;
         ros::ServiceClient plan_command_client_;
         ros::ServiceClient execute_command_client_;
         ros::ServiceClient get_robots_client_;
         ros::ServiceClient get_running_client_;
         ros::ServiceClient get_templates_client_;
-        ros::ServiceClient get_objects_client_;
         ros::ServiceClient load_robot_client_;
         ros::ServiceClient save_template_client_;
         ros::ServiceClient scale_object_client_;
         ros::ServiceClient get_template_status_client_;
         ros::ServiceClient set_template_trajectory_client_;
+        ros::ServiceClient set_waypoint_view_client_;
 
         // affordance template publishers
         ros::Publisher scale_object_streamer_;
 
         // control helper class
         ControlsSharedPtr controls_;
+
+        // waypoint display helper class
+        WaypointDisplaySharedPtr waypointDisplay_;
 
         // template bookkeeping
         TemplateInstanceID selected_template;

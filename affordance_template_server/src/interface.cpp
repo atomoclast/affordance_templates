@@ -531,21 +531,28 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
         WaypointInfo wpi;
         wpi.end_effector_name = ee.first;
         wpi.id = ee.second;
-        wpi.num_waypoints = at->getNumWaypoints(at_struct, at->getCurrentTrajectory(), wpi.id);
 
+        ROS_DEBUG("[AffordanceTemplateInterface::getTemplateStatus] parsing ee -- %s, id -- %d", ee.first.c_str(), wpi.id);
+
+        wpi.num_waypoints = at->getNumWaypoints(at_struct, at->getCurrentTrajectory(), wpi.id);
+                
         affordance_template::PlanStatus ps;
-        if (!at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps))
-        // {
-            // ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't have a valid plan!!", ats.trajectory_name.c_str(), ee.first.c_str());
-            continue;
-        // }
-        wpi.waypoint_index = ps.current_idx; // is this reversed??
-        wpi.plan_valid = ps.plan_valid;
-        wpi.execution_valid = ps.exec_valid;
-        wpi.waypoint_plan_index = ps.goal_idx; // is this reversed??
-        for (auto p : ps.sequence_poses)
-            wpi.waypoint_poses.push_back(p);
-        // the python had ee_pose_name data struct here -- don't know if it's necessary though
+        if (at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps)) {
+            ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't have a valid plan!!", ats.trajectory_name.c_str(), ee.first.c_str());
+            wpi.waypoint_index = ps.current_idx;
+            wpi.plan_valid = ps.plan_valid;
+            wpi.execution_valid = ps.exec_valid;
+            wpi.waypoint_plan_index = ps.goal_idx;
+            for (auto p : ps.sequence_poses)
+                wpi.waypoint_poses.push_back(p);
+        } else {
+            wpi.waypoint_index = -1; 
+            wpi.plan_valid = false;
+            wpi.execution_valid = false;
+            wpi.waypoint_plan_index = -1;
+        }
+
+        // TODO set compact and controls display flags
 
         ats.waypoint_info.push_back(wpi);   
     }

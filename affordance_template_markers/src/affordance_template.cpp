@@ -219,14 +219,15 @@ bool AffordanceTemplate::getTrajectory(TrajectoryList& traj_list, std::string tr
 
 bool AffordanceTemplate::getTrajectoryPlan(const std::string& trajectory, const std::string& ee, PlanStatus& plan)
 {
-  if (plan_status_.find(trajectory) != plan_status_.end())
-    if (plan_status_[trajectory].find(ee) != plan_status_[trajectory].end())
+  if (plan_status_.find(trajectory) != plan_status_.end()) {
+    if (plan_status_[trajectory].find(ee) != plan_status_[trajectory].end()) {
       plan = plan_status_[trajectory][ee];
-    else
+    } else {
       return false;
-  else
+    }
+  } else {
     return false;
-
+  }
   return true;
 }
 
@@ -258,6 +259,16 @@ void AffordanceTemplate::setTrajectoryFlags(Trajectory traj)
     }
     waypoint_flags_[traj.name] = wp_flags;
   }
+
+  // if(plan_status_.find(traj.name) == std::end(plan_status_)) {
+  //   plan_status_[traj.name][ee].direct     = false;
+  //   plan_status_[traj.name][ee].plan_valid = false;
+  //   plan_status_[traj.name][ee].exec_valid = false;
+  //   plan_status_[traj.name][ee].backwards  = false;
+  //   plan_status_[traj.name][ee].sequence_ids.clear();
+  //   plan_status_[traj.name][ee].sequence_poses.clear();
+  // }
+
 }
 
 bool AffordanceTemplate::isValidTrajectory(Trajectory traj)  
@@ -1342,6 +1353,7 @@ bool AffordanceTemplate::hasWaypointFrame(std::string wp) {
 }
 
 int AffordanceTemplate::getNumWaypoints(const AffordanceTemplateStructure structure, const std::string traj_name, const int ee_id) {
+
   for(auto &traj : structure.ee_trajectories) {
     if(traj.name == traj_name) {
       for(auto &ee_list : traj.ee_waypoint_list) {

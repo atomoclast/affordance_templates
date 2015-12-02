@@ -18,27 +18,25 @@
 using namespace rviz_affordance_template_panel;
 using namespace std;
 
-AffordanceTemplateRVizClient::AffordanceTemplateRVizClient(ros::NodeHandle &nh, Ui::RVizAffordanceTemplatePanel* ui, QGraphicsScene *at_scene, QGraphicsScene *ro_scene) :
+AffordanceTemplateRVizClient::AffordanceTemplateRVizClient(ros::NodeHandle &nh, Ui::RVizAffordanceTemplatePanel* ui, QGraphicsScene *at_scene) :
     nh_(nh),
     ui_(ui),
     affordanceTemplateGraphicsScene_(at_scene),
-    recognitionObjectGraphicsScene_(ro_scene),
     descriptionRobot_(""),
     running_(false),
     controls_(new Controls()),
-    server_status_(-1)
+    waypointDisplay_(new WaypointDisplay()),
+    server_status_(-1),
+    waypoint_display_configured_(false)
 {
 
     // setup service clients
     add_template_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplate>("/affordance_template_server/add_template");
-    // add_object_client_ = nh_.serviceClient<affordance_template_msgs::AddRecognitionObject>("/affordance_template_server/add_recognition_object");
     add_trajectory_client_ = nh_.serviceClient<affordance_template_msgs::AddAffordanceTemplateTrajectory>("/affordance_template_server/add_trajectory");
     plan_command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplatePlanCommand>("/affordance_template_server/plan_command");
     execute_command_client_ = nh_.serviceClient<affordance_template_msgs::AffordanceTemplateExecuteCommand>("/affordance_template_server/execute_command");
     delete_template_client_ = nh_.serviceClient<affordance_template_msgs::DeleteAffordanceTemplate>("/affordance_template_server/delete_template");
-    // delete_object_client_ = nh_.serviceClient<affordance_template_msgs::DeleteRecognitionObject>("/affordance_template_server/delete_recognition_object");
     get_robots_client_ = nh_.serviceClient<affordance_template_msgs::GetRobotConfigInfo>("/affordance_template_server/get_robots");
-    // get_objects_client_ = nh_.serviceClient<affordance_template_msgs::GetRecognitionObjectConfigInfo>("/affordance_template_server/get_recognition_objects");
     get_running_client_ = nh_.serviceClient<affordance_template_msgs::GetRunningAffordanceTemplates>("/affordance_template_server/get_running");
     get_templates_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateConfigInfo>("/affordance_template_server/get_templates");
     get_template_status_client_ = nh_.serviceClient<affordance_template_msgs::GetAffordanceTemplateStatus>("/affordance_template_server/get_template_status");
@@ -46,7 +44,8 @@ AffordanceTemplateRVizClient::AffordanceTemplateRVizClient(ros::NodeHandle &nh, 
     save_template_client_ = nh_.serviceClient<affordance_template_msgs::SaveAffordanceTemplate>("/affordance_template_server/save_template");
     scale_object_client_ = nh_.serviceClient<affordance_template_msgs::ScaleDisplayObject>("/affordance_template_server/scale_object");
     set_template_trajectory_client_ = nh_.serviceClient<affordance_template_msgs::SetAffordanceTemplateTrajectory>("/affordance_template_server/set_template_trajectory");
-    
+    set_waypoint_view_client_  = nh_.serviceClient<affordance_template_msgs::SetWaypointViewModes>("/affordance_template_server/set_waypoint_view");
+
     // setup publishers
     scale_object_streamer_ = nh_.advertise<affordance_template_msgs::ScaleDisplayObjectInfo>("/affordance_template_server/scale_object_streamer", 10);
 
@@ -54,6 +53,10 @@ AffordanceTemplateRVizClient::AffordanceTemplateRVizClient(ros::NodeHandle &nh, 
     controls_->setUI(ui_);
     controls_->setServices(plan_command_client_, execute_command_client_);
 
+    // set up waypoint display helper class
+    waypointDisplay_->setUI(ui_);
+    waypointDisplay_->setService(set_waypoint_view_client_);
+    
     selected_template = make_pair("",-1);
 
     label_palette_ = new QPalette();// ui_->server_status_label->palette();
@@ -77,11 +80,10 @@ AffordanceTemplateRVizClient::~AffordanceTemplateRVizClient()
     delete label_palette_;
     delete thread_;
     delete affordanceTemplateGraphicsScene_;
-    delete recognitionObjectGraphicsScene_;
 }
 
 void AffordanceTemplateRVizClient::init() {  
-    ROS_DEBUG("AffordanceTemplateRVizClient::init()");
+    ROS_WARN("AffordanceTemplateRVizClient::init()");
     getAvailableInfo();
     tryToLoadRobotFromYAML();
     getRunningItems();
@@ -292,12 +294,11 @@ void AffordanceTemplateRVizClient::refreshCallback() {
 
 void AffordanceTemplateRVizClient::getAvailableInfo() {
     getAvailableTemplates();
-    //getAvailableRecognitionObjects();
     getAvailableRobots();
 }
 
 void AffordanceTemplateRVizClient::getAvailableTemplates() {
-    ROS_INFO("querying available templates");    
+    ROS_DEBUG("querying available templates");    
     affordance_template_msgs::GetAffordanceTemplateConfigInfo srv;
     if (get_templates_client_.call(srv))
     {
@@ -308,7 +309,6 @@ void AffordanceTemplateRVizClient::getAvailableTemplates() {
             string filename = t.filename;
             QMap<QString, QVariant> trajectory_map;
             QStringList display_objects;
-            ROS_INFO("Found Affordance Template: %s", t.type.c_str());
             for (auto& traj: t.trajectory_info) {
                 QMap<QString, QVariant> waypoint_map;
                 for (auto& wp: traj.waypoint_info) {
@@ -333,32 +333,6 @@ void AffordanceTemplateRVizClient::getAvailableTemplates() {
     else
     {
         ROS_ERROR("Failed to call service get templates");
-    }       
-}
-
-void AffordanceTemplateRVizClient::getAvailableRecognitionObjects() {
-    ROS_INFO("querying available recognition objects");    
-    affordance_template_msgs::GetRecognitionObjectConfigInfo srv;
-    if (get_objects_client_.call(srv))
-    {
-        int yoffset = YOFFSET;
-        recognitionObjectGraphicsScene_->clear();
-        for (auto& o: srv.response.recognition_objects) {
-            string image_path = util::resolvePackagePath(o.image_path);
-            RecognitionObjectSharedPtr pitem(new RecognitionObject(o.type, o.launch_file, o.package, image_path));
-            pitem->setPos(XOFFSET, yoffset);
-            yoffset += PIXMAP_SIZE + YOFFSET;
-            if(!checkRecognitionObject(pitem)) {
-                addRecognitionObject(pitem);
-            }
-            recognitionObjectGraphicsScene_->addItem(pitem.get());
-                
-        }
-        recognitionObjectGraphicsScene_->update();
-    }
-    else
-    {
-        ROS_ERROR("Failed to call service get recog objects");
     }       
 }
 
@@ -418,8 +392,9 @@ void AffordanceTemplateRVizClient::getAvailableRobots() {
 
         setupRobotPanel(robotMap_.begin()->first);
 
-        // set Controls
+        // set robot map in helpers
         controls_->setRobotMap(robotMap_);
+        waypointDisplay_->setRobotMap(robotMap_);
 
     }
     else
@@ -587,6 +562,7 @@ void AffordanceTemplateRVizClient::selectTemplateTrajectory(const QString& text)
     if (set_template_trajectory_client_.call(srv))
     {
         ROS_DEBUG("select trajectory response: %d", int(srv.response.success));
+        waypoint_display_configured_ = false;
     }
     else
     {
@@ -610,14 +586,6 @@ void AffordanceTemplateRVizClient::removeAffordanceTemplates() {
     affordanceTemplateGraphicsScene_->update();
 }
 
-void AffordanceTemplateRVizClient::removeRecognitionObjects() {
-    for (auto& pitem: recognitionObjectGraphicsScene_->items()) {
-        recognitionObjectGraphicsScene_->removeItem(pitem);
-    }
-    recognitionObjectMap_.clear();
-    recognitionObjectGraphicsScene_->update();
-}
-
 int AffordanceTemplateRVizClient::sendAffordanceTemplateAdd(const string& class_name) {
     ROS_INFO("Sending Add Template request for a %s", class_name.c_str());      
     affordance_template_msgs::AddAffordanceTemplate srv;
@@ -632,20 +600,6 @@ int AffordanceTemplateRVizClient::sendAffordanceTemplateAdd(const string& class_
         ROS_ERROR("Failed to call service add_template");
     }
     return -1;
-}
-
-void AffordanceTemplateRVizClient::sendRecognitionObjectAdd(const string& object_name) {
-    ROS_INFO("Sending Add Recognition Object request for a %s", object_name.c_str());      
-    affordance_template_msgs::AddRecognitionObject srv;
-    srv.request.object_type = object_name;
-    if (add_object_client_.call(srv))
-    {
-        ROS_INFO("Add successful, new %s with id: %d", object_name.c_str(), (int)(srv.response.id));
-    }
-    else
-    {
-        ROS_ERROR("Failed to call service add_object");
-    }
 }
 
 void AffordanceTemplateRVizClient::sendAffordanceTemplateKill(const string& class_name, int id) {
@@ -691,34 +645,11 @@ void AffordanceTemplateRVizClient::sendAffordanceTemplateKill(const string& clas
     }
 }
 
-void AffordanceTemplateRVizClient::sendRecognitionObjectKill(const string& object_name, int id) {
-    ROS_INFO("Sending kill to %s:%d", object_name.c_str(), id);      
-    affordance_template_msgs::DeleteRecognitionObject srv;
-    srv.request.object_type = object_name;
-    srv.request.id = id;
-    if (delete_object_client_.call(srv))
-    {
-        ROS_INFO("Delete successful");
-    }
-    else
-    {
-        ROS_ERROR("Failed to call service delete_object");
-    }
-}
-
 void AffordanceTemplateRVizClient::killAffordanceTemplate(QListWidgetItem* item) {
     vector<string> template_info = util::split(item->text().toUtf8().constData(), ':');
     int id;
     istringstream(template_info[1]) >> id;
     sendAffordanceTemplateKill(template_info[0], id);
-    getRunningItems();
-}
-
-void AffordanceTemplateRVizClient::killRecognitionObject(QListWidgetItem* item) {
-    vector<string> object_info = util::split(item->text().toUtf8().constData(), ':');
-    int id;
-    istringstream(object_info[1]) >> id;
-    sendRecognitionObjectKill(object_info[0], id);
     getRunningItems();
 }
 
@@ -1078,18 +1009,10 @@ void AffordanceTemplateRVizClient::loadConfig() {
 
     ui_->end_effector_table->resizeColumnsToContents();
     ui_->end_effector_table->resizeRowsToContents();
-
-    /*if (load_robot_client_.call(srv))
-    {
-        ROS_INFO("Load Robot Config call succesful");
-    }
-    else
-    {
-        ROS_ERROR("Failed to call service load_robot_config");
-    }*/
-        
+      
     robot_name_ = key;
     controls_->setRobotName(robot_name_);
+    waypointDisplay_->setRobotName(robot_name_);
     robot_configured_ = true;
 
     if(ui_->robot_lock->isChecked()) {
@@ -1103,6 +1026,8 @@ void AffordanceTemplateRVizClient::loadConfig() {
 void AffordanceTemplateRVizClient::addAffordanceDisplayItem() {
     // Add an object template to the InteractiveMarkerServer for each selected item.
     QList<QGraphicsItem*> list = affordanceTemplateGraphicsScene_->selectedItems();
+    AffordanceTemplateStatusInfo::EndEffectorInfo wp_info;
+
     for (int i=0; i < list.size(); ++i) {
         // Get the object template class name from the first element in the QGraphicsItem's custom data
         // field. This field is set in the derived Affordance class when setting up the widgets.
@@ -1110,7 +1035,7 @@ void AffordanceTemplateRVizClient::addAffordanceDisplayItem() {
         string image_name = list.at(i)->data(IMAGE).toString().toStdString();
         string filename = list.at(i)->data(FILENAME).toString().toStdString();
         
-        ROS_INFO("AffordanceTemplateRVizClient::addAffordanceDisplayItem() -- %s", class_name.c_str());
+        ROS_WARN("AffordanceTemplateRVizClient::addAffordanceDisplayItem() -- %s", class_name.c_str());
         int idx = sendAffordanceTemplateAdd(class_name);
         if (idx < 0) {
             ROS_ERROR("AffordanceTemplateRVizClient::addAffordanceDisplayItem() something wrong!!");
@@ -1140,33 +1065,10 @@ void AffordanceTemplateRVizClient::addAffordanceDisplayItem() {
     getRunningItems();
 }
 
-void AffordanceTemplateRVizClient::addObjectDisplayItem() {
-    // Add an object template to the InteractiveMarkerServer for each selected item.
-    QList<QGraphicsItem*> list = recognitionObjectGraphicsScene_->selectedItems();
-    for (int i=0; i < list.size(); ++i) {
-        // Get the object template class name from the first element in the QGraphicsItem's custom data
-        // field. This field is set in the derived Affordance class when setting up the widgets.
-        string object_name = list.at(i)->data(OBJECT_INDEX).toString().toStdString();
-        ROS_INFO("AffordanceTemplateRVizClient::addObjectDisplayItem() -- %s", object_name.c_str());
-        sendRecognitionObjectAdd(object_name);
-    }
-    // update running templates
-    getRunningItems();
-}
-
 bool AffordanceTemplateRVizClient::addAffordance(const AffordanceSharedPtr& obj) {
     // check if template is in our map
     if (!checkAffordance(obj)) {
         affordanceMap_[(*obj).key()] = obj;
-        return true;
-    }
-    return false;
-}
-
-bool AffordanceTemplateRVizClient::addRecognitionObject(const RecognitionObjectSharedPtr& obj) {
-    // check if template is in our map
-    if (!checkRecognitionObject(obj)) {
-        recognitionObjectMap_[(*obj).key()] = obj;
         return true;
     }
     return false;
@@ -1181,24 +1083,8 @@ bool AffordanceTemplateRVizClient::removeAffordance(const AffordanceSharedPtr& o
     return false;
 }
 
-bool AffordanceTemplateRVizClient::removeRecognitionObject(const RecognitionObjectSharedPtr& obj) {
-    // check if template is in our map
-    if (checkRecognitionObject(obj)) {
-        recognitionObjectMap_.erase((*obj).key());
-        return true;
-    }
-    return false;
-}
-
 bool AffordanceTemplateRVizClient::checkAffordance(const AffordanceSharedPtr& obj) {
     if (affordanceMap_.find((*obj).key()) == affordanceMap_.end()) {
-        return false;
-    }
-    return true;
-}
-
-bool AffordanceTemplateRVizClient::checkRecognitionObject(const RecognitionObjectSharedPtr& obj) {
-    if (recognitionObjectMap_.find((*obj).key()) == recognitionObjectMap_.end()) {
         return false;
     }
     return true;
@@ -1269,7 +1155,7 @@ void AffordanceTemplateRVizClient::updateStatusFromControls() {
     AffordanceTemplateStatusInfo * status = controls_->getTemplateStatusInfo();
     string full_name = status->getName() + to_string(status->getID());
     template_status_info[full_name] = status;
-    updateTable(full_name, status->getCurrentTrajectory());
+    updateTables(full_name, status->getCurrentTrajectory());
 }    
 
 void AffordanceTemplateRVizClient::goToStart() { 
@@ -1308,12 +1194,14 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
     
     if (get_template_status_client_.call(srv))
     {
-        //TODO@DEBUG??? 
         ROS_DEBUG("Got info for template %s", srv.request.name.c_str());//(int)(srv.response.affordance_template_status.size()));
        
         if(srv.response.affordance_template_status.size() == 0) {
+            ROS_WARN("No status returned");
             return;
         }
+
+        //std::cout << srv.response << std::endl; 
 
         for (int i=0; i<srv.response.affordance_template_status.size(); i++) {
         
@@ -1344,9 +1232,9 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
         int id = ui_->control_trajectory_box->findText(QString(srv.response.current_trajectory.c_str()));
         ui_->control_trajectory_box->setCurrentIndex(id);
 
-        updateTable(srv.request.name, srv.response.current_trajectory);
+        updateTables(srv.request.name, srv.response.current_trajectory);
         
-        controls_->setTemplateStatusInfo(template_status_info[srv.request.name]);
+
     }   
     else
     {
@@ -1355,7 +1243,17 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
 
 }
 
-void AffordanceTemplateRVizClient::updateTable(std::string name, std::string trajectory) {
+void AffordanceTemplateRVizClient::updateTables(std::string name, std::string trajectory) {
+
+    updateControlsTable(name, trajectory);
+    updateWaypointDisplayTable(name, trajectory);   
+
+    controls_->setTemplateStatusInfo(template_status_info[name]);
+    waypointDisplay_->setTemplateStatusInfo(template_status_info[name]);
+
+}
+
+void AffordanceTemplateRVizClient::updateControlsTable(std::string name, std::string trajectory) {
 
     // set the control GUI with the current trajectories information
     AffordanceTemplateStatusInfo::EndEffectorInfo wp_info = template_status_info[name]->getTrajectoryStatus(trajectory);
@@ -1412,6 +1310,10 @@ void AffordanceTemplateRVizClient::updateTable(std::string name, std::string tra
                         item_status->setText(QString(status_string.c_str()));
                     }
                 }
+
+
+
+
             }
         }
     }
@@ -1419,6 +1321,17 @@ void AffordanceTemplateRVizClient::updateTable(std::string name, std::string tra
     // need to auto uncheck end-effector boxes in table for EEs that are not in the trajectory FIXME
 
 }
+
+
+void AffordanceTemplateRVizClient::updateWaypointDisplayTable(std::string name, std::string trajectory) {
+    if(!waypoint_display_configured_) {
+        // set the waypoint display GUI with the current trajectories information
+        AffordanceTemplateStatusInfo::EndEffectorInfo wp_info = template_status_info[name]->getTrajectoryStatus(trajectory);
+        waypointDisplay_->setupWaypointDisplayInfo(wp_info);
+    }
+    waypoint_display_configured_ = true;
+}
+
 
 bool AffordanceTemplateRVizClient::endEffectorInTrajectory(AffordanceTemplateStatusInfo::EndEffectorInfo ee_info) {
     std::string s;
