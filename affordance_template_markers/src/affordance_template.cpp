@@ -1471,17 +1471,17 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
               ++planning.progress;
               action_server_.publishFeedback(planning);
 
-              // std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
-              // ee_goals[ee_name].push_back(ee_js); // FIXME -- need group name, not sure this is right
-              // if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, true))
-              // {
-              //   ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
-              //   planning.progress = -1;
-              //   action_server_.publishFeedback(planning);
-              //   result.succeeded = false;
-              //   action_server_.setSucceeded(result);
-              //   return;
-              // }
+              std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
+              ee_goals[ee_name].push_back(ee_js); // FIXME -- need group name, not sure this is right
+              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false))
+              {
+                ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
+                planning.progress = -1;
+                action_server_.publishFeedback(planning);
+                result.succeeded = false;
+                action_server_.setSucceeded(result);
+                return;
+              }
 
               ros::Duration(2.0).sleep();
             }
