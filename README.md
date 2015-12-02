@@ -6,6 +6,7 @@
 #!bash
 $ sudo apt-get install ros-indigo-simulators ros-indigo-moveit* ros-indigo-control* ros-indigo-ros-control* ros-indigo-gazebo-ros-control*
 ```
+NOTE: if you receive a 'broken packages' error, try uninstalling libsdformat2
 
 1. checkout the following repositories into your catkin workspace to run R2 upperbody and switch to the specified branches.
 
