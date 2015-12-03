@@ -236,6 +236,19 @@ bool AffordanceTemplate::setTrajectory(const std::string& trajectory_name)
   return setCurrentTrajectory( getCurrentStructure().ee_trajectories, trajectory_name);
 }
 
+bool AffordanceTemplate::switchTrajectory(const std::string& trajectory_name)
+{
+  removeAllMarkers();
+  if(setTrajectory(trajectory_name)) {
+    setupTrajectoryMenu(structure_, trajectory_name);
+    if(createFromStructure( structure_, false, trajectory_name)) {
+      ROS_INFO("AffordanceTemplate::switchTrajectory() -- %s succeeded", trajectory_name.c_str());
+    } else {
+      ROS_ERROR("AffordanceTemplate::switchTrajectory() -- %s failed", trajectory_name.c_str());
+    }
+  }
+}
+
 void AffordanceTemplate::clearTrajectoryFlags()
 {
   waypoint_flags_.clear();
@@ -300,7 +313,7 @@ bool AffordanceTemplate::isValidTrajectory(Trajectory traj)
 // if no input request, find the first valid one
 bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::string traj) 
 {
-  ROS_DEBUG("[AffordanceTemplate::setCurrentTrajectory] will attempt to set current trajectory to %s", traj.c_str());
+  ROS_INFO("[AffordanceTemplate::setCurrentTrajectory] will attempt to set current trajectory to %s", traj.c_str());
 
   current_trajectory_ = "";
   if ( !traj.empty()) {
@@ -310,10 +323,16 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
           current_trajectory_ = t.name;
           ROS_INFO("AffordanceTemplate::setCurrentTrajectory() -- setting current trajectory to: %s", current_trajectory_.c_str());
           break;
+        } else {
+          ROS_ERROR("[AffordanceTemplate::setCurrentTrajectory] -- \'%s\' not a valid trajectory", t.name.c_str());
         }
       }
     }
-  } 
+  } else {
+    ROS_ERROR("[AffordanceTemplate::setCurrentTrajectory] -- input trajectory is empty");
+  }
+
+  // get the first valid trajectory
   if ( current_trajectory_.empty()) {
     for (auto &t: traj_list) {
       if(isValidTrajectory(t)) {
@@ -324,7 +343,7 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
           ROS_INFO("AffordanceTemplate::setCurrentTrajectory() -- setting current trajectory to: %s", current_trajectory_.c_str());          
         }
         break;
-      }
+      } 
     }
   } 
   

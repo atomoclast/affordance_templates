@@ -347,7 +347,7 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     ATPointer at;
     if (at_server_->getTemplateInstance(req.name, at))
     {
-        if (at->setTrajectory(req.trajectory))
+        if (at->switchTrajectory(req.trajectory))
             res.success = true;
         else
             ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());

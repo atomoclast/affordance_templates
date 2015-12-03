@@ -93,8 +93,9 @@ namespace affordance_template
     int getNumWaypoints(const affordance_template_object::AffordanceTemplateStructure structure, const std::string traj_name, const int ee_id);
     bool getTrajectoryPlan(const std::string&, const std::string&, PlanStatus&);
     bool getWaypointFlags(const std::string& traj, WaypointTrajectoryFlags& flags);
-    
+
     // public setters 
+    bool switchTrajectory(const std::string&);
     bool setTrajectory(const std::string&);
     bool setObjectScaling(const std::string&, double, double);
     void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
