@@ -32,7 +32,7 @@ int main(int argc, char **argv)
   goal.steps = 0; // 0 to plan for all steps
   goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN;
   goal.backwards = false;
-  goal.execute_on_plan = true;
+  goal.execute_on_plan = false;
   ac.sendGoal(goal);
 
   //wait for the action to return

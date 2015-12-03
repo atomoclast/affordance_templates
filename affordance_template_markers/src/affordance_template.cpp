@@ -18,7 +18,8 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   root_object_(""),
   loop_rate_(50.0),
   object_controls_display_on_(true),
-  action_server_(nh, ("affordance_template/" + template_type + "_" + std::to_string(id) + "/planning_server"), boost::bind(&AffordanceTemplate::planRequest, this, _1), false)
+  planning_server_(nh, ("affordance_template/" + template_type + "_" + std::to_string(id) + "/planning_server"), boost::bind(&AffordanceTemplate::planRequest, this, _1), false),
+  execution_server_(nh, ("affordance_template/" + template_type + "_" + std::to_string(id) + "/execution_server"), boost::bind(&AffordanceTemplate::executeRequest, this, _1), false)
 {
   ROS_INFO("AffordanceTemplate::init() -- Done Creating new AffordanceTemplate of type %s for robot: %s", template_type_.c_str(), robot_name_.c_str());
   name_ = template_type_ + ":" + std::to_string(id);
@@ -31,7 +32,8 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   // set to false when template gets destroyed, otherwise we can get a dangling pointer
   running_ = true;
 
-  action_server_.start();
+  planning_server_.start();
+  execution_server_.start();
   
   boost::thread spin_thread_(boost::bind(&AffordanceTemplate::run, this));
 }
@@ -1508,12 +1510,12 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
   PlanFeedback planning;
 
   planning.progress = 1;
-  action_server_.publishFeedback(planning);
+  planning_server_.publishFeedback(planning);
 
-  for (auto ee : goal->ee) 
+  for (auto ee : goal->groups) 
   {
     ++planning.progress;
-    action_server_.publishFeedback(planning);
+    planning_server_.publishFeedback(planning);
 
     plan_status_[current_trajectory_][ee].direct     = false;
     plan_status_[current_trajectory_][ee].plan_valid = false;
@@ -1529,17 +1531,15 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     std::string manipulator_name = robot_interface_->getManipulator(ee);
     std::map<std::string, std::vector<geometry_msgs::PoseStamped> > goals;
     
-    ROS_WARN("have ee %s with ee_id %d and current_idx %d", ee.c_str(), ee_id, current_idx);
-
     //
     // set the first start state to current state
     if (!robot_interface_->getPlanner()->setStartState(manipulator_name))
     {
       ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
       planning.progress = -1;
-      action_server_.publishFeedback(planning);
+      planning_server_.publishFeedback(planning);
       result.succeeded = false;
-      action_server_.setSucceeded(result);
+      planning_server_.setSucceeded(result);
       return;
     }
 
@@ -1563,9 +1563,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     {
       ROS_ERROR("[AffordanceTemplate::planRequest] waypoint vector size does not match up!!");
       planning.progress = -1;
-      action_server_.publishFeedback(planning);
+      planning_server_.publishFeedback(planning);
       result.succeeded = false;
-      action_server_.setSucceeded(result);
+      planning_server_.setSucceeded(result);
       return;
     }
 
@@ -1577,7 +1577,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     for (int idx = 0; idx < num_steps; ++idx)
     {
       ++planning.progress;
-      action_server_.publishFeedback(planning);
+      planning_server_.publishFeedback(planning);
 
       std::string next_path_str = createWaypointID(ee_id, idx);
 
@@ -1588,9 +1588,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to get path sequence!!");
         planning.progress = -1;
-        action_server_.publishFeedback(planning);
+        planning_server_.publishFeedback(planning);
         result.succeeded = false;
-        action_server_.setSucceeded(result);
+        planning_server_.setSucceeded(result);
         return;
       }
 
@@ -1606,7 +1606,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         ++planning.progress;
-        action_server_.publishFeedback(planning);
+        planning_server_.publishFeedback(planning);
 
         plan_status_[current_trajectory_][ee].current_idx = plan_status_[current_trajectory_][ee].goal_idx;
         plan_status_[current_trajectory_][ee].plan_valid = true;
@@ -1619,7 +1619,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         else
         {
           ++planning.progress;
-          action_server_.publishFeedback(planning);
+          planning_server_.publishFeedback(planning);
 
           ROS_INFO("[AffordanceTemplate::planRequest] setting EE goal pose to %s", ee_pose_map[wp_vec[idx].ee_pose].c_str());
           sensor_msgs::JointState ee_js;
@@ -1629,15 +1629,15 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
             {
               ROS_ERROR("[AffordanceTemplate::planRequest] couldn't get group state!!");
               planning.progress = -1;
-              action_server_.publishFeedback(planning);
+              planning_server_.publishFeedback(planning);
               result.succeeded = false;
-              action_server_.setSucceeded(result);
+              planning_server_.setSucceeded(result);
               return;
             }
             else
             {
               ++planning.progress;
-              action_server_.publishFeedback(planning);
+              planning_server_.publishFeedback(planning);
 
               std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
               ee_goals[ee_name].push_back(ee_js); // FIXME -- need group name, not sure this is right
@@ -1645,9 +1645,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               {
                 ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
                 planning.progress = -1;
-                action_server_.publishFeedback(planning);
+                planning_server_.publishFeedback(planning);
                 result.succeeded = false;
-                action_server_.setSucceeded(result);
+                planning_server_.setSucceeded(result);
                 return;
               }
 
@@ -1658,29 +1658,29 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
           {
             ROS_ERROR("[AffordanceTemplate::planRequest] couldn't get planner or RDF model -- bad pointer somewhere!!");
             planning.progress = -1;
-            action_server_.publishFeedback(planning);
+            planning_server_.publishFeedback(planning);
             result.succeeded = false;
-            action_server_.setSucceeded(result);
+            planning_server_.setSucceeded(result);
             return;
           }
         }
 
         ++planning.progress;
-        action_server_.publishFeedback(planning);
+        planning_server_.publishFeedback(planning);
 
         moveit::planning_interface::MoveGroup::Plan plan;
         if (!robot_interface_->getPlanner()->getPlan(manipulator_name, plan))
         {
           ROS_FATAL("[AffordanceTemplate::planRequest] couldn't find stored plan for %s waypoint!! this shouldn't happen, something is wrong!.", next_path_str.c_str());
           planning.progress = -1;
-          action_server_.publishFeedback(planning);
+          planning_server_.publishFeedback(planning);
           result.succeeded = false;
-          action_server_.setSucceeded(result);
+          planning_server_.setSucceeded(result);
           return;
         }
 
         ++planning.progress;
-        action_server_.publishFeedback(planning);
+        planning_server_.publishFeedback(planning);
 
         //
         // make a state out of the plan for the next iteration
@@ -1695,9 +1695,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         {
           ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
           planning.progress = -1;
-          action_server_.publishFeedback(planning);
+          planning_server_.publishFeedback(planning);
           result.succeeded = false;
-          action_server_.setSucceeded(result);
+          planning_server_.setSucceeded(result);
           return;
         }
       } 
@@ -1705,9 +1705,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       {
         ROS_ERROR("[AffordanceTemplate::planRequest] planning failed for waypoint %s", next_path_str.c_str());
         planning.progress = -1;
-        action_server_.publishFeedback(planning);
+        planning_server_.publishFeedback(planning);
         result.succeeded = false;
-        action_server_.setSucceeded(result);
+        planning_server_.setSucceeded(result);
         return;
       }
 
@@ -1717,29 +1717,54 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
   } // ee loop
 
   ++planning.progress;
-  action_server_.publishFeedback(planning);
+  planning_server_.publishFeedback(planning);
 
   if (goal->execute_on_plan)
   {
     ++planning.progress;
-    action_server_.publishFeedback(planning);
+    planning_server_.publishFeedback(planning);
 
-    if (!moveToWaypoints(goal->ee))
+    if (!moveToWaypoints(goal->groups))
     {
       ROS_ERROR("[AffordanceTemplate::planRequest] execution of plan failed!!");
       planning.progress = -1;
-      action_server_.publishFeedback(planning);
+      planning_server_.publishFeedback(planning);
       result.succeeded = false;
-      action_server_.setSucceeded(result);
+      planning_server_.setSucceeded(result);
       return;
     }
   }
 
   ++planning.progress;
-  action_server_.publishFeedback(planning);
+  planning_server_.publishFeedback(planning);
   
   result.succeeded = true;
-  action_server_.setSucceeded(result);
+  planning_server_.setSucceeded(result);
+}
+
+
+void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
+{
+  ROS_WARN("[AffordanceTemplate::executeRequest] executing");
+
+  ExecuteResult result;
+  ExecuteFeedback exe;
+
+  exe.progress = 1;
+  execution_server_.publishFeedback(exe);
+
+  if (!moveToWaypoints(goal->groups))
+  {
+    ROS_ERROR("[AffordanceTemplate::executeRequest] execution of plan failed!!");
+    exe.progress = -1;
+    execution_server_.publishFeedback(exe);
+    result.succeeded = false;
+    execution_server_.setSucceeded(result);
+    return;
+  }
+  
+  result.succeeded = true;
+  execution_server_.setSucceeded(result);
 }
 
  // list of ee names, steps, direct, backwards; return map of bools keyed on EE name
