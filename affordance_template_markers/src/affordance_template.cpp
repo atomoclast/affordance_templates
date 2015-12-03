@@ -1402,14 +1402,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           moveToWaypoints(ee_names); 
           ros::Duration(2).sleep();
 
-          planPathToWaypoints(ee_names, 1, false, false); 
-          moveToWaypoints(ee_names); 
-          ros::Duration(2).sleep();
-
-          planPathToWaypoints(ee_names, 1, false, false); 
-          moveToWaypoints(ee_names); 
-          ros::Duration(2).sleep();
-
         }
       }
 
