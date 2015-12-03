@@ -553,7 +553,7 @@ void AffordanceTemplateRVizClient::changeSaveInfo(int id) {
 void AffordanceTemplateRVizClient::selectTemplateTrajectory(const QString& text) {
     string template_key = ui_->control_template_box->currentText().toUtf8().constData();
     string traj_key = ui_->control_trajectory_box->currentText().toUtf8().constData();
-    ROS_DEBUG("Changing template trajectory for %s to %s", template_key.c_str(), traj_key.c_str());      
+    ROS_WARN("Changing template trajectory for %s to %s", template_key.c_str(), traj_key.c_str());      
     affordance_template_msgs::SetAffordanceTemplateTrajectory srv;
     srv.request.name = template_key;
     srv.request.trajectory = traj_key;

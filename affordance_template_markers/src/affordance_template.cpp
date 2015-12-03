@@ -202,7 +202,7 @@ bool AffordanceTemplate::addTrajectory(const std::string& trajectory_name)
   structure_.ee_trajectories.push_back(traj);
   setTrajectory(trajectory_name);
   setupTrajectoryMenu(structure_, trajectory_name);
-  return createFromStructure( structure_, false, trajectory_name);
+  return createFromStructure( structure_, true, false, trajectory_name);
 }
 
 bool AffordanceTemplate::getTrajectory(TrajectoryList& traj_list, std::string traj_name, Trajectory& traj) 
@@ -241,7 +241,7 @@ bool AffordanceTemplate::switchTrajectory(const std::string& trajectory_name)
   removeAllMarkers();
   if(setTrajectory(trajectory_name)) {
     setupTrajectoryMenu(structure_, trajectory_name);
-    if(createFromStructure( structure_, false, trajectory_name)) {
+    if(createFromStructure( structure_, true, false, trajectory_name)) {
       ROS_INFO("AffordanceTemplate::switchTrajectory() -- %s succeeded", trajectory_name.c_str());
     } else {
       ROS_ERROR("AffordanceTemplate::switchTrajectory() -- %s failed", trajectory_name.c_str());
@@ -361,19 +361,19 @@ bool AffordanceTemplate::setWaypointViewMode(int ee, int wp, bool m)
   waypoint_flags_[current_trajectory_].compact_view[wp_name] = m;
   ROS_DEBUG("AffordanceTemplate::setWaypointViewMode() -- setting compact_view for [%s] to %d", wp_name.c_str(), (int)m);
   removeAllMarkers();
-  createFromStructure(structure_, true, current_trajectory_);
+  createFromStructure(structure_, true, true, current_trajectory_);
   server_->applyChanges();
   return true;
 }
     
-bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structure, bool keep_poses, std::string traj) 
+bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structure, bool keep_object_poses, bool keep_waypoint_poses, std::string traj) 
 {
   ROS_INFO("AffordanceTemplate::createFromStructure() -- %s", template_type_.c_str());
   if(setCurrentTrajectory(structure.ee_trajectories, traj)) {
-    if(!createDisplayObjectsFromStructure(structure, keep_poses)) {
+    if(!createDisplayObjectsFromStructure(structure, keep_object_poses)) {
       return false;
     }
-    if(!createWaypointsFromStructure(structure, keep_poses)) {
+    if(!createWaypointsFromStructure(structure, keep_waypoint_poses)) {
       return false;
     }
   } else {
@@ -865,7 +865,7 @@ void AffordanceTemplate::removeAllMarkers()
 
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
-  ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
+  ROS_DEBUG("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
 
   interactive_markers::MenuHandler::CheckState state;
 
@@ -901,6 +901,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
       p = ps.pose;
     }
+    ROS_INFO("storing pose for %s", feedback->marker_name.c_str());
     frame_store_[feedback->marker_name].second.pose = p;
   }
   
@@ -1066,7 +1067,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           break;
       }
 
-      // 
       // check for 'Add Waypoint After' for EE objects
       if (group_menu_handles_.find(wp_after_key) != std::end(group_menu_handles_)) 
       {
@@ -1197,7 +1197,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     //        should these be called at the end of the processFeedback
                     //        or should we be using server->apply() instead??
                     removeAllMarkers();
-                    createFromStructure(structure_, false, current_trajectory_); 
+                    createFromStructure(structure_, true, false, current_trajectory_); 
                     break;
                   }
                 }
@@ -1211,6 +1211,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
+      // reset AT
       if(group_menu_handles_.find(reset_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[reset_key] == feedback->menu_entry_id) {
           ROS_INFO("AffordanceTemplate::processFeedback::Reset] resetting current structure to the inital structure.");
@@ -1218,10 +1219,11 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           appendIDToStructure(structure_);
           removeAllMarkers();
           clearTrajectoryFlags();
-          createFromStructure(structure_, false, current_trajectory_); //FIXME:: make sure current_traj is i ORIGINAL list of traj
+          createFromStructure(structure_, false, false, current_trajectory_); //FIXME:: make sure current_traj is i ORIGINAL list of traj
         }
       }
 
+      // save AT to file
       if (group_menu_handles_.find(save_key) != group_menu_handles_.end()) 
       {
         if (group_menu_handles_[save_key] == feedback->menu_entry_id) 
@@ -1236,6 +1238,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
+      // toggle controls
       if(group_menu_handles_.find(hide_controls_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[hide_controls_key] == feedback->menu_entry_id) {
           ROS_INFO("AffordanceTemplate::processFeedback() --   CONTROLS TOGGLE");
@@ -1257,10 +1260,11 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             }
           }
           removeAllMarkers();
-          createFromStructure(structure_, true, current_trajectory_);
+          createFromStructure(structure_, true, true, current_trajectory_);
         }
       }
 
+      // toggle EE compact view 
       if(group_menu_handles_.find(view_mode_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[view_mode_key] == feedback->menu_entry_id) {
           ROS_INFO("AffordanceTemplate::processFeedback() --   VIEW MODE TOGGLE");
@@ -1278,11 +1282,71 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             }
           }
           removeAllMarkers();
-          createFromStructure(structure_, true, current_trajectory_);
+          createFromStructure(structure_, true, true, current_trajectory_);
         }
       }
 
-      
+      //
+      // switch trajectories using the context menu
+      for (auto &traj: structure_.ee_trajectories) 
+      {
+        MenuHandleKey key;
+        key[feedback->marker_name] = {"Choose Trajectory", traj.name}; // FIXME -- can this be static like this??
+        if (group_menu_handles_.find(key) != group_menu_handles_.end())
+        {
+          marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED);
+          if (group_menu_handles_[key] == feedback->menu_entry_id) 
+          {
+            ROS_DEBUG("[AffordanceTemplate::processFeedback::Choose Trajectory] found matching trajectory name %s", traj.name.c_str());
+            setTrajectory(traj.name);
+            marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED);
+          }
+        }
+      }
+
+      //
+      // switch EE pose of a WP
+      if(isWaypoint(feedback->marker_name)) {
+        int ee_id = getEEIDfromWaypointName(feedback->marker_name);
+        std::string ee_name = robot_interface_->getEEName(ee_id);
+        for(auto &pn : robot_interface_->getEEPoseNames(ee_name)) {
+          MenuHandleKey key;
+          key[feedback->marker_name] = {"Change End-Effector Pose", pn};
+          if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) {
+            if (group_menu_handles_[key] == feedback->menu_entry_id) {
+              ROS_INFO("AffordanceTemplate::processFeedback() -- changing EE[%s] pose to \'%s\'", ee_name.c_str(), pn.c_str());
+              bool found = false;
+              for (auto& traj : structure_.ee_trajectories) {
+                if (traj.name == current_trajectory_) {
+                  // look for the object the user selected in our waypoint list
+                  for (auto& wp_list: traj.ee_waypoint_list) {
+                    int wp_id = -1; // init to -1 because we pre-add
+                    for (auto& wp: wp_list.waypoints) {
+                      std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+                      if (wp_name == feedback->marker_name) {
+                        wp.ee_pose = robot_interface_->getEEPoseIDMap(ee_name)[pn];
+                        found = true;
+                        removeAllMarkers();
+                        if(!createFromStructure(structure_, true, true)){
+                          ROS_ERROR("AffordanceTemplate::processFeedback() -- failed creating structure with new EE pose");
+                        }
+                        break;
+                      }
+                    }
+                    if(found) break;
+                  }
+                }
+                if(found) break;
+              }
+            }
+          }
+        }
+      }
+
+      // *************************************************************************************
+      // TODO: THESE ARE DUMMY HACK FUNCTIONS TO TEST UNTIL WE GET THE ACTIONLIB STUFF WORKING
+      // *************************************************************************************
+
       if(group_menu_handles_.find(plan_test_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[plan_test_key] == feedback->menu_entry_id) {
           ROS_WARN("AffordanceTemplate::processFeedback() --   PLAN");
@@ -1330,29 +1394,11 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
         }
       }
-      
-      //
-      // switch trajectories using the context menu
-      for (auto &traj: structure_.ee_trajectories) 
-      {
-        MenuHandleKey key;
-        key[feedback->marker_name] = {"Choose Trajectory", traj.name}; // FIXME -- can this be static like this??
-        if (group_menu_handles_.find(key) != group_menu_handles_.end())
-        {
-          marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED);
-          if (group_menu_handles_[key] == feedback->menu_entry_id) 
-          {
-            ROS_DEBUG("[AffordanceTemplate::processFeedback::Choose Trajectory] found matching trajectory name %s", traj.name.c_str());
-            setTrajectory(traj.name);
-            marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED);
-          }
-        }
-      }
 
       break;
     }
     default : 
-      ROS_WARN("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
+      ROS_DEBUG("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
       break;
   }
   server_->applyChanges();
@@ -1805,7 +1851,7 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   ee_scale_factor_[key] = ee_scale_factor;
 
   removeAllMarkers();
-  return createFromStructure(structure_);
+  return createFromStructure(structure_, true, true);
 }
 
 bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)

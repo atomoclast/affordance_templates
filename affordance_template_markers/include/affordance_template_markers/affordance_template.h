@@ -173,7 +173,7 @@ namespace affordance_template
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
     int getEEIDfromWaypointName(const std::string wp_name);
 
-    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses=false, std::string traj="");
+    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_object_poses=false, bool keep_waypoint_poses=false, std::string traj="");
     bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
     bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
 
