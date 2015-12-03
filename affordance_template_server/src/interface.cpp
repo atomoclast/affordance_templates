@@ -540,7 +540,7 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
                 
         affordance_template::PlanStatus ps;
         if (at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps)) {
-            ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't have a valid plan!!", ats.trajectory_name.c_str(), ee.first.c_str());
+            // ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't have a valid plan!!", ats.trajectory_name.c_str(), ee.first.c_str());
             wpi.waypoint_index = ps.current_idx;
             wpi.plan_valid = ps.plan_valid;
             wpi.execution_valid = ps.exec_valid;
