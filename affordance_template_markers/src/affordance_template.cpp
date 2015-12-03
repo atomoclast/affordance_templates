@@ -1848,28 +1848,11 @@ void AffordanceTemplate::stop()
 bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_factor, double ee_scale_factor)
 { 
   ROS_DEBUG("[AffordanceTemplate::setObjectScaling] setting object %s scaling to %g, %g", key.c_str(), scale_factor, ee_scale_factor);
-  
-  // TODO this probably needs double-checking 
-  //      also, this should only happen if we want to save scaling factor
-  // for ( auto& d : structure_.display_objects)
-  // {
-  //   if ( d.name == key)
-  //     d.controls.scale = scale_factor;
-  // }
-  // for ( auto& t : structure_.ee_trajectories)
-  // {
-  //   for ( auto& e : t.ee_waypoint_list)
-  //   {
-  //     for ( auto& w : e.waypoints)
-  //       w.controls.scale = ee_scale_factor;
-  //   }
-  // }
-
   object_scale_factor_[key] = scale_factor;
   ee_scale_factor_[key] = ee_scale_factor;
 
   removeAllMarkers();
-  return createFromStructure(structure_, true, true);
+  return createFromStructure(structure_, true, true, current_trajectory_);
 }
 
 bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
