@@ -243,11 +243,13 @@ bool AffordanceTemplate::switchTrajectory(const std::string& trajectory_name)
   if(setTrajectory(trajectory_name)) {
     setupTrajectoryMenu(structure_, trajectory_name);
     if(createFromStructure( structure_, true, false, trajectory_name)) {
-      ROS_INFO("AffordanceTemplate::switchTrajectory() -- %s succeeded", trajectory_name.c_str());
+      ROS_DEBUG("AffordanceTemplate::switchTrajectory() -- %s succeeded", trajectory_name.c_str());
     } else {
       ROS_ERROR("AffordanceTemplate::switchTrajectory() -- %s failed", trajectory_name.c_str());
+      return false;
     }
   }
+ return true;
 }
 
 void AffordanceTemplate::clearTrajectoryFlags()
@@ -1199,7 +1201,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
                     found = true;
 
-                    //FIXME:: is this the best way to handle methodsl ike these?? 
+                    //FIXME:: is this the best way to handle methods like these?? 
                     //        should these be called at the end of the processFeedback
                     //        or should we be using server->apply() instead??
                     removeAllMarkers();
