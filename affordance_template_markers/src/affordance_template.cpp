@@ -1852,7 +1852,7 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   ee_scale_factor_[key] = ee_scale_factor;
 
   removeAllMarkers();
-  return createFromStructure(structure_, true, true, current_trajectory_);
+  return createFromStructure(structure_, true, false, current_trajectory_);
 }
 
 bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
