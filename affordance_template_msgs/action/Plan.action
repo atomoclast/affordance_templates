@@ -2,8 +2,8 @@ uint8 CARTESIAN=0
 uint8 JOINT=1
 
 #goal
-string[] ee
-int32 steps
+string[] groups
+int32 steps # 0 to plan for all steps in trajectory
 uint8 planning # cartesian or joint
 bool backwards
 bool execute_on_plan
