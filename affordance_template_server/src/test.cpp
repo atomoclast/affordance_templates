@@ -3,6 +3,17 @@
 #include <actionlib/client/terminal_state.h>
 #include <affordance_template_msgs/PlanAction.h>
 
+// - new way:
+//       geometry_msgs::PoseStamped pt;
+//       pt = frame_store_[next_path_str + "/tf"].second;
+//       goals[manipulator_name].push_back(pt);
+// - or goals[manipulator_name].push_back(frame_store_[next_path_str + "/tf"].second);
+
+// because it has to execute to the next waypoint, then execute the grasp pose, then loop if more then one step
+// oh the Goal needs forward or backwards too, and if its moving straight to the first or last wp of the traj
+// guess it needs the trajectory name too
+// so that's the basic idea
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "test_actionlib");
@@ -18,10 +29,10 @@ int main(int argc, char **argv)
   
   affordance_template_msgs::PlanGoal goal;
   goal.ee.push_back("left_hand");
-  goal.steps = 0; // 0 to plan for all steps
+  goal.steps = 2; // 0 to plan for all steps
   goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN;
   goal.backwards = false;
-  goal.execute_on_plan = false;
+  goal.execute_on_plan = true;
   ac.sendGoal(goal);
 
   //wait for the action to return

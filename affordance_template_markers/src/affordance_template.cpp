@@ -1442,6 +1442,9 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         ++planning.progress;
         action_server_.publishFeedback(planning);
+
+        plan_status_[current_trajectory_][ee].current_idx = plan_status_[current_trajectory_][ee].goal_idx;
+        plan_status_[current_trajectory_][ee].plan_valid = true;
         
         // find and add EE joint state to goal
         if (ee_pose_map.find(wp_vec[idx].ee_pose) == ee_pose_map.end())
@@ -1468,22 +1471,22 @@ void AffordanceTemplate::planRequest(const affordance_template_msgs::PlanGoalCon
             }
             else
             {
-              ++planning.progress;
-              action_server_.publishFeedback(planning);
+              // ++planning.progress;
+              // action_server_.publishFeedback(planning);
 
-              std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
-              ee_goals[ee_name].push_back(ee_js); // FIXME -- need group name, not sure this is right
-              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false))
-              {
-                ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
-                planning.progress = -1;
-                action_server_.publishFeedback(planning);
-                result.succeeded = false;
-                action_server_.setSucceeded(result);
-                return;
-              }
+              // std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
+              // ee_goals[ee_name].push_back(ee_js); // FIXME -- need group name, not sure this is right
+              // if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false))
+              // {
+              //   ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
+              //   planning.progress = -1;
+              //   action_server_.publishFeedback(planning);
+              //   result.succeeded = false;
+              //   action_server_.setSucceeded(result);
+              //   return;
+              // }
 
-              ros::Duration(2.0).sleep();
+              // ros::Duration(2.0).sleep();
             }
           } 
           catch(...)
@@ -1673,14 +1676,16 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
  // list of ee waypoints to move to, return true if all waypoints were valid
 bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_names) 
 {
-  ROS_INFO("AffordanceTemplate::moveToWaypoints()");
+  // ROS_INFO("AffordanceTemplate::moveToWaypoints() with size %d", ee_names.size());
   std::vector<std::string> valid_ee_plans;
   std::vector<std::string> m_names;
   for(auto ee: ee_names) {
     if (plan_status_[current_trajectory_][ee].plan_valid) {
+      // ROS_WARN("valid plan for %s!!", ee.c_str());
       valid_ee_plans.push_back(ee);
       m_names.push_back(robot_interface_->getManipulator(ee));
     } else {
+      // ROS_WARN("%s not valid!!", ee.c_str());
       plan_status_[current_trajectory_][ee].exec_valid = false;
     }
   }
