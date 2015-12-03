@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
     affordance_template_markers
     affordance_template_library
     interactive_markers
+    actionlib_msgs
 )
 
 find_package(Boost REQUIRED COMPONENTS thread)
@@ -33,3 +34,8 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} affordance_template)
 
 add_executable(${PROJECT_NAME}_node src/interface.cpp src/server.cpp src/main.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} affordance_template)
+
+add_executable(plan_test src/test_plan.cpp)
+target_link_libraries(plan_test ${catkin_LIBRARIES} affordance_template)
+add_executable(exe_test src/test_exe.cpp)
+target_link_libraries(exe_test ${catkin_LIBRARIES} affordance_template)

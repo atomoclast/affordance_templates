@@ -1,0 +1,15 @@
+uint8 CARTESIAN=0
+uint8 JOINT=1
+
+#goal
+string[] groups
+int32 steps # 0 to plan for all steps in trajectory
+uint8 planning # cartesian or joint
+bool backwards
+bool execute_on_plan
+---
+#result
+bool succeeded
+---
+#feedback
+int32 progress # should be increasing if progress being made, -1 otherwise 
