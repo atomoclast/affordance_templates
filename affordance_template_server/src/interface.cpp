@@ -513,9 +513,11 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
     ats.trajectory_name = trajectory;
 
     AffordanceTemplateStructure at_struct = at->getCurrentStructure();
-
+    affordance_template::WaypointTrajectoryFlags wp_flags; 
     if (!doesTrajectoryExist(at, ats.trajectory_name))
         return ats;
+
+    bool has_flags = at->getWaypointFlags(ats.trajectory_name, wp_flags);
 
     for (auto obj : at_struct.display_objects)
     {
@@ -552,8 +554,13 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
             wpi.waypoint_plan_index = -1;
         }
 
-        // TODO set compact and controls display flags
-
+        // set compact and controls display flags
+        if(has_flags) {
+            for(int idx=0; idx<wpi.num_waypoints; idx++) {
+                std::string wp_name = std::to_string(wpi.id) + "." + std::to_string(idx) + ":" + ats.type + ":" + std::to_string(ats.id); 
+                wpi.compact_view.push_back(wp_flags.compact_view[wp_name]);
+            }
+        }
         ats.waypoint_info.push_back(wpi);   
     }
 

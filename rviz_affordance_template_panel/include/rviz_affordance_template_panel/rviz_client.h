@@ -202,6 +202,7 @@ namespace rviz_affordance_template_panel
 
         // waypoint display helper class
         WaypointDisplaySharedPtr waypointDisplay_;
+        std::map<std::string,bool> waypointExpansionStatus_;
 
         // template bookkeeping
         TemplateInstanceID selected_template;

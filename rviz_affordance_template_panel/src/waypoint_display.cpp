@@ -8,47 +8,67 @@ WaypointDisplay::WaypointDisplay(QObject *_parent) : QObject(_parent) {}
 
 void WaypointDisplay::setupWaypointDisplayInfo(AffordanceTemplateStatusInfo::EndEffectorInfo wp_info) {
 
-    try {
-        // preserve expansion level
-        int n = ui_->waypointDisplayTree->topLevelItemCount();
-        for(int i=0; i<n; n++) {
-            QTreeWidgetItem *eeTreeItem = ui_->waypointDisplayTree->itemAt(i,0);
-            QString eeItemStr = eeTreeItem->text(0);
-            expandStatus_[eeItemStr.toStdString()] = eeTreeItem->isExpanded();
-        }
-    } catch (int e) {
-        cout << "An exception occurred. Exception Nr. " << e << '\n';
-    }
+    ROS_DEBUG("WaypointDisplay::setupWaypointDisplayInfo()");
+    // try {
+    //     // preserve expansion level
+    //     int n = ui_->waypointDisplayTree->topLevelItemCount();
+    //     cout << "  test 1" << endl;
+    //     for(int i=0; i<n; i++) {
+    //         cout << "  test 2  " << i << endl;
+    //         QTreeWidgetItem *eeTreeItem = ui_->waypointDisplayTree->itemAt(i,0);
+    //         cout << "  test 3  " << i << endl;
+    //         QString eeItemStr = eeTreeItem->text(0);
+    //         cout << "  test 4  " << i << endl;
+    //         expandStatus_[eeItemStr.toStdString()] = eeTreeItem->isExpanded();
+    //         cout << "  test 5  " << i << endl;
+    //     }
+    // } catch (int e) {
+    //     cout << "An exception occurred. Exception Nr. " << e << '\n';
+    // }
 
+           
     ui_->waypointDisplayTree->clear();
     eeNameMap_.clear();
 
     for(auto &wp : wp_info) {
+
         for (auto& e: (*robotMap_[robotName_]).endeffectorMap) {
             std::string ee_name = e.second->name();
             if (ee_name != wp.first) {
                 int n = wp_info[ee_name]->num_waypoints;
                 if(n > 0) {
+                    //cout << "wpi[" << ee_name << "]: " << wp_info[ee_name]->compact_view.size() << endl;
                     QTreeWidgetItem *eeTreeItem = new QTreeWidgetItem(ui_->waypointDisplayTree);
                     eeTreeItem->setText(0, QString(ee_name.c_str()));
                     eeTreeItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
                     eeTreeItem->setCheckState(1,Qt::Unchecked);
-                    ROS_WARN("WaypointDisplay::setupWaypointDisplayInfo() -- creating %d waypoint display boxes for %s", n, ee_name.c_str());
+                    // eeTreeItem->setExpanded(true);
+                    ROS_DEBUG("WaypointDisplay::setupWaypointDisplayInfo() -- creating %d waypoint display boxes for %s", n, ee_name.c_str());
                     for(int i=0; i<n; i++) {
                         QTreeWidgetItem *wpTreeItem = new QTreeWidgetItem();
                         wpTreeItem->setText(0, QString(std::to_string(i).c_str()));
                         wpTreeItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
-                        wpTreeItem->setCheckState(1,Qt::Unchecked);
+                        if(wp_info[ee_name]->compact_view.size() == n) {
+                            if(wp_info[ee_name]->compact_view[i]) {
+                                wpTreeItem->setCheckState(1,Qt::Checked);
+                            } else {
+                                wpTreeItem->setCheckState(1,Qt::Unchecked);                            
+                            }
+                        } else {
+                            wpTreeItem->setCheckState(1,Qt::Unchecked);                            
+                        }
                         eeTreeItem->addChild(wpTreeItem);
                         auto p = std::make_pair(ee_name, i);
                         waypointDisplayItems_[p] = wpTreeItem;
                         eeNameMap_[ee_name] = e.second->id();
                     }
-                    // reinstate expansions
-                    auto search = expandStatus_.find(ee_name);
-                    if(search != expandStatus_.end()) {
-                        eeTreeItem->setExpanded(expandStatus_[ee_name]);
-                    }
+
+                    // // reinstate expansions
+                    // auto search = expandStatus_.find(ee_name);
+                    // if(search != expandStatus_.end()) {
+                    //     eeTreeItem->setExpanded(expandStatus_[ee_name]);
+                    // }
+
                 }
             }
         }
@@ -57,10 +77,10 @@ void WaypointDisplay::setupWaypointDisplayInfo(AffordanceTemplateStatusInfo::End
 
 void WaypointDisplay::displayEventChecked(QTreeWidgetItem *item, int i) {
     std::string str = item->text(0).toStdString();
-    auto search = expandStatus_.find(str);
+    auto search = eeNameMap_.find(str);
     std::vector<std::string> wp_names;
     std::vector<bool> modes; 
-    if(search != expandStatus_.end()) {
+    if(search != eeNameMap_.end()) {
         std::string ee_name = item->text(0).toStdString();
         for(auto &wpItem: waypointDisplayItems_) {
             QTreeWidgetItem *wpTreeItem = wpItem.second;

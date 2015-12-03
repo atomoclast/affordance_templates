@@ -241,6 +241,16 @@ void AffordanceTemplate::clearTrajectoryFlags()
   waypoint_flags_.clear();
 }
 
+bool AffordanceTemplate::getWaypointFlags(const std::string& traj, WaypointTrajectoryFlags& flags) {
+  if(waypoint_flags_.find(traj)!=waypoint_flags_.end()) {
+    flags = waypoint_flags_[traj];
+  } else {
+    ROS_ERROR("AffordanceTemplate::getWaypointFlags() -- no traj=%s found", traj.c_str());
+    return false;
+  }
+  return true;
+}
+    
 void AffordanceTemplate::setTrajectoryFlags(Trajectory traj) 
 {  
   if(waypoint_flags_.find(traj.name) == std::end(waypoint_flags_)) {

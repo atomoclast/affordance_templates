@@ -65,8 +65,6 @@ namespace rviz_affordance_template_panel
         std::map<std::pair<std::string,int>, QTreeWidgetItem*> waypointDisplayItems_;
         std::map<std::string,int> eeNameMap_;
 
-        std::map<std::string,bool> expandStatus_;
-
     };
 }
 

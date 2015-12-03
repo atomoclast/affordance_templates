@@ -71,8 +71,7 @@ AffordanceTemplateRVizClient::~AffordanceTemplateRVizClient()
 {
     ros::Duration(1).sleep();
     stop();
-    server_monitor_->stop();
-
+    
     // clean up pointers
     for (auto &ats : template_status_info) 
         delete ats.second;
@@ -109,7 +108,7 @@ void AffordanceTemplateRVizClient::run_function() {
         ros::Duration(0.1).sleep();
         updateServerStatus();
         if(server_monitor_->isReady()) {
-            
+            //ROS_INFO("AffordanceTemplateRVizClient::run_function() ");           
             controlStatusUpdate();
             //printTemplateStatus();
         }
@@ -289,7 +288,7 @@ void AffordanceTemplateRVizClient::refreshCallback() {
         tryToLoadRobotFromYAML();
     }
     ROS_WARN("ROBOT NAME: %s", robot_name_.c_str());
-    
+    waypoint_display_configured_ = false;
 }
 
 void AffordanceTemplateRVizClient::getAvailableInfo() {
@@ -1201,8 +1200,6 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
             return;
         }
 
-        //std::cout << srv.response << std::endl; 
-
         for (int i=0; i<srv.response.affordance_template_status.size(); i++) {
         
             string full_name = srv.response.affordance_template_status[i].type + ":" + to_string(srv.response.affordance_template_status[i].id);
@@ -1220,8 +1217,7 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
 
         if(srv.response.trajectory_names.size() == 0)
             return;
-        
-        //TODO@DEBUG???
+
         ROS_DEBUG("Current Trajectory: %s", srv.response.current_trajectory.c_str());
         template_status_info[srv.request.name]->setCurrentTrajectory(srv.response.current_trajectory);
 
@@ -1233,7 +1229,6 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
         ui_->control_trajectory_box->setCurrentIndex(id);
 
         updateTables(srv.request.name, srv.response.current_trajectory);
-        
 
     }   
     else
@@ -1311,9 +1306,6 @@ void AffordanceTemplateRVizClient::updateControlsTable(std::string name, std::st
                     }
                 }
 
-
-
-
             }
         }
     }
@@ -1327,7 +1319,32 @@ void AffordanceTemplateRVizClient::updateWaypointDisplayTable(std::string name, 
     if(!waypoint_display_configured_) {
         // set the waypoint display GUI with the current trajectories information
         AffordanceTemplateStatusInfo::EndEffectorInfo wp_info = template_status_info[name]->getTrajectoryStatus(trajectory);
+        
+        // try {
+        //     // preserve expansion level
+        //     int n = ui_->waypointDisplayTree->topLevelItemCount();
+        //     for(int i=0; i<n; i++) {
+        //         QTreeWidgetItem *eeTreeItem = ui_->waypointDisplayTree->itemAt(i,0);
+        //         QString eeItemStr = eeTreeItem->text(0);
+        //         waypointExpansionStatus_[eeItemStr.toStdString()] = eeTreeItem->isExpanded();
+        //     }
+        // } catch (int e) {
+        //     cout << "An exception occurred. Exception Nr. " << e << '\n';
+        // }
+
         waypointDisplay_->setupWaypointDisplayInfo(wp_info);
+
+        // reinstate expansions
+        // int n = ui_->waypointDisplayTree->topLevelItemCount();
+        // for(int i=0; i<n; i++) {
+        //     QTreeWidgetItem *eeTreeItem = ui_->waypointDisplayTree->itemAt(i,0);
+        //     QString eeItemStr = eeTreeItem->text(0);
+        //     std::string ee_name = eeItemStr.toStdString();
+        //     auto search = waypointExpansionStatus_.find(ee_name);
+        //     if(search != waypointExpansionStatus_.end()) {
+        //         eeTreeItem->setExpanded(waypointExpansionStatus_[ee_name]);
+        //     }
+        // }
     }
     waypoint_display_configured_ = true;
 }
