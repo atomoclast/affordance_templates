@@ -296,10 +296,8 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
     std::string key = type + ":" + std::to_string(id);
     if (at_map_.find(key) == at_map_.end())
         return false;
-
     at_map_[key]->stop();
     at_map_.erase(key);
-
     return true;
 }
 
@@ -319,9 +317,7 @@ bool AffordanceTemplateServer::getTemplateInstance(const std::string &type, cons
     std::string key = type + ":" + std::to_string(id);
     if (at_map_.find(key) == at_map_.end())
         return false;
-
     ati = at_map_[key];
-
     return true;
 }
 
@@ -329,8 +325,6 @@ bool AffordanceTemplateServer::getTemplateInstance(const std::string &key, boost
 {
     if (at_map_.find(key) == at_map_.end())
         return false;
-
     ati = at_map_[key];
-
     return true;
 }

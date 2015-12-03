@@ -63,6 +63,7 @@ namespace affordance_template_markers
     bool load(const affordance_template_msgs::RobotConfig&);
     bool configure();
 
+    inline sensor_msgs::JointState getCurrentJointState() { return joint_data_; }
     inline affordance_template_msgs::RobotConfig getRobotConfig() { return robot_config_; }
     inline std::map<int, std::string> getEENameMap() { return ee_name_map_; }
     inline std::map<std::string, int> getEEIDMap() { return ee_id_map_; }

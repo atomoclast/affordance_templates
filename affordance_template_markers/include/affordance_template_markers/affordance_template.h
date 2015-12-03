@@ -11,17 +11,26 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
-#include <interactive_markers/interactive_marker_server.h>
-#include <interactive_markers/menu_handler.h>
 #include <utils/marker_helper.h>
 
-#include <sensor_msgs/JointState.h>
+#include <interactive_markers/interactive_marker_server.h>
+#include <interactive_markers/menu_handler.h>
+
 #include <geometry_msgs/Pose.h>
+#include <sensor_msgs/JointState.h>
+#include <moveit_msgs/RobotState.h>
+// #include <moveit/robot_state/robot_state.h>
+// #include <moveit/robot_state/conversions.h>
+#include <actionlib/server/simple_action_server.h>
 
 #include <affordance_template_markers/robot_interface.h>
 
 #include <affordance_template_library/affordance_template_structure.h>
 #include <affordance_template_library/affordance_template_parser.h>
+
+#include <affordance_template_msgs/PlanAction.h>
+#include <affordance_template_msgs/DisplayObjectInfo.h>
+#include <affordance_template_msgs/WaypointViewMode.h>
 
 
 namespace affordance_template 
@@ -32,6 +41,7 @@ namespace affordance_template
     bool auto_execute;
     bool loop;
     std::map<std::string, bool> controls_on;
+    std::map<std::string, bool> compact_view;
   };
 
   struct PlanStatus {
@@ -44,7 +54,6 @@ namespace affordance_template
     int current_idx = -1;
     int goal_idx = -1;
   };
-
 
   class AffordanceTemplate
   { 
@@ -61,7 +70,7 @@ namespace affordance_template
                        std::string robot_name, 
                        std::string template_type,
                        int id);
-    AffordanceTemplate(){} // default constructor
+    // AffordanceTemplate(){} // default constructor
     ~AffordanceTemplate();
 
     // public methods used by server node
@@ -71,7 +80,7 @@ namespace affordance_template
     bool moveToWaypoints(const std::vector<std::string>&);
     bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
-    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool);
+    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool, bool use_current=true);
 
     // public getters
     inline int getID() { return id_; }
@@ -83,12 +92,15 @@ namespace affordance_template
 
     int getNumWaypoints(const affordance_template_object::AffordanceTemplateStructure structure, const std::string traj_name, const int ee_id);
     bool getTrajectoryPlan(const std::string&, const std::string&, PlanStatus&);
-    
+    bool getWaypointFlags(const std::string& traj, WaypointTrajectoryFlags& flags);
+
     // public setters 
+    bool switchTrajectory(const std::string&);
     bool setTrajectory(const std::string&);
     bool setObjectScaling(const std::string&, double, double);
     void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
-    
+    bool setObjectPose(const affordance_template_msgs::DisplayObjectInfo&);
+    bool setWaypointViewMode(int ee, int wp, bool m);
 
   private:
     
@@ -107,6 +119,8 @@ namespace affordance_template
     ros::NodeHandle nh_;
     tf::TransformListener tf_listener_;
     tf::TransformBroadcaster tf_broadcaster_;
+
+    actionlib::SimpleActionServer<affordance_template_msgs::PlanAction> action_server_;
 
     // bookkeeping and IDs
     std::string robot_name_;
@@ -149,6 +163,7 @@ namespace affordance_template
     bool isValidTrajectory(affordance_template_object::Trajectory traj);
     bool setCurrentTrajectory(affordance_template_object::TrajectoryList traj_list, std::string traj); 
     bool getTrajectory(affordance_template_object::TrajectoryList& traj_list, std::string traj_name, affordance_template_object::Trajectory &traj);
+    
 
     void clearTrajectoryFlags();
     void setTrajectoryFlags(affordance_template_object::Trajectory traj);
@@ -158,7 +173,7 @@ namespace affordance_template
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
     int getEEIDfromWaypointName(const std::string wp_name);
 
-    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses=false, std::string traj="");
+    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_object_poses=false, bool keep_waypoint_poses=false, std::string traj="");
     bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
     bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
 
@@ -185,6 +200,8 @@ namespace affordance_template
     bool computePathSequence(affordance_template_object::AffordanceTemplateStructure structure, std::string traj_name, int ee_id, int idx, int steps, bool backwards, std::vector<int> &sequence_ids, int &next_path_idx);
 
     void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
+    void planRequest(const affordance_template_msgs::PlanGoalConstPtr&);
 
   };
 }

@@ -29,3 +29,6 @@ string[] end_effector_pose_names
 
 # end_effector control frame
 string control_frame
+
+# waypoint is in compact_view
+bool[] compact_view
