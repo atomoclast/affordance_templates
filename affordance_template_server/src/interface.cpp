@@ -32,6 +32,7 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_rob
     at_srv_map_["set_template_pose"]       = nh.advertiseService(base_srv + "set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
     at_srv_map_["set_object_pose"]         = nh.advertiseService(base_srv + "set_object_pose", &AffordanceTemplateInterface::handleSetObject, this);
     at_srv_map_["get_object_pose"]         = nh.advertiseService(base_srv + "get_object_pose", &AffordanceTemplateInterface::handleGetObject, this);
+    at_srv_map_["set_waypoint_view"]       = nh.advertiseService(base_srv + "set_waypoint_view", &AffordanceTemplateInterface::handleSetWaypointViews, this);
 
     scale_stream_sub_ = nh.subscribe(base_srv + "scale_object_streamer", 1000, &AffordanceTemplateInterface::handleObjectScaleCallback, this);
 
@@ -346,7 +347,7 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     ATPointer at;
     if (at_server_->getTemplateInstance(req.name, at))
     {
-        if (at->setTrajectory(req.trajectory))
+        if (at->switchTrajectory(req.trajectory))
             res.success = true;
         else
             ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
@@ -425,6 +426,57 @@ bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, G
     return true;
 }
 
+bool AffordanceTemplateInterface::handleSetWaypointViews(SetWaypointViewModes::Request& req, SetWaypointViewModes::Response& res)
+{
+
+    ROS_DEBUG("[AffordanceTemplateInterface::handleSetWaypointViews] setting waypoint view modes...");
+
+    std::vector<std::string> at_keys, wp_keys;
+    int at_id, wp_id, ee_id, idx;
+    std::string at_class;
+
+    idx=0;
+    if (!req.waypoint_names.empty()) {
+      if(req.waypoint_names.size() != req.compact_view.size()) {
+        ROS_ERROR("[AffordanceTemplateInterface::handleSetWaypointViews] size mismatch between names and vals");
+        return false;
+      }
+      for(auto &wp : req.waypoint_names) {
+        boost::split(at_keys, wp, boost::is_any_of(":"));
+        if (at_keys.size() == 3) {
+          at_class = at_keys[1];
+          at_id = std::stoi(at_keys[2]);
+          boost::split(wp_keys, at_keys[0], boost::is_any_of("."));
+          if (wp_keys.size() == 2) {
+            ee_id = std::stoi(wp_keys[0]);
+            wp_id = std::stoi(wp_keys[1]);
+            //std::cout << "waypoint[" << idx << "]: " << wp << std::endl; 
+            // std::cout << "  AT Type: " << at_class << std::endl; 
+            // std::cout << "  AT ID:   " << at_id << std::endl; 
+            // std::cout << "  EE ID:   " << ee_id << std::endl; 
+            // std::cout << "  WP ID:   " << wp_id << std::endl; 
+            //std::cout << "  mode:   " << (int)req.compact_view[idx] << std::endl; 
+
+            ATPointer at;
+            if (at_server_->getTemplateInstance(at_class, at_id, at)) {
+              at->setWaypointViewMode(ee_id, wp_id, req.compact_view[idx]);
+            }
+
+          } else {
+            ROS_ERROR("[AffordanceTemplateInterface::handleSetWaypointViews] error parsing wp details");
+            return false;
+          }  
+        } else {
+          ROS_ERROR("[AffordanceTemplateInterface::handleSetWaypointViews] error parsing wp");
+          return false;
+        }
+        idx++;
+      }
+    } else {
+      ROS_INFO("[AffordanceTemplateInterface::handleSetWaypointViews] setting mode for all waypoints");
+    }
+    return true;
+}
 
 void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayObjectInfo &data)
 {
@@ -437,6 +489,9 @@ void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayOb
         if (!at->setObjectScaling(key, data.scale_factor, data.end_effector_scale_factor))
             ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
+
+
+
 
 // @seth 10/28/2015 -- may not be complete??
 // should be double checked by @swhart
@@ -458,9 +513,11 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
     ats.trajectory_name = trajectory;
 
     AffordanceTemplateStructure at_struct = at->getCurrentStructure();
-
+    affordance_template::WaypointTrajectoryFlags wp_flags; 
     if (!doesTrajectoryExist(at, ats.trajectory_name))
         return ats;
+
+    bool has_flags = at->getWaypointFlags(ats.trajectory_name, wp_flags);
 
     for (auto obj : at_struct.display_objects)
     {
@@ -476,22 +533,34 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
         WaypointInfo wpi;
         wpi.end_effector_name = ee.first;
         wpi.id = ee.second;
+
+        ROS_DEBUG("[AffordanceTemplateInterface::getTemplateStatus] parsing ee -- %s, id -- %d", ee.first.c_str(), wpi.id);
+
         wpi.num_waypoints = at->getNumWaypoints(at_struct, at->getCurrentTrajectory(), wpi.id);
-
+                
         affordance_template::PlanStatus ps;
-        if (!at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps))
-        // {
-            // ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't have a valid plan!!", ats.trajectory_name.c_str(), ee.first.c_str());
-            continue;
-        // }
-        wpi.waypoint_index = ps.current_idx; // is this reversed??
-        wpi.plan_valid = ps.plan_valid;
-        wpi.execution_valid = ps.exec_valid;
-        wpi.waypoint_plan_index = ps.goal_idx; // is this reversed??
-        for (auto p : ps.sequence_poses)
-            wpi.waypoint_poses.push_back(p);
-        // the python had ee_pose_name data struct here -- don't know if it's necessary though
+        if (at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps)) {
+            ROS_WARN("[AffordanceTemplateInterface::getTemplateStatus] trajectory %s for end effector %s doesn't have a valid plan!!", ats.trajectory_name.c_str(), ee.first.c_str());
+            wpi.waypoint_index = ps.current_idx;
+            wpi.plan_valid = ps.plan_valid;
+            wpi.execution_valid = ps.exec_valid;
+            wpi.waypoint_plan_index = ps.goal_idx;
+            for (auto p : ps.sequence_poses)
+                wpi.waypoint_poses.push_back(p);
+        } else {
+            wpi.waypoint_index = -1; 
+            wpi.plan_valid = false;
+            wpi.execution_valid = false;
+            wpi.waypoint_plan_index = -1;
+        }
 
+        // set compact and controls display flags
+        if(has_flags) {
+            for(int idx=0; idx<wpi.num_waypoints; idx++) {
+                std::string wp_name = std::to_string(wpi.id) + "." + std::to_string(idx) + ":" + ats.type + ":" + std::to_string(ats.id); 
+                wpi.compact_view.push_back(wp_flags.compact_view[wp_name]);
+            }
+        }
         ats.waypoint_info.push_back(wpi);   
     }
 

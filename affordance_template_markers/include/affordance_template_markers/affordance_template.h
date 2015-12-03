@@ -30,6 +30,8 @@
 
 #include <affordance_template_msgs/PlanAction.h>
 #include <affordance_template_msgs/DisplayObjectInfo.h>
+#include <affordance_template_msgs/WaypointViewMode.h>
+
 
 namespace affordance_template 
 {
@@ -39,6 +41,7 @@ namespace affordance_template
     bool auto_execute;
     bool loop;
     std::map<std::string, bool> controls_on;
+    std::map<std::string, bool> compact_view;
   };
 
   struct PlanStatus {
@@ -89,12 +92,15 @@ namespace affordance_template
 
     int getNumWaypoints(const affordance_template_object::AffordanceTemplateStructure structure, const std::string traj_name, const int ee_id);
     bool getTrajectoryPlan(const std::string&, const std::string&, PlanStatus&);
-    
+    bool getWaypointFlags(const std::string& traj, WaypointTrajectoryFlags& flags);
+
     // public setters 
+    bool switchTrajectory(const std::string&);
     bool setTrajectory(const std::string&);
     bool setObjectScaling(const std::string&, double, double);
     void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
     bool setObjectPose(const affordance_template_msgs::DisplayObjectInfo&);
+    bool setWaypointViewMode(int ee, int wp, bool m);
 
   private:
     
@@ -157,6 +163,7 @@ namespace affordance_template
     bool isValidTrajectory(affordance_template_object::Trajectory traj);
     bool setCurrentTrajectory(affordance_template_object::TrajectoryList traj_list, std::string traj); 
     bool getTrajectory(affordance_template_object::TrajectoryList& traj_list, std::string traj_name, affordance_template_object::Trajectory &traj);
+    
 
     void clearTrajectoryFlags();
     void setTrajectoryFlags(affordance_template_object::Trajectory traj);
@@ -166,7 +173,7 @@ namespace affordance_template
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
     int getEEIDfromWaypointName(const std::string wp_name);
 
-    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses=false, std::string traj="");
+    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_object_poses=false, bool keep_waypoint_poses=false, std::string traj="");
     bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
     bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
 

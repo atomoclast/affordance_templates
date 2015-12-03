@@ -19,3 +19,9 @@ end_effector_pose_map:
   - name: Hand Close
     group: gripper
     id: 2
+  - name: Hand Close
+    group: gripper
+    id: 3
+  - name: Hand Close
+    group: gripper
+    id: 4

@@ -25,6 +25,7 @@ add_message_files(
   ScaleDisplayObjectInfo.msg
   GripperActionMap.msg
   DisplayObjectInfo.msg
+  WaypointViewMode.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -50,6 +51,7 @@ add_service_files(
   SetAffordanceTemplatePose.srv
   GetObjectPose.srv
   SetObjectPose.srv
+  SetWaypointViewModes.srv
 )
 
 ## Generate actions in the 'action' folder

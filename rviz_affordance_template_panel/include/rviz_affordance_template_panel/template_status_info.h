@@ -81,6 +81,9 @@ namespace rviz_affordance_template_panel
 				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- waypoint_plan_index: %d", (int)(w.waypoint_plan_index));
 				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- plan_valid: %d", (int)(w.plan_valid));
 				ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- execution_valid: %d", (int)(w.execution_valid));
+				for(size_t idx=0; idx<w.compact_view.size(); idx++) {
+					ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- compact_view[%d]: %d", (int)idx, (int)(w.compact_view[(int)idx]));
+				}
 
 				trajectory_info_[status->trajectory_name][ee] = new affordance_template_msgs::WaypointInfo();
 				trajectory_info_[status->trajectory_name][ee]->id = w.id;
@@ -90,6 +93,10 @@ namespace rviz_affordance_template_panel
 				trajectory_info_[status->trajectory_name][ee]->waypoint_plan_index = w.waypoint_plan_index;
 				trajectory_info_[status->trajectory_name][ee]->plan_valid = w.plan_valid;
 				trajectory_info_[status->trajectory_name][ee]->execution_valid = w.execution_valid;
+				trajectory_info_[status->trajectory_name][ee]->compact_view = w.compact_view;
+				for(size_t idx=0; idx<w.compact_view.size(); idx++) {
+					ROS_DEBUG("AffordanceTemplateStatusInfo::updateTrajectoryStatus() ---- compact_view[%d]: %d", (int)idx, (int)(trajectory_info_[status->trajectory_name][ee]->compact_view[(int)idx]));
+				}
 			}
 
 			return true;

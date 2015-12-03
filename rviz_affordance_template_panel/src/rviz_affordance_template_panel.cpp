@@ -14,7 +14,7 @@ RVizAffordanceTemplatePanel::RVizAffordanceTemplatePanel(QWidget *parent) :
     setupWidgets();
 
     // start up client thread
-    client_ = new AffordanceTemplateRVizClient(nh_, ui_, affordanceTemplateGraphicsScene_, recognitionObjectGraphicsScene_);
+    client_ = new AffordanceTemplateRVizClient(nh_, ui_, affordanceTemplateGraphicsScene_);
     client_->start();
 }
 
@@ -31,11 +31,7 @@ void RVizAffordanceTemplatePanel::setupWidgets() {
     affordanceTemplateGraphicsScene_ = new QGraphicsScene(this);
     ui_->affordanceTemplateGraphicsView->setScene(affordanceTemplateGraphicsScene_);
 
-    recognitionObjectGraphicsScene_ = new QGraphicsScene(this);
-    // ui_->recognitionObjectGraphicsView->setScene(recognitionObjectGraphicsScene_);
-
     QObject::connect(affordanceTemplateGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addAffordanceDisplayItem()));
-    QObject::connect(recognitionObjectGraphicsScene_, SIGNAL(selectionChanged()), this, SLOT(addObjectDisplayItem()));
 
     QObject::connect(ui_->server_output_status, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(selectAffordanceTemplate(QListWidgetItem*)));
     QObject::connect(ui_->delete_template_button, SIGNAL(clicked()), this, SLOT(deleteAffordanceTemplate()));

@@ -30,9 +30,6 @@ namespace rviz_affordance_template_panel
         void addAffordanceDisplayItem() {
             client_->addAffordanceDisplayItem();
         }
-        void addObjectDisplayItem() {
-            client_->addObjectDisplayItem();
-        }
         void selectAffordanceTemplate(QListWidgetItem* it) {
             client_->selectAffordanceTemplate(it);
         }
@@ -105,7 +102,7 @@ namespace rviz_affordance_template_panel
         void selectTemplateTrajectory(const QString& s) {
             client_->selectTemplateTrajectory(s);
         }
-      
+             
 
     private:
 
@@ -117,7 +114,6 @@ namespace rviz_affordance_template_panel
 
         // GUI Widgets
         QGraphicsScene* affordanceTemplateGraphicsScene_;
-        QGraphicsScene* recognitionObjectGraphicsScene_;
 
         // ros node handle
         ros::NodeHandle nh_;
@@ -126,6 +122,7 @@ namespace rviz_affordance_template_panel
     protected:
         
         // main client class
+
         AffordanceTemplateRVizClient *client_;
 
     };

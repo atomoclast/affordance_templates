@@ -1838,6 +1838,48 @@
       <zorder>go_to_current_waypoint_button</zorder>
       <zorder>execute_button</zorder>
      </widget>
+     <widget class="QWidget" name="tab_3">
+      <attribute name="title">
+       <string>Waypoint Displays</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_8">
+       <item row="1" column="1">
+        <widget class="QPushButton" name="pushButton">
+         <property name="text">
+          <string>Animate</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QTreeWidget" name="waypointDisplayTree">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::MultiSelection</enum>
+         </property>
+         <column>
+          <property name="text">
+           <string>End Effector Waypoint Displays</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Hide</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Controls</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="tab_4">
       <attribute name="title">
        <string>Object Scaling</string>
@@ -2065,21 +2107,6 @@
         </spacer>
        </item>
       </layout>
-     </widget>
-     <widget class="QWidget" name="tab_3">
-      <attribute name="title">
-       <string>Recog Objects</string>
-      </attribute>
-      <widget class="QGraphicsView" name="recognitionObjectGraphicsView">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>10</y>
-         <width>358</width>
-         <height>411</height>
-        </rect>
-       </property>
-      </widget>
      </widget>
     </widget>
    </item>

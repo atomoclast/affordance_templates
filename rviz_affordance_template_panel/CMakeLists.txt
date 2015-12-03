@@ -19,8 +19,8 @@ qt4_wrap_cpp(MOC_FILES
     include/${PROJECT_NAME}/server_status_monitor.h
     include/${PROJECT_NAME}/rviz_client.h
     include/${PROJECT_NAME}/affordance.h
-    include/${PROJECT_NAME}/RecognitionObject.hpp
     include/${PROJECT_NAME}/robot_config.h
+    include/${PROJECT_NAME}/waypoint_display.h
     include/${PROJECT_NAME}/controls.h
     include/${PROJECT_NAME}/util.h
     include/${PROJECT_NAME}/rviz_affordance_template_panel.h
@@ -32,8 +32,8 @@ set(SRC_FILES
     src/server_status_monitor.cpp
     src/rviz_client.cpp  
     src/affordance.cpp
-    src/RecognitionObject.cpp
     src/controls.cpp
+    src/waypoint_display.cpp
     src/util.cpp
     src/rviz_affordance_template_panel.cpp
     ${MOC_FILES}
