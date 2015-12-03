@@ -553,7 +553,7 @@ void AffordanceTemplateRVizClient::changeSaveInfo(int id) {
 void AffordanceTemplateRVizClient::selectTemplateTrajectory(const QString& text) {
     string template_key = ui_->control_template_box->currentText().toUtf8().constData();
     string traj_key = ui_->control_trajectory_box->currentText().toUtf8().constData();
-    ROS_WARN("Changing template trajectory for %s to %s", template_key.c_str(), traj_key.c_str());      
+    ROS_DEBUG("Changing template trajectory for %s to %s", template_key.c_str(), traj_key.c_str());      
     affordance_template_msgs::SetAffordanceTemplateTrajectory srv;
     srv.request.name = template_key;
     srv.request.trajectory = traj_key;
@@ -888,7 +888,7 @@ void AffordanceTemplateRVizClient::sendAddTrajectory() {
 }
 
 void AffordanceTemplateRVizClient::getRunningItems() {
-    ROS_INFO("Requesting running affordance templates");      
+    ROS_DEBUG("Requesting running affordance templates");      
     affordance_template_msgs::GetRunningAffordanceTemplates srv;
     if (get_running_client_.call(srv))
     {
@@ -897,7 +897,7 @@ void AffordanceTemplateRVizClient::getRunningItems() {
         ui_->control_trajectory_box->clear();
         for (int i=0; i < srv.response.templates.size(); i++) {
             string t = srv.response.templates[i];
-            ROS_INFO("Found running template: %s", t.c_str());
+            ROS_DEBUG("Found running template: %s", t.c_str());
             ui_->server_output_status->addItem(QString::fromStdString(t.c_str()));
             ui_->server_output_status->item(i)->setForeground(Qt::blue);
             ui_->control_template_box->addItem(QString(t.c_str()));
