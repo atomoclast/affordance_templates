@@ -23,7 +23,7 @@ NOTE: if you receive a 'broken packages' error, try uninstalling libsdformat2
 #!bash
     1. roslaunch r2_gazebo r2_gazebo.launch
     2. roslaunch r2_moveit_config move_group.launch
-    3. rosrun affordance_template_server affordance_template_server_node
+    3. roslaunch affordance_template_server r2_upperbody.launch
     4. rviz
 
 ```
