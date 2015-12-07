@@ -1556,6 +1556,17 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     std::string ee_name = robot_interface_->getEEName(ee_id);
     std::string manipulator_name = robot_interface_->getManipulator(ee);
     std::map<std::string, std::vector<geometry_msgs::PoseStamped> > goals;
+
+    sensor_msgs::JointState init_state;
+    if (!robot_interface_->getPlanner()->getCurrentState(manipulator_name, init_state))
+    {
+      ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
+      planning.progress = -1;
+      planning_server_.publishFeedback(planning);
+      result.succeeded = false;
+      planning_server_.setSucceeded(result);
+      return; 
+    }
       
     //
     // set the first start state to current state
@@ -1649,6 +1660,13 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
           return;
         }
 
+        ContinuousPlan cp;
+        cp.step = idx;
+        cp.group = manipulator_name;
+        cp.start_state = init_state; // FIX ME this isn't done
+        cp.plan = plan;
+        continuous_plans_[current_trajectory_].push_back(cp);
+
         ++planning.progress;
         planning_server_.publishFeedback(planning);
 
@@ -1727,6 +1745,12 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               ++planning.progress;
               planning_server_.publishFeedback(planning);
 
+              cp.step = -2;
+              cp.group = ee_name;
+              cp.start_state = set_state; // FIX ME this isn't done
+              cp.plan = plan;
+              continuous_plans_[current_trajectory_].push_back(cp);
+
               //
               // set the start state
               sensor_msgs::JointState set_state;
@@ -1800,6 +1824,16 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
   
   result.succeeded = true;
   planning_server_.setSucceeded(result);
+
+  // debugging new container
+  for (auto cp : continuous_plans_)
+  {
+    ROS_WARN("continuous plan %s has %d plans", cp.first.c_str(), cp.second.size());
+    for (auto plan : cp.second)
+    {
+      ROS_WARN("plan has idx %d for group %s", plan.step, plan.group.c_str());
+    }
+  }
 }
 
 
@@ -2018,3 +2052,8 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 
   return found;
 }
+
+// bool AffordanceTemplate::setStartState()
+// {
+//   return true;
+// }

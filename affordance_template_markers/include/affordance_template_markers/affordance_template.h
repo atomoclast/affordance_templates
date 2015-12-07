@@ -56,7 +56,7 @@ namespace affordance_template
 
   struct ContinuousPlan 
   {
-    int step_idx = -2; // -1 --> max_idx if arm; hand defaults to -2 aka don't use
+    int step = -2; // -1 --> max_idx if arm; hand defaults to -2 aka don't use
     std::string group; // left_arm, left_hand, etc
     sensor_msgs::JointState start_state;
     moveit::planning_interface::MoveGroup::Plan plan;
@@ -174,6 +174,7 @@ namespace affordance_template
     bool setCurrentTrajectory(affordance_template_object::TrajectoryList traj_list, std::string traj); 
     bool getTrajectory(affordance_template_object::TrajectoryList& traj_list, std::string traj_name, affordance_template_object::Trajectory &traj);
     
+    // bool setStartState(const std::string&, const std::string&, bool); // @seth added 12/7 as convenience method
 
     void clearTrajectoryFlags();
     void setTrajectoryFlags(affordance_template_object::Trajectory traj);
