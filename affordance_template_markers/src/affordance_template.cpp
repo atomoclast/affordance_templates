@@ -1562,7 +1562,11 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     if (getContinuousPlan( current_trajectory_, (current_idx-1), p)) 
     {
       // index already has been planned for, get the start state
-      set_state = p.start_state;
+      set_state.header = p.plan.trajectory_.joint_trajectory.header;
+      set_state.name = p.plan.trajectory_.joint_trajectory.joint_names;
+      set_state.position = p.plan.trajectory_.joint_trajectory.points.back().positions;
+      set_state.velocity = p.plan.trajectory_.joint_trajectory.points.back().velocities;
+      set_state.effort = p.plan.trajectory_.joint_trajectory.points.back().effort;
       if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state))
       {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
@@ -1771,7 +1775,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
               cp.step = -2;
               cp.group = ee_name;
-              cp.start_state = set_state; // FIX ME this isn't done
+              cp.start_state = set_state;
               cp.plan = plan;
               continuous_plans_[current_trajectory_].push_back(cp); // FIXME I don't know how to do this without giving an extra param
 
@@ -2070,7 +2074,7 @@ bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const 
 {
   if (continuous_plans_.find(trajectory) == continuous_plans_.end())
   {
-    ROS_WARN("[AffordanceTemplate::doesContinuousPlanExist] no plan found for trajectory %s", trajectory.c_str());
+    ROS_WARN("[AffordanceTemplate::getContinuousPlan] no plan found for trajectory %s", trajectory.c_str());
     return false;
   }
 
@@ -2079,9 +2083,8 @@ bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const 
 
   for ( auto& p : continuous_plans_[trajectory])
   {
-    if (p.step == step-1)
+    if (p.step == step)
     {
-      ROS_WARN("found start state with step %d", p.step);
       plan = p;
       return true;
     }
@@ -2112,23 +2115,19 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
     continuous_plans_[trajectory].push_back(plan);
   }
 
-  for (auto cp : continuous_plans_)
-  {
-    ROS_WARN("looking at WPs for continuous plan %s", cp.first.c_str());
-    for ( auto plan : cp.second)
-    {
-      ROS_WARN("plan %d has start state", plan.step);
-      {
-        for ( unsigned int i = 0 ; i < plan.start_state.name.size(); i++)
-        {
-          ROS_WARN("\t joint %s : %g", plan.start_state.name[i].c_str(), plan.start_state.position[i]);
-        }
-      }
-    }
-  }
+  // DEBUGGING
+  // for (auto cp : continuous_plans_)
+  // {
+  //   ROS_WARN("looking at WPs for continuous plan %s", cp.first.c_str());
+  //   for ( auto plan : cp.second)
+  //   {
+  //     ROS_WARN("plan %d has start state", plan.step);
+  //     {
+  //       for ( unsigned int i = 0 ; i < plan.start_state.name.size(); i++)
+  //       {
+  //         ROS_WARN("\t joint %s : %g", plan.start_state.name[i].c_str(), plan.start_state.position[i]);
+  //       }
+  //     }
+  //   }
+  // }
 }
-
-// bool AffordanceTemplate::setStartState()
-// {
-//   return true;
-// }
