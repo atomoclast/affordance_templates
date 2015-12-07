@@ -1611,7 +1611,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       ROS_INFO("[AffordanceTemplate::planRequest] configuring plan goal for waypoint %s [%d/%d] for %s[%d] on manipulator=%s", next_path_str.c_str(), idx+1, max_idx, ee.c_str(), ee_id, manipulator_name.c_str());
 
       std::vector<int> sequence_ids;
-      if (!computePathSequence(structure_, current_trajectory_, ee_id, current_idx, 1, goal->backwards, plan_status_[current_trajectory_][ee].sequence_ids, plan_status_[current_trajectory_][ee].goal_idx))
+      if (!computePathSequence(structure_, current_trajectory_, ee_id, idx, 1, goal->backwards, plan_status_[current_trajectory_][ee].sequence_ids, plan_status_[current_trajectory_][ee].goal_idx)) // FIXME - may need current_idx instead of idx
       {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to get path sequence!!");
         planning.progress = -1;
@@ -1635,7 +1635,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         ++planning.progress;
         planning_server_.publishFeedback(planning);
 
-        current_idx = plan_status_[current_trajectory_][ee].current_idx = plan_status_[current_trajectory_][ee].goal_idx; // keep track of the current index based on what we planned
+        plan_status_[current_trajectory_][ee].current_idx = plan_status_[current_trajectory_][ee].goal_idx; // keep track of the current index based on what we planned
         plan_status_[current_trajectory_][ee].plan_valid = true;
         
         moveit::planning_interface::MoveGroup::Plan plan;

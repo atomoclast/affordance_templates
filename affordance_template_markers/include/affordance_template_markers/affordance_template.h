@@ -54,6 +54,14 @@ namespace affordance_template
     int goal_idx = -1;
   };
 
+  struct ContinuousPlan 
+  {
+    int step_idx = -2; // -1 --> max_idx if arm; hand defaults to -2 aka don't use
+    std::string group; // left_arm, left_hand, etc
+    sensor_msgs::JointState start_state;
+    moveit::planning_interface::MoveGroup::Plan plan;
+  };
+
   class AffordanceTemplate
   { 
 
@@ -156,6 +164,8 @@ namespace affordance_template
 
     std::map<std::string, WaypointTrajectoryFlags> waypoint_flags_;
     TrajectoryPlanStatus plan_status_;
+
+    std::map<std::string, std::vector<ContinuousPlan> > continuous_plans_; // @seth added new container for continuous planning via actionlib; indexed off trajectory name
 
     std::string getRootObject() { return root_object_; }
     void setRootObject(std::string root_object) { root_object_ = root_object; }
