@@ -1,5 +1,6 @@
 ##**Quick Start:**##
 
+We are quickly approaching the first "release" of this software, but in the meantime, here is a quick guide to using it with the Robonaut2 simulator.
 
 ###**Dependencies:**###
 ```
