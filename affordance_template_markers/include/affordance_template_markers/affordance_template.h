@@ -215,6 +215,8 @@ namespace affordance_template
     void planRequest(const affordance_template_msgs::PlanGoalConstPtr&);
     void executeRequest(const affordance_template_msgs::ExecuteGoalConstPtr&);
 
+    bool doesContinuousPlanExist(const std::string&, const int, sensor_msgs::JointState&);
+
   };
 }
 
