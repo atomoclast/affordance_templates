@@ -10,7 +10,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   
   // TESTTTTTT
-  actionlib::SimpleActionClient<affordance_template_msgs::ExecuteAction> ac("/affordance_template/TestWheel_0/execution_server", true);
+  actionlib::SimpleActionClient<affordance_template_msgs::ExecuteAction> ac("/affordance_template/Wheel_0/execution_server", true);
 
   ROS_INFO("Waiting for action server to start.");
   ac.waitForServer(); //will wait for infinite time

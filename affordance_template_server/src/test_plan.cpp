@@ -21,7 +21,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   
   // TESTTTTTT
-  actionlib::SimpleActionClient<affordance_template_msgs::PlanAction> ac("/affordance_template/TestWheel_0/planning_server", true);
+  actionlib::SimpleActionClient<affordance_template_msgs::PlanAction> ac("/affordance_template/Wheel_0/planning_server", true);
 
   ROS_INFO("Waiting for action server to start.");
   ac.waitForServer(); //will wait for infinite time
@@ -29,7 +29,7 @@ int main(int argc, char **argv)
   
   affordance_template_msgs::PlanGoal goal;
   goal.groups.push_back("left_hand");
-  goal.steps = 0; // 0 to plan for all steps
+  goal.steps = 1; // 0 to plan for all steps
   goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN;
   goal.backwards = false;
   goal.execute_on_plan = false;

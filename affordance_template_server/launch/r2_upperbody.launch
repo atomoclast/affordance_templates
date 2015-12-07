@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <node name="affordance_template_server" pkg="affordance_template_server" type="affordance_template_server_node" respawn="false" output="screen">
+    <param name="robot_config" value="r2_roscontrol.yaml"/>
+  </node>
+</launch>
+
+
+

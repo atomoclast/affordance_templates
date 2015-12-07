@@ -874,8 +874,12 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
   interactive_markers::MenuHandler::CheckState state;
 
-  std::string dummy_ee_name = "left_hand";
-  // std::string dummy_ee_name = "gripper";
+  std::string dummy_ee_name = "";
+  if(robot_name_=="r2") {
+     dummy_ee_name = "left_hand";
+  } else {
+    dummy_ee_name = "gripper";
+  }
 
   // set up key maps for easy comparison to menu handler ID
   MenuHandleKey wp_before_key;
