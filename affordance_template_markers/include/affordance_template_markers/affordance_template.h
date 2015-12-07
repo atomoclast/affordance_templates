@@ -56,7 +56,7 @@ namespace affordance_template
 
   struct ContinuousPlan 
   {
-    int step = -2; // -1 --> max_idx if arm; hand defaults to -2 aka don't use
+    int step; // -1 --> max_idx if arm; hand defaults to -2 aka don't use
     std::string group; // left_arm, left_hand, etc
     sensor_msgs::JointState start_state;
     moveit::planning_interface::MoveGroup::Plan plan;
@@ -215,8 +215,8 @@ namespace affordance_template
     void planRequest(const affordance_template_msgs::PlanGoalConstPtr&);
     void executeRequest(const affordance_template_msgs::ExecuteGoalConstPtr&);
 
-    bool doesContinuousPlanExist(const std::string&, const int, sensor_msgs::JointState&);
-
+    bool getContinuousPlan(const std::string&, const int, ContinuousPlan&);
+    void setContinuousPlan(const std::string&, const ContinuousPlan&);
   };
 }
 
