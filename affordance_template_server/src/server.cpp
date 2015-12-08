@@ -287,7 +287,7 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
     if (at_map_.find(key) == at_map_.end())
         return false;
     at_map_[key]->stop();
-    ros::Duration::sleep(1.0);
+    ros::Duration(1.0).sleep();
     at_map_.erase(key);
     return true;
 }
