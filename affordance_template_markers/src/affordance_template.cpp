@@ -1657,8 +1657,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       if (robot_interface_->getPlanner()->planPaths(goals, false, true)) 
       {
         ros::Time start_t = ros::Time::now();
-        while(ros::ok() && ros::Time::now() - start_t < ros::Duration(4.0))
+        while(ros::ok() && ros::Time::now() - start_t < ros::Duration(3.0))
         {
+          ros::spinOnce();
           ros::Duration(0.01).sleep(); // TODO take out
         }
 
@@ -1695,6 +1696,10 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         // set the start state for ee planning
         set_state.header = plan.trajectory_.joint_trajectory.header;
         set_state.name = plan.trajectory_.joint_trajectory.joint_names;
+        for (auto j : set_state.name)
+        {
+          ROS_WARN("manipulator state has joint name %s", j.c_str());
+        }
         set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
         set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
         set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
@@ -1739,7 +1744,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
               std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
               ee_goals[ee_name].push_back(ee_js);
-              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, true))
+              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false))
               {
                 ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
                 planning.progress = -1;
@@ -1774,25 +1779,34 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               cp.type = PlanningGroup::EE;
               cp.start_state = set_state;
               cp.plan = plan;
-              continuous_plans_[current_trajectory_].push_back(cp); // FIXME I don't know how to do this without giving an extra param
+              // continuous_plans_[current_trajectory_].push_back(cp); // FIXME I don't know how to do this without giving an extra param
+
+              ContinuousPlan p;
+              getContinuousPlan( current_trajectory_, idx, PlanningGroup::MANIPULATOR, p);
+              // p.plan.trajectory_.joint_trajectory.joint_names.push_back(plan.trajectory_.joint_names);
+              p.plan.trajectory_.joint_trajectory.points.push_back(plan.trajectory_.joint_trajectory.points.back());
 
               //
               // set the start state for next iteration
-              set_state.header = plan.trajectory_.joint_trajectory.header;
-              set_state.name = plan.trajectory_.joint_trajectory.joint_names;
-              set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
-              set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
-              set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
+              // set_state.header = plan.trajectory_.joint_trajectory.header;
+              // set_state.name = plan.trajectory_.joint_trajectory.joint_names;
+              // for (auto j : set_state.name)
+              // {
+              //   ROS_WARN("ee state has joint name %s", j.c_str());
+              // }
+              // set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
+              // set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
+              // set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
 
-              if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state))
-              {
-                ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
-                planning.progress = -1;
-                planning_server_.publishFeedback(planning);
-                result.succeeded = false;
-                planning_server_.setSucceeded(result);
-                return;
-              }
+              // if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state))
+              // {
+              //   ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
+              //   planning.progress = -1;
+              //   planning_server_.publishFeedback(planning);
+              //   result.succeeded = false;
+              //   planning_server_.setSucceeded(result);
+              //   return;
+              // }
             }
           } 
           catch(...)
