@@ -85,6 +85,7 @@ namespace affordance_template
     void stop();
     void update();
     bool addTrajectory(const std::string&);
+    bool continuousMoveToWaypoints(const std::string&, const std::string&, int, int);
     bool moveToWaypoints(const std::vector<std::string>&);
     bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
@@ -170,7 +171,7 @@ namespace affordance_template
     std::map<std::string, WaypointTrajectoryFlags> waypoint_flags_;
     TrajectoryPlanStatus plan_status_;
 
-    std::map<std::string, std::vector<ContinuousPlan> > continuous_plans_; // @seth added new container for continuous planning via actionlib; indexed off trajectory name
+    std::map<std::string, std::vector<ContinuousPlan> > continuous_plans_; // @seth added new container for continuous planning via actionlib; indexed off trajectory name - may not be final design
 
     std::string getRootObject() { return root_object_; }
     void setRootObject(std::string root_object) { root_object_ = root_object; }

@@ -1830,7 +1830,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     ++planning.progress;
     planning_server_.publishFeedback(planning);
 
-    if (!moveToWaypoints(goal->groups))
+    if (!continuousMoveToWaypoints(current_trajectory_, goal->groups.front(), plan_status_[current_trajectory_][goal->groups.front()].current_idx, goal->steps)) // fixme 12/8/2015
     {
       ROS_ERROR("[AffordanceTemplate::planRequest] execution of plan failed!!");
       planning.progress = -1;
@@ -1859,7 +1859,7 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
   exe.progress = 1;
   execution_server_.publishFeedback(exe);
 
-  if (!moveToWaypoints(goal->groups))
+  if (!continuousMoveToWaypoints(current_trajectory_, goal->groups.front(), goal->index, goal->steps)) // fixme 12/8/2015
   {
     ROS_ERROR("[AffordanceTemplate::executeRequest] execution of plan failed!!");
     exe.progress = -1;
@@ -1972,7 +1972,50 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
   return ret;
 }
 
- // list of ee waypoints to move to, return true if all waypoints were valid
+bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory, const std::string& ee, int index, int steps=1)
+{
+  ROS_INFO("[AffordanceTemplate::continuousMoveToWaypoints] executing trajectory %s starting at indexed plan %d for %d steps", trajectory.c_str(), index+1, steps);
+
+  if (continuous_plans_.find(trajectory) == continuous_plans_.end())
+  {
+    ROS_ERROR("[AffordanceTemplate::continuousMoveToWaypoints] no plan found for trajectory %s!!", trajectory.c_str());
+    return false;
+  }
+
+  if (!plan_status_[current_trajectory_][ee].plan_valid) 
+  {
+    plan_status_[current_trajectory_][ee].exec_valid = false;
+    ROS_ERROR("[AffordanceTemplate::continuousMoveToWaypoints] EE %s in trajectory %s doesn't have a valid plan!!", ee.c_str(), trajectory.c_str());
+    return false;
+  }
+    
+  int max_idx;
+  if (steps == 0)
+    max_idx = getNumWaypoints(structure_, trajectory, robot_interface_->getEEID(ee));
+  else
+    max_idx = (index + steps)-1;
+
+  std::map<std::string, moveit::planning_interface::MoveGroup::Plan> plans_to_exe;
+  for ( auto& p : continuous_plans_[trajectory])
+    if (p.step >= index && p.step <= max_idx)
+      plans_to_exe[p.group] = p.plan;
+
+  if (!robot_interface_->getPlanner()->executeContinuousPlans(plans_to_exe))
+  {
+    ROS_ERROR("[AffordanceTemplate::continuousMoveToWaypoints] execution failed");
+    return false;
+  }
+  ROS_INFO("[AffordanceTemplate::moveToWaypoints] execution succeeded!!");
+  
+  plan_status_[current_trajectory_][ee].current_idx = plan_status_[current_trajectory_][ee].goal_idx;
+  plan_status_[current_trajectory_][ee].plan_valid = false;
+  plan_status_[current_trajectory_][ee].exec_valid = true;
+
+  return true;
+}
+
+
+// list of ee waypoints to move to, return true if all waypoints were valid
 bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_names) 
 {
   // ROS_INFO("AffordanceTemplate::moveToWaypoints() with size %d", ee_names.size());
@@ -1980,11 +2023,9 @@ bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_name
   std::vector<std::string> m_names;
   for(auto ee: ee_names) {
     if (plan_status_[current_trajectory_][ee].plan_valid) {
-      // ROS_WARN("valid plan for %s!!", ee.c_str());
       valid_ee_plans.push_back(ee);
       m_names.push_back(robot_interface_->getManipulator(ee));
     } else {
-      // ROS_WARN("%s not valid!!", ee.c_str());
       plan_status_[current_trajectory_][ee].exec_valid = false;
     }
   }
