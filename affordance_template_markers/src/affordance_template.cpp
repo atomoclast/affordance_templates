@@ -869,13 +869,13 @@ void AffordanceTemplate::removeAllMarkers()
 
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
-  ROS_INFO("AffordanceTemplate::processFeedback() -- %s", feedback->marker_name.c_str());
+  ROS_INFO("AffordanceTemplate::processFeedback(%s) -- %s", robot_name_.c_str(), feedback->marker_name.c_str());
 
   interactive_markers::MenuHandler::CheckState state;
 
   std::string dummy_ee_name = "";
   if(robot_name_=="r2") {
-     dummy_ee_name = "left_hand";
+    dummy_ee_name = "left_hand";
   } else {
     dummy_ee_name = "gripper";
   }

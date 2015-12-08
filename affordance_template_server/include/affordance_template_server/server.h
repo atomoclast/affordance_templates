@@ -37,6 +37,7 @@ namespace affordance_template_server
     std::string getPackagePath(const std::string&);
 
     ros::NodeHandle nh_;
+    boost::mutex mutex_;
 
     tf::TransformListener listener_;
     affordance_template_msgs::RobotConfig robot_config_;
