@@ -16,7 +16,7 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   template_type_(template_type),
   id_(id),
   root_object_(""),
-  loop_rate_(50.0),
+  loop_rate_(10.0),
   object_controls_display_on_(true),
   planning_server_(nh, ("affordance_template/" + template_type + "_" + std::to_string(id) + "/planning_server"), boost::bind(&AffordanceTemplate::planRequest, this, _1), false),
   execution_server_(nh, ("affordance_template/" + template_type + "_" + std::to_string(id) + "/execution_server"), boost::bind(&AffordanceTemplate::executeRequest, this, _1), false)
@@ -26,14 +26,14 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
 
   setupMenuOptions();
 
-  // set to false when template gets destroyed, otherwise we can get a dangling pointer
-  running_ = true;
-
   planning_server_.start();
   execution_server_.start();
-
+ 
   // updateTimer_ = nh_.createTimer(ros::Duration(1.0/loop_rate_), &AffordanceTemplate::updateCallback, this);
   updateThread_.reset(new boost::thread(boost::bind(&AffordanceTemplate::run, this)));
+
+  // set to false when template gets destroyed, otherwise we can get a dangling pointer
+  running_ = true;
 
 }
 
@@ -1944,11 +1944,12 @@ void AffordanceTemplate::run()
   FrameInfo fi;
   ros::Time t;
   
+  mutex_.lock();
+  
   ROS_INFO("AffordanceTemplate::run() -- spinning...");
   while(running_ && ros::ok())
   {
     t = ros::Time::now();
-    mutex_.lock();
     for(auto &f: frame_store_) 
     {
       fi = f.second;
@@ -1956,8 +1957,8 @@ void AffordanceTemplate::run()
       tf_broadcaster_.sendTransform(tf::StampedTransform(transform, t, fi.second.header.frame_id, fi.first));
     }
     loop_rate.sleep();
-    mutex_.unlock();
   }
+  mutex_.unlock();
   ROS_INFO("AffordanceTemplate::run() -- leaving spin thread. template must be shutting down...");
 }
 
