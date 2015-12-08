@@ -29,7 +29,7 @@ int main(int argc, char **argv)
   
   affordance_template_msgs::PlanGoal goal;
   goal.groups.push_back("left_hand"); // should be trajectory?? and have AT figure out which groups are in thet rajectory??
-  goal.steps = 1; // 0 to plan for all steps
+  goal.steps = 0; // 0 to plan for all steps
   goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN;
   goal.backwards = false;
   goal.execute_on_plan = false;
