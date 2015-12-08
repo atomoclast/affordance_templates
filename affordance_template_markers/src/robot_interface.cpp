@@ -3,19 +3,19 @@
 using namespace affordance_template_markers;
 using namespace end_effector_helper;
 
-RobotInterface::RobotInterface()
+RobotInterface::RobotInterface(const ros::NodeHandle& nh) :
+  nh_(nh)
 {
   reset();
-  ros::NodeHandle nh;
-  nh.subscribe("joint_states", 10, &RobotInterface::jointStateCallback, this);
+  nh_.subscribe("joint_states", 10, &RobotInterface::jointStateCallback, this);
   reload_attempted_ = false; 
 }
 
-RobotInterface::RobotInterface(const std::string &_joint_states_topic="joint_states")
+RobotInterface::RobotInterface(const ros::NodeHandle& nh, const std::string &_joint_states_topic="joint_states") :
+  nh_(nh)
 {
   reset();
-  ros::NodeHandle nh;
-  nh.subscribe(_joint_states_topic, 10, &RobotInterface::jointStateCallback, this);
+  nh_.subscribe(_joint_states_topic, 10, &RobotInterface::jointStateCallback, this);
   reload_attempted_ = false;
 }
 
@@ -38,7 +38,7 @@ bool RobotInterface::load(const std::string &yaml)
     std::string yaml_base = tokens.back();
 
     ros::NodeHandle nh;
-    nh.setParam("/affordance_templates/robot_yaml", yaml);
+    nh_.setParam("/affordance_templates/robot_yaml", yaml);
    
     YAML::Node yaml_doc = YAML::LoadFile(yaml);
 
@@ -202,7 +202,7 @@ bool RobotInterface::load(const affordance_template_msgs::RobotConfig &config)
   robot_config_ = config;
 
   ros::NodeHandle nh;
-  nh.setParam("/affordance_templates/robot_yaml", "");
+  nh_.setParam("/affordance_templates/robot_yaml", "");
 
   for (auto config : robot_config_.end_effectors)
   {
@@ -422,7 +422,8 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "tester_for_robot_interface_class");
 
-  RobotInterface ri("test_joint_states");
+  ros::NodeHandle nh;
+  RobotInterface ri(nh, "test_joint_states");
   ri.load("r2_upperbody.yaml");
 
   return 0;

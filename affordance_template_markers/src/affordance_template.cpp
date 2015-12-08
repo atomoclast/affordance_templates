@@ -24,9 +24,6 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   ROS_INFO("AffordanceTemplate::init() -- Done Creating new AffordanceTemplate of type %s for robot: %s", template_type_.c_str(), robot_name_.c_str());
   name_ = template_type_ + ":" + std::to_string(id);
 
-  ros::AsyncSpinner spinner(1.0/loop_rate_);
-  spinner.start();
-
   setupMenuOptions();
 
   // set to false when template gets destroyed, otherwise we can get a dangling pointer
@@ -34,8 +31,10 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
 
   planning_server_.start();
   execution_server_.start();
-  
-  boost::thread spin_thread_(boost::bind(&AffordanceTemplate::run, this));
+
+  // updateTimer_ = nh_.createTimer(ros::Duration(1.0/loop_rate_), &AffordanceTemplate::updateCallback, this);
+  updateThread_.reset(new boost::thread(boost::bind(&AffordanceTemplate::run, this)));
+
 }
 
 
@@ -53,7 +52,7 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
 
 AffordanceTemplate::~AffordanceTemplate() 
 {
-	
+  updateThread_->join();
 }
 
 void AffordanceTemplate::setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface)
@@ -1622,7 +1621,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       goals[manipulator_name].push_back(pt);
       plan_status_[current_trajectory_][ee].sequence_poses.push_back(pt);
     
-      if (robot_interface_->getPlanner()->planCartesianPaths(goals, false, true)) 
+      if (robot_interface_->getPlanner()->planPaths(goals, false, true)) 
       {
         ros::Duration(2.0).sleep(); // TODO take out
 
@@ -1869,7 +1868,10 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
   }
 
   // if(robot_interface_->getPlanner()->planPaths(goals, false, true)) {
-  if(robot_interface_->getPlanner()->planCartesianPaths(goals, false, true)) 
+  bool result = robot_interface_->getPlanner()->planPaths(goals, false, true);
+  ROS_INFO("AffordanceTemplate::planPathToWaypoints() -- planner returned with %d", (int)result);
+
+  if(result) 
   {
     ROS_INFO("AffordanceTemplate::planPathToWaypoints() -- planning succeeded");
 
@@ -1914,24 +1916,49 @@ bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_name
   return false;
 }
 
-void AffordanceTemplate::run()
-{
+
+void AffordanceTemplate::update() {
   ros::Rate loop_rate(loop_rate_);
   tf::Transform transform;
   FrameInfo fi;
-
-  ROS_INFO("[AffordanceTemplate] spinning...");
-  while(ros::ok() && running_)
+  ros::Time t = ros::Time::now();
+  
+  ROS_INFO("AffordanceTemplate::udpate() -- updating...");
+  if(running_)
   {
     for(auto &f: frame_store_) 
     {
       fi = f.second;
       tf::poseMsgToTF(fi.second.pose, transform);
-      tf_broadcaster_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), fi.second.header.frame_id, fi.first));
+      tf_broadcaster_.sendTransform(tf::StampedTransform(transform, t, fi.second.header.frame_id, fi.first));
+      loop_rate.sleep();
+    }
+  }
+}
+
+
+void AffordanceTemplate::run()
+{
+  ros::Rate loop_rate(loop_rate_);
+  tf::Transform transform;
+  FrameInfo fi;
+  ros::Time t;
+  
+  ROS_INFO("AffordanceTemplate::run() -- spinning...");
+  while(running_ && ros::ok())
+  {
+    t = ros::Time::now();
+    mutex_.lock();
+    for(auto &f: frame_store_) 
+    {
+      fi = f.second;
+      tf::poseMsgToTF(fi.second.pose, transform);
+      tf_broadcaster_.sendTransform(tf::StampedTransform(transform, t, fi.second.header.frame_id, fi.first));
     }
     loop_rate.sleep();
+    mutex_.unlock();
   }
-  ROS_INFO("[AffordanceTemplate] leaving spin thread. template must be shutting down...");
+  ROS_INFO("AffordanceTemplate::run() -- leaving spin thread. template must be shutting down...");
 }
 
 void AffordanceTemplate::stop()

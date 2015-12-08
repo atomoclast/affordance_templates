@@ -5,7 +5,6 @@ using namespace affordance_template_server;
 AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yaml="") :
     robot_yaml_(_robot_yaml)
 {
-    // boost::thread at_server_thread(boost::bind(&AffordanceTemplateServer::run, this));
     
     pkg_name_ = "affordance_template_library";
 
@@ -20,16 +19,8 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
     if (!loadTemplates())
         ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot JSONs!!");
 
-    // status_ = true;
-
     ROS_INFO("[AffordanceTemplateServer] server configured. spinning...");
-    // at_server_thread.join();
-}
 
-void AffordanceTemplateServer::run()
-{
-    // status_ = true;
-    ros::spin();
 }
 
 /**
@@ -128,7 +119,7 @@ bool AffordanceTemplateServer::loadRobot()
     // }
 
     // make robot instances with the .yamls we just found
-    robot_interface_.reset(new affordance_template_markers::RobotInterface());
+    robot_interface_.reset(new affordance_template_markers::RobotInterface(nh_));
     if ( !robot_interface_->load(root+robot_yaml_))
     {
         ROS_WARN("[AffordanceTemplateServer::loadRobot] robot yaml %s NOT loaded, ignoring.", robot_yaml_.c_str());
@@ -283,8 +274,7 @@ bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id,
     std::string key = type + ":" + std::to_string(id);
     ROS_INFO("[AffordanceTemplateServer::addTemplate] creating new affordance template with ID: %d and key: %s", id, key.c_str());
 
-    ros::NodeHandle nh;
-    at_map_[key] = boost::shared_ptr<affordance_template::AffordanceTemplate>(new affordance_template::AffordanceTemplate(nh, im_server_, robot_interface_, robot_name_, type, id));
+    at_map_[key] = boost::shared_ptr<affordance_template::AffordanceTemplate>(new affordance_template::AffordanceTemplate(nh_, im_server_, robot_interface_, robot_name_, type, id));
     
     affordance_template_object::AffordanceTemplateStructure structure;
     geometry_msgs::Pose p;
@@ -297,6 +287,7 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
     if (at_map_.find(key) == at_map_.end())
         return false;
     at_map_[key]->stop();
+    ros::Time::sleep(1);
     at_map_.erase(key);
     return true;
 }

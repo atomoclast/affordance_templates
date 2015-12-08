@@ -29,12 +29,14 @@ namespace affordance_template_server
 {
   class AffordanceTemplateServer
   {
-    void run();
+    // void run();
     void configureServer();
     bool loadRobot();
     bool loadTemplates();
     int getNextID(const std::string&);
     std::string getPackagePath(const std::string&);
+
+    ros::NodeHandle nh_;
 
     tf::TransformListener listener_;
     affordance_template_msgs::RobotConfig robot_config_;

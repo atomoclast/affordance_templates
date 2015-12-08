@@ -75,6 +75,7 @@ namespace affordance_template
     // public methods used by server node
     void run();
     void stop();
+    void update();
     bool addTrajectory(const std::string&);
     bool moveToWaypoints(const std::vector<std::string>&);
     bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
@@ -116,6 +117,9 @@ namespace affordance_template
     typedef std::map<std::string, EndEffectorPlanStatusMap> TrajectoryPlanStatus;
 
     ros::NodeHandle nh_;
+    boost::scoped_ptr<boost::thread> updateThread_;
+    boost::mutex mutex_;
+
     tf::TransformListener tf_listener_;
     tf::TransformBroadcaster tf_broadcaster_;
 
@@ -133,6 +137,7 @@ namespace affordance_template
     double loop_rate_;
     bool object_controls_display_on_;
     bool running_;
+    
 
     boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
     boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface_;
@@ -163,7 +168,6 @@ namespace affordance_template
     bool isValidTrajectory(affordance_template_object::Trajectory traj);
     bool setCurrentTrajectory(affordance_template_object::TrajectoryList traj_list, std::string traj); 
     bool getTrajectory(affordance_template_object::TrajectoryList& traj_list, std::string traj_name, affordance_template_object::Trajectory &traj);
-    
 
     void clearTrajectoryFlags();
     void setTrajectoryFlags(affordance_template_object::Trajectory traj);

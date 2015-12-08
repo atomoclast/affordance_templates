@@ -2,19 +2,21 @@
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "affordance_template_server_node");
 
+  ros::init(argc, argv, "affordance_template_server_node");
+  ros::AsyncSpinner spinner(100);
   ros::NodeHandle nh;
   std::string robot_name = "";
+
   nh.getParam("robot_config", robot_name);
 
   if (robot_name.empty())
-  	// robot_name = "fetch.yaml";
-   robot_name = "r2_roscontrol.yaml";
+    robot_name = "r2_roscontrol.yaml";
 
-  affordance_template_server::AffordanceTemplateInterface ati(robot_name);
+  affordance_template_server::AffordanceTemplateInterface ati(nh, robot_name);
 
-  ros::spin();
-
+  spinner.start();
+  ros::waitForShutdown();
+  
   return 0;
 }

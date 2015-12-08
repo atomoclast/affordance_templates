@@ -68,9 +68,10 @@ namespace affordance_template_server
         boost::shared_ptr<AffordanceTemplateServer> at_server_;
         tf::TransformListener listener_;
         std::map<std::string, ros::ServiceServer> at_srv_map_;
+        ros::NodeHandle nh_;
 
     public:
-        AffordanceTemplateInterface(const std::string&);
+        AffordanceTemplateInterface(const ros::NodeHandle&, const std::string&);
         ~AffordanceTemplateInterface() {}
     };       
 }

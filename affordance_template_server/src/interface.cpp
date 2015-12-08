@@ -4,37 +4,36 @@ using namespace affordance_template_server;
 using namespace affordance_template_msgs;
 using namespace affordance_template_object;
 
-AffordanceTemplateInterface::AffordanceTemplateInterface(const std::string &_robot_yaml)
+AffordanceTemplateInterface::AffordanceTemplateInterface(const ros::NodeHandle &nh, const std::string &_robot_yaml) :
+    nh_(nh)
 {
     ROS_INFO("[AffordanceTemplateInterface] starting...");
-
-    ros::NodeHandle nh;
 
     if (!_robot_yaml.empty())
         ROS_INFO("[AffordanceTemplateInterface] creating server using robot yaml %s", _robot_yaml.c_str());
     at_server_.reset(new AffordanceTemplateServer(_robot_yaml));
 
     const std::string base_srv = "/affordance_template_server/";
-    at_srv_map_["get_robots"]              = nh.advertiseService(base_srv + "get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
-    at_srv_map_["get_templates"]           = nh.advertiseService(base_srv + "get_templates", &AffordanceTemplateInterface::handleTemplateRequest, this);
-    at_srv_map_["load_robot"]              = nh.advertiseService(base_srv + "load_robot", &AffordanceTemplateInterface::handleLoadRobot, this);
-    at_srv_map_["add_template"]            = nh.advertiseService(base_srv + "add_template", &AffordanceTemplateInterface::handleAddTemplate, this);
-    at_srv_map_["delete_template"]         = nh.advertiseService(base_srv + "delete_template", &AffordanceTemplateInterface::handleDeleteTemplate, this);
-    at_srv_map_["get_running"]             = nh.advertiseService(base_srv + "get_running", &AffordanceTemplateInterface::handleRunning, this);
-    at_srv_map_["plan_command"]            = nh.advertiseService(base_srv + "plan_command", &AffordanceTemplateInterface::handlePlanCommand, this);
-    at_srv_map_["execute_command"]         = nh.advertiseService(base_srv + "execute_command", &AffordanceTemplateInterface::handleExecuteCommand, this);
-    at_srv_map_["save_template"]           = nh.advertiseService(base_srv + "save_template", &AffordanceTemplateInterface::handleSaveTemplate, this);
-    at_srv_map_["add_trajectory"]          = nh.advertiseService(base_srv + "add_trajectory", &AffordanceTemplateInterface::handleAddTrajectory, this);
-    at_srv_map_["scale_object"]            = nh.advertiseService(base_srv + "scale_object", &AffordanceTemplateInterface::handleObjectScale, this);
-    at_srv_map_["get_status"]              = nh.advertiseService(base_srv + "get_status", &AffordanceTemplateInterface::handleServerStatus, this);
-    at_srv_map_["get_template_status"]     = nh.advertiseService(base_srv + "get_template_status", &AffordanceTemplateInterface::handleTemplateStatus, this);
-    at_srv_map_["set_template_trajectory"] = nh.advertiseService(base_srv + "set_template_trajectory", &AffordanceTemplateInterface::handleSetTrajectory, this);
-    at_srv_map_["set_template_pose"]       = nh.advertiseService(base_srv + "set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
-    at_srv_map_["set_object_pose"]         = nh.advertiseService(base_srv + "set_object_pose", &AffordanceTemplateInterface::handleSetObject, this);
-    at_srv_map_["get_object_pose"]         = nh.advertiseService(base_srv + "get_object_pose", &AffordanceTemplateInterface::handleGetObject, this);
-    at_srv_map_["set_waypoint_view"]       = nh.advertiseService(base_srv + "set_waypoint_view", &AffordanceTemplateInterface::handleSetWaypointViews, this);
+    at_srv_map_["get_robots"]              = nh_.advertiseService(base_srv + "get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
+    at_srv_map_["get_templates"]           = nh_.advertiseService(base_srv + "get_templates", &AffordanceTemplateInterface::handleTemplateRequest, this);
+    at_srv_map_["load_robot"]              = nh_.advertiseService(base_srv + "load_robot", &AffordanceTemplateInterface::handleLoadRobot, this);
+    at_srv_map_["add_template"]            = nh_.advertiseService(base_srv + "add_template", &AffordanceTemplateInterface::handleAddTemplate, this);
+    at_srv_map_["delete_template"]         = nh_.advertiseService(base_srv + "delete_template", &AffordanceTemplateInterface::handleDeleteTemplate, this);
+    at_srv_map_["get_running"]             = nh_.advertiseService(base_srv + "get_running", &AffordanceTemplateInterface::handleRunning, this);
+    at_srv_map_["plan_command"]            = nh_.advertiseService(base_srv + "plan_command", &AffordanceTemplateInterface::handlePlanCommand, this);
+    at_srv_map_["execute_command"]         = nh_.advertiseService(base_srv + "execute_command", &AffordanceTemplateInterface::handleExecuteCommand, this);
+    at_srv_map_["save_template"]           = nh_.advertiseService(base_srv + "save_template", &AffordanceTemplateInterface::handleSaveTemplate, this);
+    at_srv_map_["add_trajectory"]          = nh_.advertiseService(base_srv + "add_trajectory", &AffordanceTemplateInterface::handleAddTrajectory, this);
+    at_srv_map_["scale_object"]            = nh_.advertiseService(base_srv + "scale_object", &AffordanceTemplateInterface::handleObjectScale, this);
+    at_srv_map_["get_status"]              = nh_.advertiseService(base_srv + "get_status", &AffordanceTemplateInterface::handleServerStatus, this);
+    at_srv_map_["get_template_status"]     = nh_.advertiseService(base_srv + "get_template_status", &AffordanceTemplateInterface::handleTemplateStatus, this);
+    at_srv_map_["set_template_trajectory"] = nh_.advertiseService(base_srv + "set_template_trajectory", &AffordanceTemplateInterface::handleSetTrajectory, this);
+    at_srv_map_["set_template_pose"]       = nh_.advertiseService(base_srv + "set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
+    at_srv_map_["set_object_pose"]         = nh_.advertiseService(base_srv + "set_object_pose", &AffordanceTemplateInterface::handleSetObject, this);
+    at_srv_map_["get_object_pose"]         = nh_.advertiseService(base_srv + "get_object_pose", &AffordanceTemplateInterface::handleGetObject, this);
+    at_srv_map_["set_waypoint_view"]       = nh_.advertiseService(base_srv + "set_waypoint_view", &AffordanceTemplateInterface::handleSetWaypointViews, this);
 
-    scale_stream_sub_ = nh.subscribe(base_srv + "scale_object_streamer", 1000, &AffordanceTemplateInterface::handleObjectScaleCallback, this);
+    scale_stream_sub_ = nh_.subscribe(base_srv + "scale_object_streamer", 1000, &AffordanceTemplateInterface::handleObjectScaleCallback, this);
 
     ROS_INFO("[AffordanceTemplateInterface] services set up...robot ready!");
 }
