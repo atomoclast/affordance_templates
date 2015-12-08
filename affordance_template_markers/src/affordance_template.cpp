@@ -1554,7 +1554,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
     sensor_msgs::JointState set_state;
     ContinuousPlan p;
-    if (getContinuousPlan( current_trajectory_, (current_idx-1), p)) 
+    if (getContinuousPlan( current_trajectory_, (current_idx-1), PlanningGroup::MANIPULATOR, p))
     {
       // index already has been planned for, get the start state
       set_state.header = p.plan.trajectory_.joint_trajectory.header;
@@ -2137,7 +2137,7 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
   return found;
 }
 
-bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const int step, ContinuousPlan& plan)
+bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const int step, const PlanningGroup type, ContinuousPlan& plan)
 {
   if (continuous_plans_.find(trajectory) == continuous_plans_.end())
   {
@@ -2150,7 +2150,7 @@ bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const 
 
   for ( auto& p : continuous_plans_[trajectory])
   {
-    if (p.step == step)
+    if (p.step == step && p.type == type)
     {
       plan = p;
       return true;
