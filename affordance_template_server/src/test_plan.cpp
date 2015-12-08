@@ -21,7 +21,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   
   // TESTTTTTT
-  actionlib::SimpleActionClient<affordance_template_msgs::PlanAction> ac("/affordance_template/Wheel_0/planning_server", true);
+  actionlib::SimpleActionClient<affordance_template_msgs::PlanAction> ac("/affordance_template/TestWheel_0/planning_server", true);
 
   ROS_INFO("Waiting for action server to start.");
   ac.waitForServer(); //will wait for infinite time
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
   ac.sendGoal(goal);
 
   //wait for the action to return
-  bool finished_before_timeout = ac.waitForResult(ros::Duration(30.0));
+  bool finished_before_timeout = ac.waitForResult(ros::Duration(60.0));
 
   if (finished_before_timeout)
   {

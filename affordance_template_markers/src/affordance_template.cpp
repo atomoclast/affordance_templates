@@ -1698,8 +1698,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
         set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
         set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
-
-        if (!robot_interface_->getPlanner()->setStartState(ee_name, set_state)) // manipulator_name == left_arm
+        robot_interface_->getPlanner()->setStartState(manipulator_name, set_state); //fixme -- take out??
+        if (!robot_interface_->getPlanner()->setStartState(ee_name, set_state))
         {
           ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee_name.c_str());
           planning.progress = -1;
@@ -1974,6 +1974,7 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
   return ret;
 }
 
+
 bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory, const std::string& ee, int index, int steps=1)
 {
   ROS_INFO("[AffordanceTemplate::continuousMoveToWaypoints] executing trajectory %s starting at indexed plan %d for %d steps", trajectory.c_str(), index+1, steps);
@@ -1997,10 +1998,10 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
   else
     max_idx = (index + steps)-1;
 
-  std::map<std::string, moveit::planning_interface::MoveGroup::Plan> plans_to_exe;
+  std::vector<std::pair<std::string, moveit::planning_interface::MoveGroup::Plan> > plans_to_exe;
   for ( auto& p : continuous_plans_[trajectory])
     if (p.step >= index && p.step <= max_idx) 
-      plans_to_exe[p.group] = p.plan;
+      plans_to_exe.push_back(std::make_pair(p.group, p.plan));
 
   if (!robot_interface_->getPlanner()->executeContinuousPlans(plans_to_exe))
   {
@@ -2090,12 +2091,14 @@ void AffordanceTemplate::run()
   ROS_INFO("AffordanceTemplate::run() -- leaving spin thread. template must be shutting down...");
 }
 
+
 void AffordanceTemplate::stop()
 {
   ROS_WARN("[AffordanceTemplate::stop] %s being asked to stop..", name_.c_str());
   running_ = false;
   removeAllMarkers();
 }
+
 
 bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_factor, double ee_scale_factor)
 { 
@@ -2106,6 +2109,7 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   removeAllMarkers();
   return createFromStructure(structure_, true, false, current_trajectory_);
 }
+
 
 bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 {
@@ -2159,6 +2163,7 @@ bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const 
   return false;
 }
 
+
 void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const ContinuousPlan& plan)
 {
   if (continuous_plans_.find(trajectory) == continuous_plans_.end())
@@ -2169,7 +2174,7 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
   {
     for (auto& cp : continuous_plans_[trajectory])
     {
-      if (cp.step == plan.step)
+      if (cp.step == plan.step && cp.type == plan.type)
       {
         cp.group = plan.group;
         cp.type = plan.type;
@@ -2183,19 +2188,5 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
     continuous_plans_[trajectory].push_back(plan);
   }
 
-  // DEBUGGING
-  // for (auto cp : continuous_plans_)
-  // {
-  //   ROS_WARN("looking at WPs for continuous plan %s", cp.first.c_str());
-  //   for ( auto plan : cp.second)
-  //   {
-  //     ROS_WARN("plan %d has start state", plan.step);
-  //     {
-  //       for ( unsigned int i = 0 ; i < plan.start_state.name.size(); i++)
-  //       {
-  //         ROS_WARN("\t joint %s : %g", plan.start_state.name[i].c_str(), plan.start_state.position[i]);
-  //       }
-  //     }
-  //   }
-  // }
+  ROS_WARN("[affordance_template::setContinuousPlan] there are now %d plans", continuous_plans_[trajectory].size());
 }
