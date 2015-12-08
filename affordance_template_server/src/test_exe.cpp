@@ -17,7 +17,10 @@ int main(int argc, char **argv)
   ROS_INFO("Action server started, sending goal.");
   
   affordance_template_msgs::ExecuteGoal goal;
+  goal.trajectory = "Left Hand Counter Clockwise Turn";
   goal.groups.push_back("left_hand");
+  goal.index = 0; 
+  goal.steps = 0; // do max trajectory steps
   ac.sendGoal(goal);
 
   //wait for the action to return

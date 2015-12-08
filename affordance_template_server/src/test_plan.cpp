@@ -28,7 +28,7 @@ int main(int argc, char **argv)
   ROS_INFO("Action server started, sending goal.");
   
   affordance_template_msgs::PlanGoal goal;
-  goal.groups.push_back("left_hand");
+  goal.groups.push_back("left_hand"); // should be trajectory?? and have AT figure out which groups are in thet rajectory??
   goal.steps = 1; // 0 to plan for all steps
   goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN;
   goal.backwards = false;
