@@ -1683,6 +1683,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         ContinuousPlan cp;
         cp.step = idx;
         cp.group = manipulator_name;
+        cp.type = PlanningGroup::MANIPULATOR;
         cp.start_state = set_state;
         cp.plan = plan;
         setContinuousPlan(current_trajectory_, cp);
@@ -1768,8 +1769,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               ++planning.progress;
               planning_server_.publishFeedback(planning);
 
-              cp.step = -2;
+              cp.step = idx;
               cp.group = ee_name;
+              cp.type = PlanningGroup::EE;
               cp.start_state = set_state;
               cp.plan = plan;
               continuous_plans_[current_trajectory_].push_back(cp); // FIXME I don't know how to do this without giving an extra param
@@ -1997,7 +1999,7 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
 
   std::map<std::string, moveit::planning_interface::MoveGroup::Plan> plans_to_exe;
   for ( auto& p : continuous_plans_[trajectory])
-    if (p.step >= index && p.step <= max_idx)
+    if (p.step >= index && p.step <= max_idx) 
       plans_to_exe[p.group] = p.plan;
 
   if (!robot_interface_->getPlanner()->executeContinuousPlans(plans_to_exe))
@@ -2170,6 +2172,7 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
       if (cp.step == plan.step)
       {
         cp.group = plan.group;
+        cp.type = plan.type;
         cp.start_state = plan.start_state;
         cp.plan = plan.plan;
         return;

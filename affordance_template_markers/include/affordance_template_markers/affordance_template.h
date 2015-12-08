@@ -54,10 +54,13 @@ namespace affordance_template
     int goal_idx = -1;
   };
 
+  enum PlanningGroup { MANIPULATOR, EE };
+
   struct ContinuousPlan 
   {
-    int step; // -1 --> max_idx if arm; hand defaults to -2 aka don't use
+    int step; // -1 --> max_idx
     std::string group; // left_arm, left_hand, etc
+    PlanningGroup type;
     sensor_msgs::JointState start_state;
     moveit::planning_interface::MoveGroup::Plan plan;
   };
