@@ -31,3 +31,7 @@ NOTE: if you receive a 'broken packages' error, try uninstalling libsdformat2
     * robot model - Robot Description: robot_description
     * interactive marker - Update Topic: /affordance_template_interactive_marker_server/update
 2. add affordance template panel by going to Panels->Add New Panel->RVizAffordanceTemplatePanel
+
+
+##**Software Overview:**##
+![AT Architecture.png](https://bitbucket.org/repo/r5rydq/images/1896767692-AT%20Architecture.png)
