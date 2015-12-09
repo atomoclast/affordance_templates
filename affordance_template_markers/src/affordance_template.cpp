@@ -1656,12 +1656,15 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     
       if (robot_interface_->getPlanner()->planPaths(goals, false, true)) 
       {
+        //########################  TAKE OUT  ##############################
+        //##################################################################
         ros::Time start_t = ros::Time::now();
         while(ros::ok() && ros::Time::now() - start_t < ros::Duration(3.0))
         {
           ros::spinOnce();
-          ros::Duration(0.01).sleep(); // TODO take out
+          ros::Duration(0.01).sleep(); 
         }
+        //##################################################################
 
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         ++planning.progress;
@@ -1696,23 +1699,25 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         // set the start state for ee planning
         set_state.header = plan.trajectory_.joint_trajectory.header;
         set_state.name = plan.trajectory_.joint_trajectory.joint_names;
-        for (auto j : set_state.name)
-        {
-          ROS_WARN("manipulator state has joint name %s", j.c_str());
-        }
         set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
         set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
         set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
         robot_interface_->getPlanner()->setStartState(manipulator_name, set_state); //fixme -- take out??
-        if (!robot_interface_->getPlanner()->setStartState(ee_name, set_state))
-        {
-          ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee_name.c_str());
-          planning.progress = -1;
-          planning_server_.publishFeedback(planning);
-          result.succeeded = false;
-          planning_server_.setSucceeded(result);
-          return;
-        }
+        
+        // for (auto j : set_state.name)
+        // {
+        //   ROS_WARN("manipulator state has joint name %s", j.c_str());
+        // }
+        
+        // if (!robot_interface_->getPlanner()->setStartState(ee_name, set_state))
+        // {
+        //   ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee_name.c_str());
+        //   planning.progress = -1;
+        //   planning_server_.publishFeedback(planning);
+        //   result.succeeded = false;
+        //   planning_server_.setSucceeded(result);
+        //   return;
+        // }
 
         // find and add EE joint state to goal
         if (ee_pose_map.find(wp_vec[current_idx].ee_pose) == ee_pose_map.end())
@@ -1754,11 +1759,14 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
                 return;
               }
 
+              //########################  TAKE OUT  ##############################
+              //##################################################################
               start_t = ros::Time::now();
               while(ros::ok() && ros::Time::now() - start_t < ros::Duration(4.0))
               {
                 ros::Duration(0.01).sleep(); // TODO take out
               }
+              //##################################################################
 
               // set start state for arm based on what the hand did
               if (!robot_interface_->getPlanner()->getPlan(ee_name, plan))
@@ -1779,24 +1787,23 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               cp.type = PlanningGroup::EE;
               cp.start_state = set_state;
               cp.plan = plan;
-              // continuous_plans_[current_trajectory_].push_back(cp); // FIXME I don't know how to do this without giving an extra param
+              setContinuousPlan(current_trajectory_, cp);
 
               ContinuousPlan p;
               getContinuousPlan( current_trajectory_, idx, PlanningGroup::MANIPULATOR, p);
-              // p.plan.trajectory_.joint_trajectory.joint_names.push_back(plan.trajectory_.joint_names);
               p.plan.trajectory_.joint_trajectory.points.push_back(plan.trajectory_.joint_trajectory.points.back());
 
-              //
+              
               // set the start state for next iteration
               // set_state.header = plan.trajectory_.joint_trajectory.header;
               // set_state.name = plan.trajectory_.joint_trajectory.joint_names;
+              // set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
+              // set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
+              // set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
               // for (auto j : set_state.name)
               // {
               //   ROS_WARN("ee state has joint name %s", j.c_str());
               // }
-              // set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
-              // set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
-              // set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
 
               // if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state))
               // {
