@@ -10,18 +10,21 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   
   // TESTTTTTT
-  actionlib::SimpleActionClient<affordance_template_msgs::ExecuteAction> ac("/affordance_template/Wheel_0/execution_server", true);
+  actionlib::SimpleActionClient<affordance_template_msgs::ExecuteAction> ac("/affordance_template/TestWheel_0/execution_server", true);
 
   ROS_INFO("Waiting for action server to start.");
   ac.waitForServer(); //will wait for infinite time
   ROS_INFO("Action server started, sending goal.");
   
   affordance_template_msgs::ExecuteGoal goal;
+  goal.trajectory = "Left Hand Counter Clockwise Turn";
   goal.groups.push_back("left_hand");
+  goal.index = 0;
+  goal.steps = 0; // do max trajectory steps
   ac.sendGoal(goal);
 
   //wait for the action to return
-  bool finished_before_timeout = ac.waitForResult(ros::Duration(30.0));
+  bool finished_before_timeout = ac.waitForResult(ros::Duration(60.0));
 
   if (finished_before_timeout)
   {

@@ -1,5 +1,8 @@
 #goal
+string trajectory
 string[] groups
+int32 index
+int32 steps
 ---
 #result
 bool succeeded
