@@ -1702,6 +1702,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
         set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
         set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
+        
         robot_interface_->getPlanner()->setStartState(manipulator_name, set_state); //fixme -- take out??
         
         // for (auto j : set_state.name)
@@ -1761,11 +1762,11 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
               //########################  TAKE OUT  ##############################
               //##################################################################
-              start_t = ros::Time::now();
-              while(ros::ok() && ros::Time::now() - start_t < ros::Duration(4.0))
-              {
-                ros::Duration(0.01).sleep(); // TODO take out
-              }
+              // start_t = ros::Time::now();
+              // while(ros::ok() && ros::Time::now() - start_t < ros::Duration(4.0))
+              // {
+              //   ros::Duration(0.01).sleep(); // TODO take out
+              // }
               //##################################################################
 
               // set start state for arm based on what the hand did
@@ -1793,27 +1794,26 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               getContinuousPlan( current_trajectory_, idx, PlanningGroup::MANIPULATOR, p);
               p.plan.trajectory_.joint_trajectory.points.push_back(plan.trajectory_.joint_trajectory.points.back());
 
-              
               // set the start state for next iteration
-              // set_state.header = plan.trajectory_.joint_trajectory.header;
-              // set_state.name = plan.trajectory_.joint_trajectory.joint_names;
-              // set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
-              // set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
-              // set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
+              set_state.header = plan.trajectory_.joint_trajectory.header;
+              set_state.name = plan.trajectory_.joint_trajectory.joint_names;
+              set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
+              set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
+              set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
               // for (auto j : set_state.name)
               // {
               //   ROS_WARN("ee state has joint name %s", j.c_str());
               // }
 
-              // if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state))
-              // {
-              //   ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
-              //   planning.progress = -1;
-              //   planning_server_.publishFeedback(planning);
-              //   result.succeeded = false;
-              //   planning_server_.setSucceeded(result);
-              //   return;
-              // }
+              if (!robot_interface_->getPlanner()->setStartState(ee_name, set_state))
+              {
+                ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee_name.c_str());
+                planning.progress = -1;
+                planning_server_.publishFeedback(planning);
+                result.succeeded = false;
+                planning_server_.setSucceeded(result);
+                return;
+              }
             }
           } 
           catch(...)
