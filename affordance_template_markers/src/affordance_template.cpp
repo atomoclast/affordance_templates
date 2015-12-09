@@ -1555,7 +1555,33 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     plan_status_[goal->trajectory][ee].sequence_ids.clear();
     plan_status_[goal->trajectory][ee].sequence_poses.clear();
 
+    bool skip = false;
+    
+    // get our waypoints for this trajectory so we can get the EE pose IDs
     int ee_id = robot_interface_->getEEID(ee);
+    std::vector<affordance_template_object::EndEffectorWaypoint> wp_vec;
+    for(auto &traj : structure_.ee_trajectories) 
+    {
+      if(traj.name == goal->trajectory)
+      {
+        for(auto &ee_list : traj.ee_waypoint_list) 
+        {
+          if(ee_list.id == ee_id) 
+            wp_vec = ee_list.waypoints;
+          else if(ee_list.id != ee_id) 
+          {
+            ROS_WARN("[AffordanceTemplate::planRequest] EE %s does not have any waypoints in this trajectory");
+            skip = true;
+          }
+        }
+      }
+    }
+
+    //
+    // make sure the ee_id (thus, the EE) is in the WP list
+    if (skip)
+      continue;
+
     int max_idx = getNumWaypoints(structure_, goal->trajectory, ee_id);
     int current_idx = plan_status_[goal->trajectory][ee].current_idx;
     std::string ee_name = robot_interface_->getEEName(ee_id);
@@ -1603,21 +1629,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         result.succeeded = false;
         planning_server_.setSucceeded(result);
         return;
-      }
-    }
-
-    // get our waypoints for this trajectory
-    // the waypoint vec will give us the EE pose ID
-    std::vector<affordance_template_object::EndEffectorWaypoint> wp_vec;
-    for(auto &traj : structure_.ee_trajectories) 
-    {
-      if(traj.name == goal->trajectory)
-      {
-        for(auto &ee_list : traj.ee_waypoint_list) 
-        {
-          if(ee_list.id == ee_id) 
-            wp_vec = ee_list.waypoints;
-        }
       }
     }
 
@@ -1994,7 +2005,13 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
 
 bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory, const std::string& ee, int index, int steps=1)
 {
-  ROS_INFO("[AffordanceTemplate::continuousMoveToWaypoints] executing trajectory %s starting at indexed plan %d for %d steps", trajectory.c_str(), index+1, steps);
+  int max_idx;
+  if (steps == 0)
+    max_idx = getNumWaypoints(structure_, trajectory, robot_interface_->getEEID(ee));
+  else
+    max_idx = (index + steps)-1;
+
+  ROS_INFO("[AffordanceTemplate::continuousMoveToWaypoints] executing trajectory %s starting at index %d for %d steps", trajectory.c_str(), index+1, max_idx);
 
   if (continuous_plans_.find(trajectory) == continuous_plans_.end())
   {
@@ -2002,18 +2019,12 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
     return false;
   }
 
-  if (!plan_status_[current_trajectory_][ee].plan_valid) 
+  if (!plan_status_[trajectory][ee].plan_valid) 
   {
-    plan_status_[current_trajectory_][ee].exec_valid = false;
+    plan_status_[trajectory][ee].exec_valid = false;
     ROS_ERROR("[AffordanceTemplate::continuousMoveToWaypoints] EE %s in trajectory %s doesn't have a valid plan!!", ee.c_str(), trajectory.c_str());
     return false;
   }
-    
-  int max_idx;
-  if (steps == 0)
-    max_idx = getNumWaypoints(structure_, trajectory, robot_interface_->getEEID(ee));
-  else
-    max_idx = (index + steps)-1;
 
   std::vector<std::pair<std::string, moveit::planning_interface::MoveGroup::Plan> > plans_to_exe;
   for ( auto& p : continuous_plans_[trajectory])
@@ -2027,9 +2038,9 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
   }
   ROS_INFO("[AffordanceTemplate::moveToWaypoints] execution succeeded!!");
   
-  plan_status_[current_trajectory_][ee].current_idx = plan_status_[current_trajectory_][ee].goal_idx;
-  plan_status_[current_trajectory_][ee].plan_valid = false;
-  plan_status_[current_trajectory_][ee].exec_valid = true;
+  plan_status_[trajectory][ee].current_idx = plan_status_[trajectory][ee].goal_idx;
+  plan_status_[trajectory][ee].plan_valid = false;
+  plan_status_[trajectory][ee].exec_valid = true;
 
   return true;
 }
