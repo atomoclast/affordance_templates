@@ -1525,7 +1525,7 @@ bool AffordanceTemplate::computePathSequence(AffordanceTemplateStructure structu
 
 void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 {
-  ROS_INFO("[AffordanceTemplate::planRequest] planning");
+  ROS_INFO("[AffordanceTemplate::planRequest] request to plan for current trajectory...");
 
   PlanResult result;
   PlanFeedback planning;
@@ -1723,7 +1723,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
           sensor_msgs::JointState ee_js;
           try 
           {
-            if (!robot_interface_->getPlanner()->getRDFModel()->getGroupState( ee, ee_pose_map[wp_vec[current_idx].ee_pose], ee_js))
+            if (!robot_interface_->getPlanner()->getRDFModel()->getGroupState( ee, ee_pose_map[wp_vec[current_idx].ee_pose], ee_js)) // this is the reason for the try{} block, TODO should put null pointer detection in
             {
               ROS_ERROR("[AffordanceTemplate::planRequest] couldn't get group state!!");
               planning.progress = -1;
@@ -1804,7 +1804,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
           } 
           catch(...)
           {
-            ROS_ERROR("[AffordanceTemplate::planRequest] couldn't get planner or RDF model -- bad pointer somewhere!!");
+            ROS_FATAL("[AffordanceTemplate::planRequest] couldn't get planner or RDF model -- bad pointer somewhere!!");
             planning.progress = -1;
             planning_server_.publishFeedback(planning);
             result.succeeded = false;
@@ -1826,7 +1826,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         return;
       }
 
-      std::cout<<std::endl; // just clear a line for debugging purposes
+      // std::cout<<std::endl; // just clear a line for debugging purposes
 
     } // waypoint loop
   } // ee loop
@@ -1860,7 +1860,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
 void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
 {
-  ROS_WARN("[AffordanceTemplate::executeRequest] executing");
+  ROS_INFO("[AffordanceTemplate::executeRequest] request to execute any stored plans...");
 
   ExecuteResult result;
   ExecuteFeedback exe;
@@ -1868,7 +1868,7 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
   exe.progress = 1;
   execution_server_.publishFeedback(exe);
 
-  if (!continuousMoveToWaypoints(current_trajectory_, goal->groups.front(), goal->index, goal->steps)) // fixme 12/8/2015
+  if (!continuousMoveToWaypoints(goal->trajectory, goal->groups.front(), goal->index, goal->steps))
   {
     ROS_ERROR("[AffordanceTemplate::executeRequest] execution of plan failed!!");
     exe.progress = -1;
@@ -2195,5 +2195,5 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
     continuous_plans_[trajectory].push_back(plan);
   }
 
-  ROS_WARN("[affordance_template::setContinuousPlan] there are now %d plans", continuous_plans_[trajectory].size());
+  ROS_DEBUG("[AffordanceTemplate::setContinuousPlan] there are now %d plans", continuous_plans_[trajectory].size());
 }
