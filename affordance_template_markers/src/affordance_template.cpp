@@ -1533,28 +1533,38 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
   planning.progress = 1;
   planning_server_.publishFeedback(planning);
 
+  if (goal->trajectory.empty())
+  {
+    ROS_ERROR("[AffordanceTemplate::planRequest] no trajectory provided");
+    planning.progress = -1;
+    planning_server_.publishFeedback(planning);
+    result.succeeded = false;
+    planning_server_.setSucceeded(result);
+    return;
+  }
+
   for (auto ee : goal->groups) 
   {
     ++planning.progress;
     planning_server_.publishFeedback(planning);
 
-    plan_status_[current_trajectory_][ee].direct     = false;
-    plan_status_[current_trajectory_][ee].plan_valid = false;
-    plan_status_[current_trajectory_][ee].exec_valid = false;
-    plan_status_[current_trajectory_][ee].backwards  = goal->backwards;
-    plan_status_[current_trajectory_][ee].sequence_ids.clear();
-    plan_status_[current_trajectory_][ee].sequence_poses.clear();
+    plan_status_[goal->trajectory][ee].direct     = false;
+    plan_status_[goal->trajectory][ee].plan_valid = false;
+    plan_status_[goal->trajectory][ee].exec_valid = false;
+    plan_status_[goal->trajectory][ee].backwards  = goal->backwards;
+    plan_status_[goal->trajectory][ee].sequence_ids.clear();
+    plan_status_[goal->trajectory][ee].sequence_poses.clear();
 
     int ee_id = robot_interface_->getEEID(ee);
-    int max_idx = getNumWaypoints(structure_, current_trajectory_, ee_id);
-    int current_idx = plan_status_[current_trajectory_][ee].current_idx;
+    int max_idx = getNumWaypoints(structure_, goal->trajectory, ee_id);
+    int current_idx = plan_status_[goal->trajectory][ee].current_idx;
     std::string ee_name = robot_interface_->getEEName(ee_id);
     std::string manipulator_name = robot_interface_->getManipulator(ee);
     std::map<std::string, std::vector<geometry_msgs::PoseStamped> > goals;
 
     sensor_msgs::JointState set_state;
     ContinuousPlan p;
-    if (getContinuousPlan( current_trajectory_, (current_idx-1), PlanningGroup::MANIPULATOR, p))
+    if (getContinuousPlan( goal->trajectory, (current_idx-1), PlanningGroup::MANIPULATOR, p))
     {
       // index already has been planned for, get the start state
       set_state.header = p.plan.trajectory_.joint_trajectory.header;
@@ -1601,7 +1611,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     std::vector<affordance_template_object::EndEffectorWaypoint> wp_vec;
     for(auto &traj : structure_.ee_trajectories) 
     {
-      if(traj.name == current_trajectory_)
+      if(traj.name == goal->trajectory)
       {
         for(auto &ee_list : traj.ee_waypoint_list) 
         {
@@ -1638,7 +1648,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       ROS_INFO("[AffordanceTemplate::planRequest] configuring plan goal for waypoint %s [%d/%d] for %s[%d] on manipulator=%s", next_path_str.c_str(), idx+1, max_idx, ee.c_str(), ee_id, manipulator_name.c_str());
 
       std::vector<int> sequence_ids;
-      if (!computePathSequence(structure_, current_trajectory_, ee_id, idx, 1, goal->backwards, plan_status_[current_trajectory_][ee].sequence_ids, plan_status_[current_trajectory_][ee].goal_idx)) // FIXME - may need current_idx instead of idx
+      if (!computePathSequence(structure_, goal->trajectory, ee_id, idx, 1, goal->backwards, plan_status_[goal->trajectory][ee].sequence_ids, plan_status_[goal->trajectory][ee].goal_idx)) // FIXME - may need current_idx instead of idx
       {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to get path sequence!!");
         planning.progress = -1;
@@ -1652,7 +1662,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       goals[manipulator_name].clear();
       geometry_msgs::PoseStamped pt = frame_store_[next_path_str + "/tf"].second;    
       goals[manipulator_name].push_back(pt);
-      plan_status_[current_trajectory_][ee].sequence_poses.push_back(pt);
+      plan_status_[goal->trajectory][ee].sequence_poses.push_back(pt);
     
       if (robot_interface_->getPlanner()->planPaths(goals, false, true)) 
       {
@@ -1670,8 +1680,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         }
         //##################################################################
 
-        current_idx = plan_status_[current_trajectory_][ee].current_idx = plan_status_[current_trajectory_][ee].goal_idx; // keep track of the current index based on what we planned
-        plan_status_[current_trajectory_][ee].plan_valid = true;
+        current_idx = plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx; // keep track of the current index based on what we planned
+        plan_status_[goal->trajectory][ee].plan_valid = true;
         
         moveit::planning_interface::MoveGroup::Plan plan;
         if (!robot_interface_->getPlanner()->getPlan(manipulator_name, plan))
@@ -1690,7 +1700,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         cp.type = PlanningGroup::MANIPULATOR;
         cp.start_state = set_state;
         cp.plan = plan;
-        setContinuousPlan(current_trajectory_, cp);
+        setContinuousPlan(goal->trajectory, cp);
 
         //
         // set the start state for ee planning
@@ -1777,12 +1787,12 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               cp.type = PlanningGroup::EE;
               cp.start_state = set_state;
               cp.plan = plan;
-              setContinuousPlan(current_trajectory_, cp);
+              setContinuousPlan(goal->trajectory, cp);
 
               //
               // doing this lets us append the grasp pose without having the arm go back to init start state
               ContinuousPlan p;
-              getContinuousPlan( current_trajectory_, idx, PlanningGroup::MANIPULATOR, p);
+              getContinuousPlan( goal->trajectory, idx, PlanningGroup::MANIPULATOR, p);
               p.plan.trajectory_.joint_trajectory.points.push_back(plan.trajectory_.joint_trajectory.points.back());
 
               // set the start state for next iteration
@@ -1839,7 +1849,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     ++planning.progress;
     planning_server_.publishFeedback(planning);
 
-    if (!continuousMoveToWaypoints(current_trajectory_, goal->groups.front(), plan_status_[current_trajectory_][goal->groups.front()].current_idx, goal->steps)) // fixme 12/8/2015
+    if (!continuousMoveToWaypoints(goal->trajectory, goal->groups.front(), plan_status_[goal->trajectory][goal->groups.front()].current_idx, goal->steps)) // fixme 12/8/2015
     {
       ROS_ERROR("[AffordanceTemplate::planRequest] execution of plan failed!!");
       planning.progress = -1;
