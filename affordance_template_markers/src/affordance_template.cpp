@@ -1570,7 +1570,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
             wp_vec = ee_list.waypoints;
           else if(ee_list.id != ee_id) 
           {
-            ROS_WARN("[AffordanceTemplate::planRequest] EE %s does not have any waypoints in this trajectory");
+            ROS_WARN("[AffordanceTemplate::planRequest] EE %s does not have any waypoints in this trajectory", ee.c_str());
             skip = true;
           }
         }
@@ -1860,14 +1860,24 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     ++planning.progress;
     planning_server_.publishFeedback(planning);
 
-    if (!continuousMoveToWaypoints(goal->trajectory, goal->groups.front(), plan_status_[goal->trajectory][goal->groups.front()].current_idx, goal->steps)) // fixme 12/8/2015
+    for (auto ee : goal->groups)
     {
-      ROS_ERROR("[AffordanceTemplate::planRequest] execution of plan failed!!");
-      planning.progress = -1;
-      planning_server_.publishFeedback(planning);
-      result.succeeded = false;
-      planning_server_.setSucceeded(result);
-      return;
+      if ( plan_status_[goal->trajectory][ee].plan_valid)
+      {
+        if (!continuousMoveToWaypoints(goal->trajectory, ee, plan_status_[goal->trajectory][ee].current_idx, goal->steps))
+        {
+          ROS_ERROR("[AffordanceTemplate::planRequest] execution of plan failed!!");
+          planning.progress = -1;
+          planning_server_.publishFeedback(planning);
+          result.succeeded = false;
+          planning_server_.setSucceeded(result);
+          return;
+        }
+      }
+      else
+      {
+        ROS_WARN("[AffordanceTemplate::planRequest] no valid plan found for EE %s to execute", ee.c_str());
+      }
     }
   }
 
@@ -2182,7 +2192,7 @@ bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const 
 
   for ( auto& p : continuous_plans_[trajectory])
   {
-    if (p.step == step && p.type == type)
+    if (p.step == step && p.type == type)//add group
     {
       plan = p;
       return true;
@@ -2202,7 +2212,7 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
   {
     for (auto& cp : continuous_plans_[trajectory])
     {
-      if (cp.step == plan.step && cp.type == plan.type)
+      if (cp.step == plan.step && cp.type == plan.type) // add group
       {
         cp.group = plan.group;
         cp.type = plan.type;
