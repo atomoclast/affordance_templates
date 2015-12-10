@@ -35,7 +35,14 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const ros::NodeHandle &
 
     scale_stream_sub_ = nh_.subscribe(base_srv + "scale_object_streamer", 1000, &AffordanceTemplateInterface::handleObjectScaleCallback, this);
 
+    planning_thread_.reset(new boost::thread(boost::bind(&AffordanceTemplateInterface::runPlan, this))); // spin up thread
+
     ROS_INFO("[AffordanceTemplateInterface] services set up...robot ready!");
+}
+
+AffordanceTemplateInterface::~AffordanceTemplateInterface()
+{
+    planning_thread_->join();
 }
 
 bool AffordanceTemplateInterface::handleRobotRequest(GetRobotConfigInfo::Request &req, GetRobotConfigInfo::Response &res)
@@ -149,76 +156,94 @@ bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::R
 bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanCommand::Request &req, AffordanceTemplatePlanCommand::Response &res)
 {
     at_server_->setStatus(false);
-    std::cout<<std::endl; // take out
     ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] new plan request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
 
-    ATPointer at;
-    if (!at_server_->getTemplateInstance(req.type, req.id, at))
-        ROS_ERROR("[AffordanceTemplateInterface::handlePlanCommand] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
-    else
-    {
-        // check if specific trajectory was given
-        if (req.trajectory_name.empty())
-            req.trajectory_name = at->getCurrentTrajectory();
+    planning_mutex_.lock();
+    plan_stack_.push_back(req);
+    planning_mutex_.unlock();
 
-        // // old way of direct planPathToWayoints()
-        // // go through all the EE waypoints in the request
-        // int id = 0; 
-        // int steps = 0;
-
-        // std::vector<std::string> ee_names;
-        // std::map<std::string, bool> ee_path;
-        // for (auto ee : req.end_effectors)
-        // {
-        //     ee_path[ee] = false;
-        //     steps = req.steps[id];
-        //     // make sure EE is in trajectory
-        //     if (!doesEndEffectorExist(at, ee))
-        //         continue;
-        //     ee_names.push_back(ee);
-        //     ++id;
-        // }
-
-        // // compute path plan (returns dictionary of bools keyed off EE name)
-        // ee_path = at->planPathToWaypoints(ee_names, steps, req.direct, req.backwards);
-        // ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] planned path for %lu end-effectors:", ee_path.size());
-        // for (auto ee : ee_path)
-        //     ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] \t%s : %s", ee.first.c_str(), boolToString(ee.second).c_str());
-
-        // new way with actionlib
-        std::string server_name = req.type + "_" + std::to_string(req.id) + "/planning_server";
-        actionlib::SimpleActionClient<affordance_template_msgs::PlanAction> plan_client(server_name, true);
-
-        ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] waiting for action server %s to start...", server_name.c_str());
-        plan_client.waitForServer(); //TODO add timed wait
-        ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] connected to action server. sending goal.");
-
-        affordance_template_msgs::PlanGoal goal;
-        for (auto ee : req.end_effectors)
-            goal.groups.push_back(ee);
-        goal.trajectory = req.trajectory_name;
-        goal.steps = 0; // 0 to plan for all steps
-        goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN;
-        goal.backwards = req.backwards;
-        // goal.execute_on_plan = true; //TODO
-        plan_client.sendGoal(goal);
-
-        //wait for the action to return
-        bool finished_before_timeout = plan_client.waitForResult(ros::Duration(60.0));
-        if (finished_before_timeout)
-        {
-            actionlib::SimpleClientGoalState state = plan_client.getState();
-            ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] Action finished: %s",state.toString().c_str());
-        }
-        else
-            ROS_ERROR("[AffordanceTemplateInterface::handlePlanCommand] Action did not finish before the time out.");
-
-        res.affordance_template_status = getTemplateStatus(req.type, req.id, req.trajectory_name);
-    }
+    res.affordance_template_status = getTemplateStatus(req.type, req.id, req.trajectory_name);
 
     at_server_->setStatus(true);
-    std::cout<<std::endl; //take out
     return true;
+}
+
+void AffordanceTemplateInterface::runPlan()
+{
+    ROS_INFO("[AffordanceTemplateInterface::runPlan] spinning up planning thread...");
+    ros::Rate loop_rate(10);
+    while(ros::ok())
+    {
+        if (plan_stack_.size())
+        {
+            affordance_template_msgs::AffordanceTemplatePlanCommand::Request req = plan_stack_.front();
+            planning_mutex_.lock();
+            plan_stack_.pop_front();
+            planning_mutex_.unlock();
+
+            ATPointer at;
+            if (!at_server_->getTemplateInstance(req.type, req.id, at))
+            {
+                ROS_ERROR("[AffordanceTemplateInterface::runPlan] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
+                continue;
+            }
+            
+            // check if specific trajectory was given
+            if (req.trajectory_name.empty())
+                req.trajectory_name = at->getCurrentTrajectory();
+
+            // // old way of direct planPathToWayoints()
+            // // go through all the EE waypoints in the request
+            // int id = 0; 
+            // int steps = 0;
+
+            // std::vector<std::string> ee_names;
+            // std::map<std::string, bool> ee_path;
+            // for (auto ee : req.end_effectors)
+            // {
+            //     ee_path[ee] = false;
+            //     steps = req.steps[id];
+            //     // make sure EE is in trajectory
+            //     if (!doesEndEffectorExist(at, ee))
+            //         continue;
+            //     ee_names.push_back(ee);
+            //     ++id;
+            // }
+
+            // // compute path plan (returns dictionary of bools keyed off EE name)
+            // ee_path = at->planPathToWaypoints(ee_names, steps, req.direct, req.backwards);
+            // ROS_INFO("[AffordanceTemplateInterface::runPlan] planned path for %lu end-effectors:", ee_path.size());
+            // for (auto ee : ee_path)
+            //     ROS_INFO("[AffordanceTemplateInterface::runPlan] \t%s : %s", ee.first.c_str(), boolToString(ee.second).c_str());        
+
+            std::string server_name = req.type + "_" + std::to_string(req.id) + "/planning_server";
+            actionlib::SimpleActionClient<affordance_template_msgs::PlanAction> plan_client(server_name, true);
+
+            ROS_INFO("[AffordanceTemplateInterface::runPlan] waiting for action server %s to start...", server_name.c_str());
+            plan_client.waitForServer(); //TODO add timed wait
+            ROS_INFO("[AffordanceTemplateInterface::runPlan] connected to action server. sending goal.");
+
+            affordance_template_msgs::PlanGoal goal;
+            for (auto ee : req.end_effectors)
+                goal.groups.push_back(ee);
+            goal.trajectory = req.trajectory_name;
+            goal.steps = req.steps.front(); // 0 to plan for all steps
+            goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN;
+            goal.backwards = req.backwards;
+            goal.execute_on_plan = false; //TODO
+            plan_client.sendGoal(goal);
+
+            //wait for the action to return
+            bool finished_before_timeout = plan_client.waitForResult(ros::Duration(60.0));
+            if (finished_before_timeout)
+            {
+                actionlib::SimpleClientGoalState state = plan_client.getState();
+                ROS_INFO("[AffordanceTemplateInterface::runPlan] Action finished: %s",state.toString().c_str());
+            }
+            else
+                ROS_ERROR("[AffordanceTemplateInterface::runPlan] Action did not finish before the time out.");            
+        }   
+    }
 }
 
 bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecuteCommand::Request &req, AffordanceTemplateExecuteCommand::Response &res)

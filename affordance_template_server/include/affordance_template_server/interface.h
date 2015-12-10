@@ -59,6 +59,7 @@ namespace affordance_template_server
         bool handleGetObject(GetObjectPose::Request&, GetObjectPose::Response&);
         bool handleSetWaypointViews(SetWaypointViewModes::Request&, SetWaypointViewModes::Response&);
 
+        void runPlan();
         void handleObjectScaleCallback(const ScaleDisplayObjectInfo&);
         bool doesTrajectoryExist(const ATPointer&, const std::string&);
         bool doesEndEffectorExist(const ATPointer&, const std::string&);
@@ -70,9 +71,13 @@ namespace affordance_template_server
         std::map<std::string, ros::ServiceServer> at_srv_map_;
         ros::NodeHandle nh_;
 
+        std::deque<affordance_template_msgs::AffordanceTemplatePlanCommand::Request> plan_stack_;
+        boost::scoped_ptr<boost::thread> planning_thread_;
+        boost::mutex planning_mutex_;
+
     public:
         AffordanceTemplateInterface(const ros::NodeHandle&, const std::string&);
-        ~AffordanceTemplateInterface() {}
+        ~AffordanceTemplateInterface();
     };       
 }
 
