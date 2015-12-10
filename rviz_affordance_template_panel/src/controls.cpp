@@ -12,13 +12,19 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
     string key = ui_->control_template_box->currentText().toUtf8().constData();
     if(key=="") return false;
 
+    std::cout<<std::endl;
+
     ROS_INFO("Sending Plan command request for a %s", key.c_str());      
 
     vector<string> stuff = util::split(key, ':');
     srv.request.type = stuff[0];
+    ROS_INFO("request type is %s", srv.request.type.c_str());
     srv.request.id = int(atoi(stuff[1].c_str()));
+    ROS_INFO("request ID is %d", srv.request.id);
     srv.request.trajectory_name = template_status_->getCurrentTrajectory();
+    ROS_INFO("request trajectory is %s", srv.request.trajectory_name.c_str());
     srv.request.backwards = (command_type==CommandType::STEP_BACKWARD);
+    ROS_INFO("request to go backwards is %s",(srv.request.backwards==true?"true":"false"));
 
     vector<pair<string,int> > ee_info = getSelectedEndEffectorInfo();
 
@@ -27,6 +33,7 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
             continue;
         }
         srv.request.end_effectors.push_back(ee.first);
+        ROS_INFO("request EE of %s", srv.request.end_effectors.back().c_str());
     }
   
     if(command_type==CommandType::CURRENT) {
@@ -44,6 +51,7 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
                 return false;
             }
             srv.request.steps.push_back(0);
+            ROS_INFO("request to do current step with steps 0"); // <-- needs to == 0 in my actionlib
         }
     } else if(command_type==CommandType::START || command_type==CommandType::END) {
      
@@ -69,7 +77,6 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
             int N = template_status_->getTrajectoryInfo()[srv.request.trajectory_name][ee.first]->num_waypoints;
             int steps = 0;
 
-            
             if(command_type==CommandType::START) {
                 if(idx==-1) {
                     steps = 1;
@@ -87,23 +94,26 @@ bool Controls::requestPlan(Controls::CommandType command_type) {
             }
             srv.request.steps.push_back(steps);
                 
+            ROS_INFO("request will use index %d num wp %d and steps %d", idx, N, steps);
         }
                 
     } else {
         for(auto &ee : ee_info) {
             int steps = ui_->num_steps->text().toInt();
             srv.request.steps.push_back(steps);
+            ROS_INFO("requst will have %d step", srv.request.steps.back());
         }
     }
+
+    std::cout<<std::endl;
               
     if (planService_.call(srv))
     {
         ROS_INFO("PLAN command successful, returned status: %d", (int)(srv.response.status)); // FIXME
         affordance_template_msgs::AffordanceTemplateStatusConstPtr ptr(new affordance_template_msgs::AffordanceTemplateStatus(srv.response.affordance_template_status));
         bool r = template_status_->updateTrajectoryStatus(ptr);
-        if(!r) {
+        if (!r)
             ROS_ERROR("Controls::requestPlan() -- error updating template status");
-        } 
         return r;
     }
     else
@@ -123,31 +133,31 @@ bool Controls::executePlan() {
 
     ROS_INFO("Sending Execute command request for a %s", key.c_str());      
 
-    vector<string> stuff = util::split(key, ':');
-    srv.request.type = stuff[0];
-    srv.request.id = int(atoi(stuff[1].c_str()));
-    srv.request.trajectory_name = template_status_->getCurrentTrajectory();
+    // vector<string> stuff = util::split(key, ':');
+    // srv.request.type = stuff[0];
+    // srv.request.id = int(atoi(stuff[1].c_str()));
+    // srv.request.trajectory_name = template_status_->getCurrentTrajectory();
     
-    vector<pair<string,int> > ee_info = getSelectedEndEffectorInfo();
-    for(auto &ee : ee_info) {
-        srv.request.end_effectors.push_back(ee.first);
-    }
+    // vector<pair<string,int> > ee_info = getSelectedEndEffectorInfo();
+    // for(auto &ee : ee_info) {
+    //     srv.request.end_effectors.push_back(ee.first);
+    // }
 
-    if (executeService_.call(srv))
-    {
-        ROS_INFO("EXECUTE command successful, returned status: %d", (int)(srv.response.status)); // FIXME
-        affordance_template_msgs::AffordanceTemplateStatusConstPtr ptr(new affordance_template_msgs::AffordanceTemplateStatus(srv.response.affordance_template_status));
-        bool r = template_status_->updateTrajectoryStatus(ptr);
-        if(!r) {
-            ROS_ERROR("Controls::exsecutePlan() -- error updating template status");
-        }
-        return r;
-    }
-    else
-    {
-        ROS_ERROR("Failed to call execute service command");
-        return false;
-    }
+    // if (executeService_.call(srv))
+    // {
+    //     ROS_INFO("EXECUTE command successful, returned status: %d", (int)(srv.response.status)); // FIXME
+    //     affordance_template_msgs::AffordanceTemplateStatusConstPtr ptr(new affordance_template_msgs::AffordanceTemplateStatus(srv.response.affordance_template_status));
+    //     bool r = template_status_->updateTrajectoryStatus(ptr);
+    //     if(!r) {
+    //         ROS_ERROR("Controls::exsecutePlan() -- error updating template status");
+    //     }
+    //     return r;
+    // }
+    // else
+    // {
+    //     ROS_ERROR("Failed to call execute service command");
+    //     return false;
+    // }
 
 }
 

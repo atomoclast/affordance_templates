@@ -42,15 +42,15 @@ namespace rviz_affordance_template_panel
         Controls();
         ~Controls() {};
 
-        void setServices(ros::ServiceClient plan_srv, ros::ServiceClient execute_srv) { planService_ = plan_srv; executeService_ = execute_srv; };
-        void setRobotMap(std::map<std::string, RobotConfigSharedPtr> map) { robotMap_ = map; };
-        void setRobotName(std::string name) { robotName_ = name; };
-        void setTemplateStatusInfo(AffordanceTemplateStatusInfo *template_status) { template_status_ = template_status; }
+        inline void setServices(ros::ServiceClient plan_srv, ros::ServiceClient execute_srv) { planService_ = plan_srv; executeService_ = execute_srv; }
+        inline void setRobotMap(std::map<std::string, RobotConfigSharedPtr> map) { robotMap_ = map; }
+        inline void setRobotName(std::string name) { robotName_ = name; }
+        inline void setTemplateStatusInfo(AffordanceTemplateStatusInfo *template_status) { template_status_ = template_status; }
+        inline void setUI(Ui::RVizAffordanceTemplatePanel* ui) { ui_ = ui; }
+        inline AffordanceTemplateStatusInfo * getTemplateStatusInfo() { return template_status_; }
+        
         bool requestPlan(Controls::CommandType command_type);
         bool executePlan();
-        void setUI(Ui::RVizAffordanceTemplatePanel* ui) { ui_ = ui; }
-
-        AffordanceTemplateStatusInfo * getTemplateStatusInfo() { return template_status_; }
         std::vector<std::pair<std::string,int> > getSelectedEndEffectorInfo();
 
     private:
