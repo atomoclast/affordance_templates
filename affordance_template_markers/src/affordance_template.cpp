@@ -18,8 +18,8 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   root_object_(""),
   loop_rate_(10.0),
   object_controls_display_on_(true),
-  planning_server_(nh, ("affordance_template/" + template_type + "_" + std::to_string(id) + "/planning_server"), boost::bind(&AffordanceTemplate::planRequest, this, _1), false),
-  execution_server_(nh, ("affordance_template/" + template_type + "_" + std::to_string(id) + "/execution_server"), boost::bind(&AffordanceTemplate::executeRequest, this, _1), false)
+  planning_server_(nh, (template_type + "_" + std::to_string(id) + "/planning_server"), boost::bind(&AffordanceTemplate::planRequest, this, _1), false),
+  execution_server_(nh, (template_type + "_" + std::to_string(id) + "/execution_server"), boost::bind(&AffordanceTemplate::executeRequest, this, _1), false)
 {
   ROS_INFO("AffordanceTemplate::init() -- Done Creating new AffordanceTemplate of type %s for robot: %s", template_type_.c_str(), robot_name_.c_str());
   name_ = template_type_ + ":" + std::to_string(id);
@@ -1525,23 +1525,13 @@ bool AffordanceTemplate::computePathSequence(AffordanceTemplateStructure structu
 
 void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 {
-  ROS_INFO("[AffordanceTemplate::planRequest] request to plan for current trajectory...");
+  ROS_INFO("[AffordanceTemplate::planRequest] request to plan for \"%s\" trajectory...", goal->trajectory.c_str());
 
   PlanResult result;
   PlanFeedback planning;
 
   planning.progress = 1;
   planning_server_.publishFeedback(planning);
-
-  if (goal->trajectory.empty())
-  {
-    ROS_ERROR("[AffordanceTemplate::planRequest] no trajectory provided");
-    planning.progress = -1;
-    planning_server_.publishFeedback(planning);
-    result.succeeded = false;
-    planning_server_.setSucceeded(result);
-    return;
-  }
 
   for (auto ee : goal->groups) 
   {
