@@ -2149,8 +2149,13 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
       ROS_INFO("[AffordanceTemplate::setObjectPose] matched object %s in frame: %s", obj_name.c_str(), obj.stamped_pose.header.frame_id.c_str());
 
       geometry_msgs::PoseStamped ps;
-      tf_listener_.transformPose (frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
-
+      try {
+        ros::Time now = ros::Time::now();
+        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, now, ros::Duration(3.0));
+        tf_listener_.transformPose(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
+      } catch(...) {
+        ROS_WARN("tf lookup error");  
+      }
       frame_store_[obj_name].second = ps;
 
       server_->setPose(obj_name, ps.pose);
