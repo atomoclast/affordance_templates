@@ -109,7 +109,8 @@ namespace affordance_template
     void setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface);
     bool setObjectPose(const affordance_template_msgs::DisplayObjectInfo&);
     bool setWaypointViewMode(int ee, int wp, bool m);
-
+    bool setTemplatePose(geometry_msgs::PoseStamped ps);
+    
   private:
     
     // menu config will hold the menu text as well as bool for whether it should have a checkbox
