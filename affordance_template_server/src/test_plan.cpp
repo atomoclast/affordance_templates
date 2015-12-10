@@ -21,22 +21,22 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   
   // TESTTTTTT
-  actionlib::SimpleActionClient<affordance_template_msgs::PlanAction> ac("/affordance_template/Wheel_0/planning_server", true);
+  actionlib::SimpleActionClient<affordance_template_msgs::PlanAction> ac("/affordance_template/TestWheel_0/planning_server", true);
 
   ROS_INFO("Waiting for action server to start.");
   ac.waitForServer(); //will wait for infinite time
   ROS_INFO("Action server started, sending goal.");
   
   affordance_template_msgs::PlanGoal goal;
-  goal.groups.push_back("left_hand");
-  goal.steps = 1; // 0 to plan for all steps
+  goal.groups.push_back("left_hand"); // should be trajectory?? and have AT figure out which groups are in thet rajectory??
+  goal.steps = 0; // 0 to plan for all steps
   goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN;
   goal.backwards = false;
-  goal.execute_on_plan = false;
+  goal.execute_on_plan = true;
   ac.sendGoal(goal);
 
   //wait for the action to return
-  bool finished_before_timeout = ac.waitForResult(ros::Duration(30.0));
+  bool finished_before_timeout = ac.waitForResult(ros::Duration(60.0));
 
   if (finished_before_timeout)
   {
