@@ -1545,7 +1545,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     plan_status_[goal->trajectory][ee].sequence_ids.clear();
     plan_status_[goal->trajectory][ee].sequence_poses.clear();
 
-    bool skip = false;
+    bool skip = true;
     
     // get our waypoints for this trajectory so we can get the EE pose IDs
     int ee_id = robot_interface_->getEEID(ee);
@@ -1557,11 +1557,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         for(auto &ee_list : traj.ee_waypoint_list) 
         {
           if(ee_list.id == ee_id) 
-            wp_vec = ee_list.waypoints;
-          else if(ee_list.id != ee_id) 
           {
-            ROS_WARN("[AffordanceTemplate::planRequest] EE %s does not have any waypoints in this trajectory", ee.c_str());
-            skip = true;
+            wp_vec = ee_list.waypoints;
+            skip = false;
           }
         }
       }
