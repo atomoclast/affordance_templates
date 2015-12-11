@@ -88,7 +88,7 @@ namespace affordance_template
     void stop();
     void update();
     bool addTrajectory(const std::string&);
-    bool continuousMoveToWaypoints(const std::string&, const std::string&, int, int);
+    bool continuousMoveToWaypoints(const std::string&, const std::string&);
     bool moveToWaypoints(const std::vector<std::string>&);
     bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
@@ -150,7 +150,6 @@ namespace affordance_template
     bool object_controls_display_on_;
     bool running_;
     
-
     boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
     boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface_;
 
