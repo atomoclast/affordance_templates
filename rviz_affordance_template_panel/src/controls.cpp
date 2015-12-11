@@ -12,8 +12,6 @@ bool Controls::requestPlan(Controls::CommandType command_type)
     string key = ui_->control_template_box->currentText().toUtf8().constData();
     if(key=="") return false;
 
-    ROS_INFO("Sending Plan command request for a %s", key.c_str());
-
     vector<string> stuff = util::split(key, ':');
     srv.request.type = stuff[0];
     srv.request.id = int(atoi(stuff[1].c_str()));
@@ -43,7 +41,6 @@ bool Controls::requestPlan(Controls::CommandType command_type)
                 return false;
             }
             srv.request.steps.push_back(0);
-            ROS_WARN("request to do current step with steps 0"); // <-- needs to == 0 in my actionlib
         }
     } else if(command_type==CommandType::START || command_type==CommandType::END) {
      
@@ -93,7 +90,6 @@ bool Controls::requestPlan(Controls::CommandType command_type)
         for(auto &ee : ee_info) {
             int steps = ui_->num_steps->text().toInt();
             srv.request.steps.push_back(steps);
-            ROS_WARN("requst will have %d step", srv.request.steps.back());
         }
     }
               

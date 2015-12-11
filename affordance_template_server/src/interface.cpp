@@ -219,11 +219,10 @@ void AffordanceTemplateInterface::runPlanAction()
             ROS_INFO("[AffordanceTemplateInterface::runPlanAction] connected to action server. sending goal.");
 
             affordance_template_msgs::PlanGoal goal;
-            for (auto ee : req.end_effectors)
-                goal.groups.push_back(ee);
             goal.trajectory = req.trajectory_name;
-            goal.steps = req.steps.front(); // 0 to plan for all steps
-            goal.planning = affordance_template_msgs::PlanGoal::CARTESIAN; // TODO
+            goal.groups = req.end_effectors;
+            goal.steps = req.steps.front();
+            goal.direct = req.direct;
             goal.backwards = req.backwards;
             goal.execute_on_plan = false; // TODO
             plan_client.sendGoal(goal);
@@ -275,10 +274,7 @@ void AffordanceTemplateInterface::runExecuteAction()
 
             affordance_template_msgs::ExecuteGoal goal;
             goal.trajectory = req.trajectory_name;
-            for (auto ee : req.end_effectors)
-                goal.groups.push_back(ee);
-            goal.index = 0; // TODO
-            goal.steps = 0; // do max trajectory steps
+            goal.groups = req.end_effectors;
             exe_client.sendGoal(goal);
 
             //wait for the action to return

@@ -1538,9 +1538,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     ++planning.progress;
     planning_server_.publishFeedback(planning);
 
-    plan_status_[goal->trajectory][ee].direct     = false;
     plan_status_[goal->trajectory][ee].plan_valid = false;
     plan_status_[goal->trajectory][ee].exec_valid = false;
+    plan_status_[goal->trajectory][ee].direct     = goal->direct;
     plan_status_[goal->trajectory][ee].backwards  = goal->backwards;
     plan_status_[goal->trajectory][ee].sequence_ids.clear();
     plan_status_[goal->trajectory][ee].sequence_poses.clear();
