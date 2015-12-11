@@ -1,8 +1,6 @@
 #goal
-string trajectory
 string[] groups
-int32 index
-int32 steps
+string trajectory
 ---
 #result
 bool succeeded
