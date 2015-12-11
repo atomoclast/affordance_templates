@@ -1566,19 +1566,18 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     }
 
     //
-    // make sure the ee_id (thus, the EE) is in the WP list
+    // make sure the ee_id (thus, the EE) is in the WP list, if not move onto next EE
     if (skip)
       continue;
 
     int max_idx = getNumWaypoints(structure_, goal->trajectory, ee_id);
     int current_idx = plan_status_[goal->trajectory][ee].current_idx;
-    std::string ee_name = robot_interface_->getEEName(ee_id);
     std::string manipulator_name = robot_interface_->getManipulator(ee);
     std::map<std::string, std::vector<geometry_msgs::PoseStamped> > goals;
 
     sensor_msgs::JointState set_state;
     ContinuousPlan p;
-    if (getContinuousPlan( goal->trajectory, (current_idx-1), PlanningGroup::MANIPULATOR, p))
+    if (getContinuousPlan( goal->trajectory, (current_idx-1), manipulator_name, PlanningGroup::MANIPULATOR, p))
     {
       // index already has been planned for, get the start state
       set_state.header = p.plan.trajectory_.joint_trajectory.header;
@@ -1747,7 +1746,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               planning_server_.publishFeedback(planning);
 
               std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
-              ee_goals[ee_name].push_back(ee_js);
+              ee_goals[ee].push_back(ee_js);
               if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false))
               {
                 ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
@@ -1771,7 +1770,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               // }
               //##################################################################
 
-              if (!robot_interface_->getPlanner()->getPlan(ee_name, plan))
+              if (!robot_interface_->getPlanner()->getPlan(ee, plan))
               {
                 ROS_FATAL("[AffordanceTemplate::planRequest] couldn't find stored plan for %s waypoint!! this shouldn't happen, something is wrong!.", next_path_str.c_str());
                 planning.progress = -1;
@@ -1782,7 +1781,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               }
 
               cp.step = idx;
-              cp.group = ee_name;
+              cp.group = ee;
               cp.type = PlanningGroup::EE;
               cp.start_state = set_state;
               cp.plan = plan;
@@ -1791,7 +1790,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               //
               // doing this lets us append the grasp pose without having the arm go back to init start state
               ContinuousPlan p;
-              getContinuousPlan( goal->trajectory, idx, PlanningGroup::MANIPULATOR, p);
+              getContinuousPlan( goal->trajectory, idx, manipulator_name, PlanningGroup::MANIPULATOR, p);
               p.plan.trajectory_.joint_trajectory.points.push_back(plan.trajectory_.joint_trajectory.points.back());
 
               // set the start state for next iteration
@@ -1800,9 +1799,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
               set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
               set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
-              if (!robot_interface_->getPlanner()->setStartState(ee_name, set_state))
+              if (!robot_interface_->getPlanner()->setStartState(ee, set_state))
               {
-                ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee_name.c_str());
+                ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee.c_str());
                 planning.progress = -1;
                 planning_server_.publishFeedback(planning);
                 result.succeeded = false;
@@ -1834,9 +1833,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         planning_server_.setSucceeded(result);
         return;
       }
-
-      // std::cout<<std::endl; // just clear a line for debugging purposes
-
     } // waypoint loop
   } // ee loop
 
@@ -2015,7 +2011,7 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
   else
     max_idx = (index + steps)-1;
 
-  ROS_INFO("[AffordanceTemplate::continuousMoveToWaypoints] executing trajectory %s starting at index %d for %d steps", trajectory.c_str(), index+1, max_idx);
+  ROS_INFO("[AffordanceTemplate::continuousMoveToWaypoints] executing trajectory %s for EE %s starting at index %d for %d steps", trajectory.c_str(), ee.c_str(), index+1, max_idx);
 
   if (continuous_plans_.find(trajectory) == continuous_plans_.end())
   {
@@ -2030,9 +2026,10 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
     return false;
   }
 
+  std::string manipulator_name = robot_interface_->getManipulator(ee);
   std::vector<std::pair<std::string, moveit::planning_interface::MoveGroup::Plan> > plans_to_exe;
   for ( auto& p : continuous_plans_[trajectory])
-    if (p.step >= index && p.step <= max_idx) 
+    if (p.step >= index && p.step <= max_idx && (p.group == ee || p.group == manipulator_name)) 
       plans_to_exe.push_back(std::make_pair(p.group, p.plan));
 
   if (!robot_interface_->getPlanner()->executeContinuousPlans(plans_to_exe))
@@ -2173,7 +2170,7 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
   return found;
 }
 
-bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const int step, const PlanningGroup type, ContinuousPlan& plan)
+bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const int step, const std::string& group, const PlanningGroup type, ContinuousPlan& plan)
 {
   if (continuous_plans_.find(trajectory) == continuous_plans_.end())
   {
@@ -2186,7 +2183,7 @@ bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const 
 
   for ( auto& p : continuous_plans_[trajectory])
   {
-    if (p.step == step && p.type == type)//add group
+    if (p.step == step && p.group == group && p.type == type)
     {
       plan = p;
       return true;
@@ -2206,10 +2203,8 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
   {
     for (auto& cp : continuous_plans_[trajectory])
     {
-      if (cp.step == plan.step && cp.type == plan.type) // add group
+      if (cp.step == plan.step && cp.group == plan.group && cp.type == plan.type)
       {
-        cp.group = plan.group;
-        cp.type = plan.type;
         cp.start_state = plan.start_state;
         cp.plan = plan.plan;
         return;

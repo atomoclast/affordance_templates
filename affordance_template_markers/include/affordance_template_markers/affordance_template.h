@@ -58,7 +58,7 @@ namespace affordance_template
 
   struct ContinuousPlan 
   {
-    int step; // -1 --> max_idx
+    int step; // =0 means do max steps
     std::string group; // left_arm, left_hand, etc
     PlanningGroup type;
     sensor_msgs::JointState start_state;
@@ -222,7 +222,7 @@ namespace affordance_template
     void planRequest(const affordance_template_msgs::PlanGoalConstPtr&);
     void executeRequest(const affordance_template_msgs::ExecuteGoalConstPtr&);
 
-    bool getContinuousPlan(const std::string&, const int, const PlanningGroup, ContinuousPlan&);
+    bool getContinuousPlan(const std::string&, const int, const std::string&, const PlanningGroup, ContinuousPlan&);
     void setContinuousPlan(const std::string&, const ContinuousPlan&);
   };
 }
