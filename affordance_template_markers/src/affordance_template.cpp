@@ -1888,15 +1888,21 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
 
   exe.progress = 1;
   execution_server_.publishFeedback(exe);
-
-  if (!continuousMoveToWaypoints(goal->trajectory, goal->groups.front(), goal->index, goal->steps))
+  
+  for (auto ee : goal->groups)
   {
-    ROS_ERROR("[AffordanceTemplate::executeRequest] execution of plan failed!!");
-    exe.progress = -1;
-    execution_server_.publishFeedback(exe);
-    result.succeeded = false;
-    execution_server_.setSucceeded(result);
-    return;
+    if ( plan_status_[goal->trajectory][ee].plan_valid)
+    {
+      if (!continuousMoveToWaypoints(goal->trajectory, ee, plan_status_[goal->trajectory][ee].current_idx, goal->steps))
+      {
+        ROS_ERROR("[AffordanceTemplate::executeRequest] execution of plan failed!!");
+        exe.progress = -1;
+        execution_server_.publishFeedback(exe);
+        result.succeeded = false;
+        execution_server_.setSucceeded(result);
+        return;
+      }
+    }
   }
   
   result.succeeded = true;
