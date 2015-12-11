@@ -32,7 +32,7 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
  */
 bool AffordanceTemplateServer::loadTemplates()
 {
-    ROS_INFO("[AffordanceTemplateServer:loadTemplates] searching for JSON templates in package: %s", pkg_name_.c_str());
+    ROS_INFO("[AffordanceTemplateServer::loadTemplates] searching for JSON templates in package: %s", pkg_name_.c_str());
 
     affordance_template_object::AffordanceTemplateParser atp;
 
