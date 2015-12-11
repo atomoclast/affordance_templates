@@ -893,7 +893,12 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
   std::string dummy_ee_name = "";
   if(robot_name_=="r2") {
-    dummy_ee_name = "left_hand";
+    std::size_t found = current_trajectory_.find("Left");
+    if (found!=std::string::npos) {
+      dummy_ee_name = "left_hand";
+    } else {
+      dummy_ee_name = "right_hand";
+    }
   } else {
     dummy_ee_name = "gripper";
   }
