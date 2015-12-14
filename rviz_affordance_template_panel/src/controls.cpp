@@ -40,7 +40,7 @@ bool Controls::requestPlan(Controls::CommandType command_type)
                 ROS_ERROR("Controls::requestPlan() -- end-effector \'%s\' not found in template status for traj \'%s\'", ee.first.c_str(),srv.request.trajectory_name.c_str());
                 return false;
             }
-            srv.request.steps.push_back(0);
+            srv.request.steps.push_back(-1);
         }
     } else if(command_type==CommandType::START || command_type==CommandType::END) {
      
@@ -127,7 +127,7 @@ bool Controls::executePlan() {
     for(auto &ee : ee_info) {
         srv.request.end_effectors.push_back(ee.first);
     }
-    ROS_WARN("sending command to service");
+    
     if (executeService_.call(srv))
     {
         ROS_INFO("EXECUTE command successful, returned status: %d", (int)(srv.response.status)); // FIXME

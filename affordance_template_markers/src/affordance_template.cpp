@@ -1645,7 +1645,21 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     // now loop through waypoints setting new start state to the last planned joint values
     // FIXME - don't like how I'm doing this, just hacking to get it working for now..
     int idx = current_idx == -1 ? 0 : current_idx; // FIXME
-    int num_steps = goal->steps == 0 ? max_idx : idx + goal->steps; // FIXME
+    int num_steps;
+    switch(goal->steps) // really dislike this
+    {
+      case -1:
+        if (idx > 0)
+          idx += goal->steps;
+        num_steps = idx + 1; // current, "refresh" button
+        break;
+      case 0:
+        num_steps = max_idx;
+        break;
+      default:
+        num_steps = idx + goal->steps;
+        break;
+    } 
     if(goal->direct)  // FIXME
     {
       idx = goal->steps == max_idx ? max_idx-1 : 0;
