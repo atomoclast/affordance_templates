@@ -1481,7 +1481,7 @@ int AffordanceTemplate::getNumWaypoints(const AffordanceTemplateStructure struct
 }
 
 
-bool AffordanceTemplate::computePathSequence(AffordanceTemplateStructure structure, std::string traj_name, int ee_id, int idx, int steps, bool backwards, std::vector<int> &sequence_ids, int &next_path_idx)
+bool AffordanceTemplate::computePathSequence(const AffordanceTemplateStructure structure, std::string traj_name, int ee_id, int idx, int steps, bool direct, bool backwards, std::vector<int> &sequence_ids, int &next_path_idx)
 { 
   sequence_ids.clear();
   if (steps == 0) {
@@ -1646,7 +1646,11 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       ROS_INFO("[AffordanceTemplate::planRequest] configuring plan goal for waypoint %s [%d/%d] for %s[%d] on manipulator=%s", next_path_str.c_str(), idx+1, max_idx, ee.c_str(), ee_id, manipulator_name.c_str());
 
       std::vector<int> sequence_ids;
-      if (!computePathSequence(structure_, goal->trajectory, ee_id, idx, 1, goal->backwards, plan_status_[goal->trajectory][ee].sequence_ids, plan_status_[goal->trajectory][ee].goal_idx)) // FIXME - may need current_idx instead of idx
+      if (!computePathSequence(structure_, goal->trajectory, ee_id, idx, 1,  
+                               plan_status_[goal->trajectory][ee].direct, 
+                               plan_status_[goal->trajectory][ee].backwards, 
+                               plan_status_[goal->trajectory][ee].sequence_ids, 
+                               plan_status_[goal->trajectory][ee].goal_idx)) // FIXME - may need current_idx instead of idx
       {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to get path sequence!!");
         planning.progress = -1;
@@ -1938,7 +1942,7 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
 
     std::vector<int> sequence_ids;
     int next_path_idx;
-    if(computePathSequence(structure_, current_trajectory_, ee_id, current_idx, steps, backwards, sequence_ids, next_path_idx)) {    
+    if(computePathSequence(structure_, current_trajectory_, ee_id, current_idx, steps, direct, backwards, sequence_ids, next_path_idx)) {    
       ROS_INFO("AffordanceTemplate::planPathToWaypoints() -- got path sequence");
       // std::cout << "path sequence: [ ";
       // for (auto i: sequence_ids) {
