@@ -359,6 +359,21 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
   return true;
 }
 
+
+bool AffordanceTemplate::setTemplatePose(geometry_msgs::PoseStamped ps)
+{
+
+  key_ = structure_.name;
+
+    //ps.pose = robot_interface_->getRobotConfig().root_offset;
+    //ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
+  frame_store_[key_] = FrameInfo(key_, ps);
+
+
+  return true;
+}
+    
+
 bool AffordanceTemplate::setWaypointViewMode(int ee, int wp, bool m)
 {
   std::string wp_name = createWaypointID(ee, wp);
@@ -398,7 +413,10 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     geometry_msgs::PoseStamped ps;
     ps.pose = robot_interface_->getRobotConfig().root_offset;
     ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
-    frame_store_[key_] = FrameInfo(key_, ps);
+
+    if(frame_store_.find(key_) == frame_store_.end()) {
+      frame_store_[key_] = FrameInfo(key_, ps);
+    }
   }
 
   for(auto &obj: structure.display_objects) {
@@ -875,7 +893,12 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
   std::string dummy_ee_name = "";
   if(robot_name_=="r2") {
-    dummy_ee_name = "left_hand";
+    std::size_t found = current_trajectory_.find("Left");
+    if (found!=std::string::npos) {
+      dummy_ee_name = "left_hand";
+    } else {
+      dummy_ee_name = "right_hand";
+    }
   } else {
     dummy_ee_name = "gripper";
   }
@@ -2179,29 +2202,31 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 {
   bool found = false;
   
-  ROS_WARN("[AffordanceTemplate::setObjectPose] setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
+  ROS_INFO("[AffordanceTemplate::setObjectPose] setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
   for (auto& d : structure_.display_objects)
   {
-    if (d.name == obj.name)
+    std::string obj_name = obj.name + ":" + std::to_string(obj.id);
+    if (d.name == obj_name)
     {
-      ROS_WARN("[AffordanceTemplate::setObjectPose] matched object %s", obj.name.c_str());
+      ROS_INFO("[AffordanceTemplate::setObjectPose] matched object %s in frame: %s", obj_name.c_str(), obj.stamped_pose.header.frame_id.c_str());
+
+      geometry_msgs::PoseStamped ps;
+      try {
+        ros::Time now = ros::Time::now();
+        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, now, ros::Duration(3.0));
+        tf_listener_.transformPose(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
+      } catch(...) {
+        ROS_WARN("tf lookup error");  
+      }
+      frame_store_[obj_name].second = ps;
+
+      server_->setPose(obj_name, ps.pose);
+              
       found = true;
-
-      d.origin.position[0] = obj.stamped_pose.pose.position.x;
-      d.origin.position[1] = obj.stamped_pose.pose.position.y;
-      d.origin.position[2] = obj.stamped_pose.pose.position.z;
-
-      tf::Quaternion q;
-      tf::quaternionMsgToTF(obj.stamped_pose.pose.orientation, q);
-      double roll, pitch, yaw;
-      tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
-
-      d.origin.orientation[0] = roll;
-      d.origin.orientation[1] = pitch;
-      d.origin.orientation[2] = yaw;
+      break;
     }
   }
-
+  server_->applyChanges();
   return found;
 }
 

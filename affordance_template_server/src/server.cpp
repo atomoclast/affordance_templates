@@ -32,7 +32,7 @@ AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yam
  */
 bool AffordanceTemplateServer::loadTemplates()
 {
-    ROS_INFO("[AffordanceTemplateServer:loadTemplates] searching for JSON templates in package: %s", pkg_name_.c_str());
+    ROS_INFO("[AffordanceTemplateServer::loadTemplates] searching for JSON templates in package: %s", pkg_name_.c_str());
 
     affordance_template_object::AffordanceTemplateParser atp;
 
@@ -307,9 +307,8 @@ bool AffordanceTemplateServer::updateTemplate(const std::string& type, const uin
     if (at_map_.find(key) == at_map_.end())
         return false;
 
-    // ROS_INFO("[AffordanceTemplateServer::updateTemplate] updating %s to X: %g Y: %g Z: %g, x: %g y: %g z: %g w: %g", key.c_str(), pose.pose.position.x, pose.pose.position.y, pose.pose.position.z, pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w);
-    // return at_map_[key]->updatePose(pose); // @steve-todo
-    return true;
+    ROS_INFO("[AffordanceTemplateServer::updateTemplate] updating %s to X: %g Y: %g Z: %g, x: %g y: %g z: %g w: %g", key.c_str(), pose.pose.position.x, pose.pose.position.y, pose.pose.position.z, pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w);
+    return at_map_[key]->setTemplatePose(pose); 
 }
 
 bool AffordanceTemplateServer::getTemplateInstance(const std::string &type, const uint8_t id, boost::shared_ptr<affordance_template::AffordanceTemplate> &ati)

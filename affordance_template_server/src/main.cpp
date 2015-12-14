@@ -15,7 +15,7 @@ int main(int argc, char **argv)
   if (robot_name.empty())
     robot_name = "r2_roscontrol.yaml";
 
- affordance_template_server::AffordanceTemplateInterface ati(nh, robot_name);
+  affordance_template_server::AffordanceTemplateInterface ati(nh, robot_name);
 
   spinner.start();
   ros::waitForShutdown();
