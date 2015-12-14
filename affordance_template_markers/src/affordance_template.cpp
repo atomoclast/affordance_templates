@@ -1484,11 +1484,20 @@ int AffordanceTemplate::getNumWaypoints(const AffordanceTemplateStructure struct
 bool AffordanceTemplate::computePathSequence(const AffordanceTemplateStructure structure, std::string traj_name, int ee_id, int idx, int steps, bool direct, bool backwards, std::vector<int> &sequence_ids, int &next_path_idx)
 { 
   sequence_ids.clear();
-  if (steps == 0) {
+  if (direct)
+  {
+    sequence_ids.push_back(steps);
+    next_path_idx = steps;
+    return true;
+  }
+  else if (steps == 0) 
+  {
     sequence_ids.push_back(idx);
     next_path_idx = idx;
     return true;
-  } else {
+  } 
+  else 
+  {
     int max_idx = getNumWaypoints(structure, traj_name, ee_id)-1;
     int cap = max_idx+1;
     int inc = 1;
@@ -1634,8 +1643,14 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     std::map<int, std::string> ee_pose_map = robot_interface_->getEEPoseNameMap(ee);
 
     // now loop through waypoints setting new start state to the last planned joint values
+    // FIXME - don't like how I'm doing this, just hacking to get it working for now..
     int idx = current_idx == -1 ? 0 : current_idx; // FIXME
-    int num_steps = goal->steps == 0 ? max_idx : idx + goal->steps;
+    int num_steps = goal->steps == 0 ? max_idx : idx + goal->steps; // FIXME
+    if(goal->direct)  // FIXME
+    {
+      idx = goal->steps == max_idx ? max_idx-1 : 0;
+      num_steps = idx + 1;
+    } 
     for (; idx < num_steps && idx < max_idx; ++idx)
     {
       ++planning.progress;
@@ -1645,12 +1660,16 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
       ROS_INFO("[AffordanceTemplate::planRequest] configuring plan goal for waypoint %s [%d/%d] for %s[%d] on manipulator=%s", next_path_str.c_str(), idx+1, max_idx, ee.c_str(), ee_id, manipulator_name.c_str());
 
-      std::vector<int> sequence_ids;
-      if (!computePathSequence(structure_, goal->trajectory, ee_id, idx, 1,  
-                               plan_status_[goal->trajectory][ee].direct, 
-                               plan_status_[goal->trajectory][ee].backwards, 
-                               plan_status_[goal->trajectory][ee].sequence_ids, 
-                               plan_status_[goal->trajectory][ee].goal_idx)) // FIXME - may need current_idx instead of idx
+      if (plan_status_[goal->trajectory][ee].direct)
+      {
+        plan_status_[goal->trajectory][ee].sequence_ids.clear();
+        plan_status_[goal->trajectory][ee].sequence_ids.push_back(goal->steps);
+        plan_status_[goal->trajectory][ee].goal_idx = goal->steps;
+      }
+      else if (!computePathSequence(structure_, goal->trajectory, ee_id, idx, 1, false,
+                                    plan_status_[goal->trajectory][ee].backwards, 
+                                    plan_status_[goal->trajectory][ee].sequence_ids, 
+                                    plan_status_[goal->trajectory][ee].goal_idx)) // FIXME - may need current_idx instead of idx
       {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to get path sequence!!");
         planning.progress = -1;
