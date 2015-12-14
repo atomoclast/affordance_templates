@@ -66,24 +66,24 @@ bool Controls::requestPlan(Controls::CommandType command_type)
             int N = template_status_->getTrajectoryInfo()[srv.request.trajectory_name][ee.first]->num_waypoints;
             int steps = 0;
 
-            if(command_type==CommandType::START) {
-                if(idx==-1) {
-                    steps = 1;
-                } else {
-                    steps = idx;
-                    srv.request.backwards = true;
-                }
-            } else if(command_type==CommandType::END) {
-                if(idx==-1) {
+            // @seth 12/14/2015 -- kind of a hack to have the code match my understanding of what is needing to happen when we move direct
+            // if(command_type==CommandType::START) {
+                // if(idx==-1) {
+                //     steps = 1;
+                // } else {
+                //     steps = idx;
+                //     srv.request.backwards = true;
+                // }
+            // } else 
+            if(command_type==CommandType::END) {
+                // if(idx==-1) {
                     steps = N;
-                } else {
-                    steps = N - idx - 1;
-                    srv.request.backwards = false;
-                }
+                // } else {
+                //     steps = N - idx - 1;
+                //     srv.request.backwards = false;
+                // }
             }
             srv.request.steps.push_back(steps);
-                
-            ROS_WARN("request will use index %d num wp %d and steps %d", idx, N, steps);
         }
                 
     } else {
