@@ -564,8 +564,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
 bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses) 
 {
-  // DEBUG statements -- TODO
-  ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- trajectory: %s", current_trajectory_.c_str());
+  ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- trajectory: %s", current_trajectory_.c_str());
 
   int wp_ids = 0;
 
@@ -583,14 +582,14 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
     int wp_id = 0;
 
-    ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Trajectory for Waypoint[%d]: %s", ee_id, ee_name.c_str());
+    ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() creating Trajectory for Waypoint[%d]: %s", ee_id, ee_name.c_str());
 
     setTrajectoryFlags(traj);
 
     for(auto &wp: wp_list.waypoints) {
 
       std::string wp_name = createWaypointID(ee_id, wp_id);
-      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Waypoint: %s", wp_name.c_str());
+      ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() creating Waypoint: %s", wp_name.c_str());
 
       setupWaypointMenu(structure, wp_name);
       geometry_msgs::Pose display_pose = originToPoseMsg(wp.origin);  
@@ -664,7 +663,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       } catch(...) {
         ee_pose_name = "current";
       }
-      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure()   ee_pose_name[%d]: %s", wp.ee_pose, ee_pose_name.c_str());
+      ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure()   ee_pose_name[%d]: %s", wp.ee_pose, ee_pose_name.c_str());
                
       visualization_msgs::MarkerArray markers;
       end_effector_helper::EndEffectorHelperConstPtr ee_link_data;
@@ -706,7 +705,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
       if(waypoint_flags_[current_trajectory_].compact_view[wp_name]) {
         int N = getNumWaypoints(structure, current_trajectory_, ee_id);
-        ROS_WARN("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in COMPACT mode", wp_name.c_str());
+        ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in COMPACT mode", wp_name.c_str());
         visualization_msgs::Marker m;
         m.header.frame_id = ee_frame_name;
         m.ns = name_;
@@ -721,7 +720,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         m.pose.orientation.w = 1;
         menu_control.markers.push_back( m );
       } else {
-        ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in FULL mode", wp_name.c_str());
+        ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in FULL mode", wp_name.c_str());
         for(auto &m: markers.markers) {
           visualization_msgs::Marker ee_m = m;
           ee_m.header.frame_id = tf_frame_name;
@@ -758,7 +757,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       wp_id++;
     }
   }
-  ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- done");
+  ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- done");
  
   return true;
 }
@@ -861,7 +860,7 @@ int AffordanceTemplate::getEEIDfromWaypointName(const std::string wp_name)
 
 void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMarker m)
 {
-  ROS_INFO("AffordanceTemplate::addInteractiveMarker() -- %s with frame: %s", m.name.c_str(), m.header.frame_id.c_str());
+  ROS_DEBUG("AffordanceTemplate::addInteractiveMarker() -- %s with frame: %s", m.name.c_str(), m.header.frame_id.c_str());
   std::string name = m.name;
   int_markers_[m.name] = m;
   server_->insert(m);
@@ -870,7 +869,7 @@ void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMar
 
 void AffordanceTemplate::removeInteractiveMarker(std::string marker_name) 
 {
-  ROS_INFO("[AffordanceTemplate::removeInteractiveMarker] removing marker %s", marker_name.c_str());
+  ROS_DEBUG("[AffordanceTemplate::removeInteractiveMarker] removing marker %s", marker_name.c_str());
   server_->erase(marker_name);
   server_->applyChanges();
 }
