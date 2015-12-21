@@ -1,5 +1,5 @@
 robot_name: fetch
-planner_type: moveit
+planner_type: tracik
 config_package: fetch_moveit_config
 config_file: config/fetch.srdf
 frame_id: base_link
