@@ -12,8 +12,8 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
 
-#include <planner_interface/planner_interface.h>
 #include <moveit_planner/moveit_planner.h>
+#include <tracik_planner/tracik_planner.h>
 
 #include <end_effector_helper/end_effector_helper.h>
 

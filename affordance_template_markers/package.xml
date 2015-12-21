@@ -17,6 +17,7 @@
   <build_depend>interactive_markers</build_depend>
   <build_depend>planner_interface</build_depend>
   <build_depend>moveit_planner</build_depend>
+  <build_depend>tracik_planner</build_depend>
   <build_depend>end_effector_helper</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>nav_msgs</build_depend>
@@ -30,6 +31,7 @@
   <run_depend>interactive_markers</run_depend>
   <run_depend>planner_interface</run_depend>
   <run_depend>moveit_planner</run_depend>
+  <run_depend>tracik_planner</run_depend>
   <run_depend>end_effector_helper</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>nav_msgs</run_depend>

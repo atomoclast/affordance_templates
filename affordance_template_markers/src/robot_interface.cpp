@@ -241,6 +241,11 @@ bool RobotInterface::configure() // TODO
     // robot_planner_ = new moveit_planner::MoveItPlanner(robot_config_.name, config_file_); // TODO?? not implemented this way with cpp rewrite
     robot_planner_ = new moveit_planner::MoveItPlanner();
   }
+  else if (robot_config_.planner_type == "trac_ik")
+  {
+    // robot_planner_ = new moveit_planner::MoveItPlanner(robot_config_.name, config_file_); // TODO?? not implemented this way with cpp rewrite
+    robot_planner_ = new tracik_planner::TracIKPlanner();
+  }
   else if (robot_config_.planner_type == "atlas")
   {
     ROS_WARN("[RobotInterface::configure] nothing for atlas planner yet...");
