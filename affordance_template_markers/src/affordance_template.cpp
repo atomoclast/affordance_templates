@@ -2279,5 +2279,5 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
     continuous_plans_[trajectory].push_back(plan);
   }
 
-  ROS_DEBUG("[AffordanceTemplate::setContinuousPlan] there are now %d plans", continuous_plans_[trajectory].size());
+  ROS_DEBUG("[AffordanceTemplate::setContinuousPlan] there are now %d plans", (int)continuous_plans_[trajectory].size());
 }
