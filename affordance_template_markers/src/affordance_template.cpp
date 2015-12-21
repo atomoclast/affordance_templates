@@ -1737,8 +1737,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         }
         //##################################################################
 
-        current_idx = plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx; // keep track of the current index based on what we planned
         plan_status_[goal->trajectory][ee].plan_valid = true;
+        plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
         
         moveit::planning_interface::MoveGroup::Plan plan;
         if (!robot_interface_->getPlanner()->getPlan(manipulator_name, plan))
@@ -1879,6 +1879,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
             return;
           }
         }
+
+         // keep track of the current index based on what we planned
+        current_idx = plan_status_[goal->trajectory][ee].current_idx;
 
         ++planning.progress;
         planning_server_.publishFeedback(planning);
