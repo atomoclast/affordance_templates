@@ -1951,6 +1951,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
           }
         }
 
+        // keep track of the current index based on what we planned
+        current_idx = plan_status_[goal->trajectory][ee].current_idx;
+
         ++planning.progress;
         planning_server_.publishFeedback(planning);
       } 
