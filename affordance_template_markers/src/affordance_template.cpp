@@ -609,6 +609,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       int_marker.name = wp_name;
       int_marker.description = wp_name;
       int_marker.scale = wp.controls.scale;
+
     
       if(!keep_poses || !hasWaypointFrame(wp_name) ) {
         //store base WP pose to publish by TF
@@ -706,7 +707,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
       if(waypoint_flags_[current_trajectory_].compact_view[wp_name]) {
         int N = getNumWaypoints(structure, current_trajectory_, ee_id);
-        ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in COMPACT mode", wp_name.c_str());
+        ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in COMPACT mode", wp_name.c_str());
         visualization_msgs::Marker m;
         m.header.frame_id = ee_frame_name;
         m.ns = name_;
@@ -721,7 +722,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         m.pose.orientation.w = 1;
         menu_control.markers.push_back( m );
       } else {
-        ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in FULL mode", wp_name.c_str());
+        ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in FULL mode", wp_name.c_str());
         for(auto &m: markers.markers) {
           visualization_msgs::Marker ee_m = m;
           ee_m.header.frame_id = tf_frame_name;
@@ -754,11 +755,11 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
       marker_menus_[wp_name].apply( *server_, wp_name );
       server_->applyChanges();          
-
+ 
       wp_id++;
     }
   }
-  ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- done");
+  ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- done");
  
   return true;
 }
@@ -1068,35 +1069,17 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                   std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
                   if (wp_name == feedback->marker_name)
                   {
-                    ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] for EE waypoint: %s", feedback->marker_name.c_str());
-                    ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] -- display object: %s",  appendID(wp.display_object).c_str());
-                    ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] -- ee_pose: %d", wp.ee_pose);
-
-                    affordance_template_object::EndEffectorWaypoint eewp, wp_next;
-                    eewp.ee_pose = wp.ee_pose;
-                    eewp.display_object = wp.display_object;//appendID(wp.display_object);
- 
-                    eewp.origin = wp.origin;
-                    
-                    if(wp_id > 0) {
-                      ROS_WARN("averging position with wp %d", wp_id-1);
-                      wp_next = wp_list.waypoints[wp_id-1];
-                      eewp.origin.position[0] = (wp_next.origin.position[0] + wp.origin.position[0])/2.0;
-                      eewp.origin.position[1] = (wp_next.origin.position[1] + wp.origin.position[1])/2.0;
-                      eewp.origin.position[2] = (wp_next.origin.position[2] + wp.origin.position[2])/2.0;
-                    } else {
-                      eewp.origin.position[0] = wp.origin.position[0] - 0.025;
-                      eewp.origin.position[1] = wp.origin.position[1] - 0.025;
-                      eewp.origin.position[2] = wp.origin.position[2] - 0.025;
-                    }
-
-                    
-                    eewp.controls = wp.controls;
-                    // wp_list.waypoints.insert(wp_list.waypoints.begin()+wp_id, eewp);
-                    insertWaypointInList(eewp, wp_id, wp_list);
-
-                    removeAllMarkers();
-                    createFromStructure(structure_, true, true, current_trajectory_); 
+                    ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint Before] for EE waypoint %s", feedback->marker_name.c_str());
+                    // TODO and FIXME - this is all just testing insertion
+                    affordance_template_object::EndEffectorWaypoint eewp;
+                    eewp.ee_pose = 1;
+                    eewp.display_object = "test_before_object";
+                    eewp.origin.position[0] = eewp.origin.position[1] = eewp.origin.position[2] = 1.0;
+                    eewp.origin.orientation[0] = eewp.origin.orientation[1] = eewp.origin.orientation[2] = 0.0;
+                    eewp.controls.translation[0] = eewp.controls.translation[1] = eewp.controls.translation[2] = true;
+                    eewp.controls.rotation[0] = eewp.controls.rotation[1] = eewp.controls.rotation[2] = true;
+                    eewp.controls.scale = 1.0;
+                    wp_list.waypoints.insert(wp_list.waypoints.begin(), eewp);
 
                     found = true;
                     break;
@@ -1135,51 +1118,17 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                 {
                   if (wp_list.id == robot_interface_->getEEID(ee.second))
                   {
-                    
-                    ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] for trajectory: %s and end effector: %s", current_trajectory_.c_str(), robot_interface_->getReadableEEName(ee.second).c_str());
-                    ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] -- display object: %s",  feedback->marker_name.c_str());
-
-                    affordance_template_object::EndEffectorWaypoint wp, eewp;
-                    
-                    if(wp_list.waypoints.size() > 0) {
-                      wp = wp_list.waypoints[0];
-                      eewp = wp;
-                    } else {
-                      wp.ee_pose = 0;
-                      wp.origin.orientation[3] = 1.0;
-                    }
-                    ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] -- ee_pose: %d", wp.ee_pose);
-
-                    std::vector<std::string> keys;
-                    boost::split(keys, feedback->marker_name, boost::is_any_of(":"));
-                    eewp.display_object = keys[0];
-
-                    // tweak pos a bit 
-                    eewp.origin.position[0] = wp.origin.position[0] + 0.025;
-                    eewp.origin.position[1] = wp.origin.position[1] + 0.025;
-                    eewp.origin.position[2] = wp.origin.position[2] + 0.025;
-                    
-                    eewp.controls = wp.controls;
-                    // wp_list.waypoints.insert(wp_list.waypoints.begin(), eewp);
-                    insertWaypointInList(eewp, 0, wp_list);
-
-                    removeAllMarkers();
-                    createFromStructure(structure_, true, true, current_trajectory_); 
-
-
-                    // // TODO and FIXME - this is all just testing insertion
-                    // affordance_template_object::EndEffectorWaypoint wp;
-                    // wp.ee_pose = 1; 
-                    // wp.display_object = feedback->marker_name;
-                    // wp.origin.position[0] = wp.origin.position[1] = wp.origin.position[2] = 1.0;
-                    // wp.origin.orientation[0] = wp.origin.orientation[1] = wp.origin.orientation[2] = 0.0;
-                    // wp.controls.translation[0] = wp.controls.translation[1] = wp.controls.translation[2] = true;
-                    // wp.controls.rotation[0] = wp.controls.rotation[1] = wp.controls.rotation[2] = true;
-                    // wp.controls.scale = 1.0;
-                    // wp_list.waypoints.insert(wp_list.waypoints.begin(), wp);
-
-                    // removeAllMarkers();
-                    // createFromStructure(structure_, true, true, current_trajectory_); 
+                    ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint Before] for trajectory: %s and end effector: %s", current_trajectory_.c_str(), robot_interface_->getReadableEEName(ee.second).c_str());
+                    // TODO and FIXME - this is all just testing insertion
+                    affordance_template_object::EndEffectorWaypoint wp;
+                    wp.ee_pose = 1; 
+                    wp.display_object = "test_before_object";
+                    wp.origin.position[0] = wp.origin.position[1] = wp.origin.position[2] = 1.0;
+                    wp.origin.orientation[0] = wp.origin.orientation[1] = wp.origin.orientation[2] = 0.0;
+                    wp.controls.translation[0] = wp.controls.translation[1] = wp.controls.translation[2] = true;
+                    wp.controls.rotation[0] = wp.controls.rotation[1] = wp.controls.rotation[2] = true;
+                    wp.controls.scale = 1.0;
+                    wp_list.waypoints.insert(wp_list.waypoints.begin(), wp);
 
                     found = true;
                     break;
@@ -1859,8 +1808,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         }
         //##################################################################
 
-        current_idx = plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx; // keep track of the current index based on what we planned
         plan_status_[goal->trajectory][ee].plan_valid = true;
+        plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
         
         moveit::planning_interface::MoveGroup::Plan plan;
         if (!robot_interface_->getPlanner()->getPlan(manipulator_name, plan))
@@ -2398,5 +2347,5 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
     continuous_plans_[trajectory].push_back(plan);
   }
 
-  ROS_DEBUG("[AffordanceTemplate::setContinuousPlan] there are now %d plans", (int)(continuous_plans_[trajectory].size()));
+  ROS_DEBUG("[AffordanceTemplate::setContinuousPlan] there are now %d plans", continuous_plans_[trajectory].size());
 }

@@ -1,5 +1,5 @@
 robot_name: atlas
-planner_type: hybrid
+planner_type: tracik
 config_package: atlas_moveit_config
 config_file: config/atlas.srdf
 gripper_action:
