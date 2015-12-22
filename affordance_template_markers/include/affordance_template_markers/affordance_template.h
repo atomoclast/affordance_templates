@@ -194,6 +194,7 @@ namespace affordance_template
     bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_object_poses=false, bool keep_waypoint_poses=false, std::string traj="");
     bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
     bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
+    bool insertWaypointInList(affordance_template_object::EndEffectorWaypoint wp, int id, affordance_template_object::EndEffectorWaypointList &wp_list);
 
     void addInteractiveMarker(visualization_msgs::InteractiveMarker m);
     void removeInteractiveMarker(std::string marker_name);
