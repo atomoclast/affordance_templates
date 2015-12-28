@@ -225,6 +225,8 @@ namespace affordance_template
 
     bool getContinuousPlan(const std::string&, const int, const std::string&, const PlanningGroup, ContinuousPlan&);
     void setContinuousPlan(const std::string&, const ContinuousPlan&);
+
+    bool autoplay_display_;
   };
 }
 

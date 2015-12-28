@@ -29,12 +29,11 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   planning_server_.start();
   execution_server_.start();
  
-  // updateTimer_ = nh_.createTimer(ros::Duration(1.0/loop_rate_), &AffordanceTemplate::updateCallback, this);
   updateThread_.reset(new boost::thread(boost::bind(&AffordanceTemplate::run, this)));
 
   // set to false when template gets destroyed, otherwise we can get a dangling pointer
   running_ = true;
-
+  autoplay_display_ = true;
 }
 
 
@@ -86,6 +85,10 @@ void AffordanceTemplate::setupMenuOptions()
   object_menu_options_.push_back(MenuConfig("Plan and Execute Test", false));
   object_menu_options_.push_back(MenuConfig("Knob Test", false));
 
+  // @seth added 12/28 to start on context menu
+  object_menu_options_.push_back(MenuConfig("Play Plan", false));
+  object_menu_options_.push_back(MenuConfig("Loop Animation", true));
+  object_menu_options_.push_back(MenuConfig("Autoplay", true));
 }
 
 bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose pose, AffordanceTemplateStructure &structure)
@@ -556,6 +559,14 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
       marker_menus_[obj.name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
     }
 
+    // @seth - temp -- there should be a better way to do this
+    key[obj.name] = {"Autoplay"};
+    if(autoplay_display_) {
+      marker_menus_[obj.name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
+    } else {
+      marker_menus_[obj.name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
+    }
+
     marker_menus_[obj.name].apply( *server_, obj.name );
   }
   server_->applyChanges();
@@ -934,6 +945,10 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   MenuHandleKey plan_and_execute_test_key;
   MenuHandleKey knob_test_key;
   MenuHandleKey view_mode_key;
+  
+  MenuHandleKey play_plan_key; // @seth
+  MenuHandleKey loop_key;
+  MenuHandleKey autoplay_key;
 
   wp_before_key[feedback->marker_name] = {"Add Waypoint Before"};
   wp_after_key[feedback->marker_name] = {"Add Waypoint After"};
@@ -946,6 +961,10 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   execute_test_key[feedback->marker_name] = {"Execute Test"};
   plan_and_execute_test_key[feedback->marker_name] = {"Plan and Execute Test"};
   knob_test_key[feedback->marker_name] = {"Knob Test"};
+  
+  play_plan_key[feedback->marker_name] = {"Play Plan"}; // @seth 
+  loop_key[feedback->marker_name] = {"Loop Animation"};
+  autoplay_key[feedback->marker_name] = {"Autoplay"};
 
   if(hasObjectFrame(feedback->marker_name) || hasWaypointFrame(feedback->marker_name)) {
     geometry_msgs::Pose p = feedback->pose;
@@ -1527,6 +1546,79 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
+      // @seth added 12/28
+      if (group_menu_handles_.find(play_plan_key) != std::end(group_menu_handles_))
+      {
+        if (group_menu_handles_[play_plan_key] == feedback->menu_entry_id)
+        {
+          ROS_INFO("[AffordanceTemplate::processFeedback] playing available plan");
+          robot_interface_->getPlanner()->playPlan();
+        }
+      }
+
+      if (group_menu_handles_.find(loop_key) != std::end(group_menu_handles_))
+      {
+        if (group_menu_handles_[loop_key] == feedback->menu_entry_id)
+        {
+          ROS_INFO("[AffordanceTemplate::processFeedback] changing looping functionality");
+
+          MenuHandleKey key;
+          key[feedback->marker_name] = {"Loop Animation"};
+
+          bool loop = false;
+          if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) 
+          {
+            if(state == interactive_markers::MenuHandler::CHECKED) 
+            {
+              marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
+            }
+            else
+            {
+              marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
+              loop = true; // transitioning from not looping to looping
+            }
+              
+            marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
+            robot_interface_->getPlanner()->loopAnimation(loop);
+          }
+          else
+          {
+            ROS_ERROR("can't get the loop state!!");
+          }
+        }
+      }
+
+      if (group_menu_handles_.find(autoplay_key) != std::end(group_menu_handles_))
+      {
+        if (group_menu_handles_[autoplay_key] == feedback->menu_entry_id)
+        {
+          ROS_WARN("[AffordanceTemplate::processFeedback] flipping autoplay functionality");
+
+          MenuHandleKey key;
+          key[feedback->marker_name] = {"Autoplay"};
+
+          if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) 
+          {
+            if(state == interactive_markers::MenuHandler::CHECKED) 
+            {
+              marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
+              autoplay_display_ = false;
+            }
+            else
+            {
+              marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
+              autoplay_display_ = true;
+            }
+              
+            marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
+          }
+          else
+          {
+            ROS_ERROR("can't get the autoplay state!!");
+          }
+        }
+      }
+
       break;
     }
     default : 
@@ -1792,7 +1884,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       goals[manipulator_name].push_back(pt);
       plan_status_[goal->trajectory][ee].sequence_poses.push_back(pt);
     
-      if (robot_interface_->getPlanner()->planPaths(goals, false, true)) 
+      if (robot_interface_->getPlanner()->planPaths(goals, false, autoplay_display_)) 
       {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         ++planning.progress;
@@ -1877,7 +1969,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
               std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
               ee_goals[ee].push_back(ee_js);
-              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false))
+              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, autoplay_display_))
               {
                 ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
                 planning.progress = -1;
