@@ -86,7 +86,7 @@ void AffordanceTemplate::setupMenuOptions()
   object_menu_options_.push_back(MenuConfig("Knob Test", false));
 
   // @seth added 12/28 to start on context menu
-  object_menu_options_.push_back(MenuConfig("Play Plan", false));
+  object_menu_options_.push_back(MenuConfig("(Re)Play Plan", false));
   object_menu_options_.push_back(MenuConfig("Loop Animation", true));
   object_menu_options_.push_back(MenuConfig("Autoplay", true));
 }
@@ -964,7 +964,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   plan_and_execute_test_key[feedback->marker_name] = {"Plan and Execute Test"};
   knob_test_key[feedback->marker_name] = {"Knob Test"};
   
-  play_plan_key[feedback->marker_name] = {"Play Plan"}; // @seth 
+  play_plan_key[feedback->marker_name] = {"(Re)Play Plan"}; // @seth 
   loop_key[feedback->marker_name] = {"Loop Animation"};
   autoplay_key[feedback->marker_name] = {"Autoplay"};
 
@@ -1728,6 +1728,10 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
   planning.progress = 1;
   planning_server_.publishFeedback(planning);
+
+  // @seth added 12/29
+  // reset prediced display queue
+  robot_interface_->getPlanner()->resetAnimation();
 
   for (auto ee : goal->groups) 
   {
