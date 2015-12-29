@@ -252,6 +252,8 @@ bool AffordanceTemplate::switchTrajectory(const std::string& trajectory_name)
       ROS_ERROR("AffordanceTemplate::switchTrajectory() -- %s failed", trajectory_name.c_str());
       return false;
     }
+
+    // robot_interface_->getPlanner()->resetAnimation(); // @seth added 12/29 FIXME
   }
  return true;
 }
@@ -1552,7 +1554,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         if (group_menu_handles_[play_plan_key] == feedback->menu_entry_id)
         {
           ROS_INFO("[AffordanceTemplate::processFeedback] playing available plan");
-          robot_interface_->getPlanner()->playPlan();
+          robot_interface_->getPlanner()->playAnimation();
         }
       }
 
