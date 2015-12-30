@@ -1833,6 +1833,22 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     // get list of EE pose names related to ID
     std::map<int, std::string> ee_pose_map = robot_interface_->getEEPoseNameMap(ee);
 
+    // testing debug
+    if (!computePathSequence(structure_, goal->trajectory, ee_id, 
+                            plan_status_[goal->trajectory][ee].current_idx,
+                            goal->steps, false,
+                            plan_status_[goal->trajectory][ee].backwards, 
+                            plan_status_[goal->trajectory][ee].sequence_ids, 
+                            plan_status_[goal->trajectory][ee].goal_idx)
+    {
+      ROS_ERROR("[AffordanceTemplate::planRequest] failed to get path sequence!!");
+      planning.progress = -1;
+      planning_server_.publishFeedback(planning);
+      result.succeeded = false;
+      planning_server_.setSucceeded(result);
+      return;
+    }
+
     // now loop through waypoints setting new start state to the last planned joint values
     // FIXME - don't like how I'm doing this, just hacking to get it working for now..
     int idx = current_idx == -1 ? 0 : current_idx; // FIXME
@@ -1883,6 +1899,10 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         planning_server_.setSucceeded(result);
         return;
       }
+
+      for(auto id : plan_status_[goal->trajectory][ee].sequence_ids)
+        ROS_WARN("sequence_ids in the loop %d", id);
+      continue;
 
       // create goal
       goals[manipulator_name].clear();
@@ -2117,7 +2137,11 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
         continuous_plans_[goal->trajectory].clear();
 
         // @seth TODO 12/30 should increment the current index for the trajectory plan
-
+        // the plan button is for "from the waypoint i am currently add, i should plan num_steps ahead"
+        // you only increment the counter after you execute
+        // so the idea is you start at -1, cause you are not "on" the waypoint trajectory
+        // you can plan to the 1st waypoint, or n-steps through from -1
+    
         return;
       }
     }
