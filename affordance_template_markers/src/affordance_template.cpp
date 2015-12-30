@@ -1896,15 +1896,15 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         ++planning.progress;
         planning_server_.publishFeedback(planning);
 
-        //########################  TAKE OUT  ##############################
-        //##################################################################
-        ros::Time start_t = ros::Time::now();
-        while(ros::ok() && ros::Time::now() - start_t < ros::Duration(2.0))
-        {
-          ros::spinOnce();
-          ros::Duration(0.01).sleep(); 
-        }
-        //##################################################################
+        // //########################  TAKE OUT  ##############################
+        // //##################################################################
+        // ros::Time start_t = ros::Time::now();
+        // while(ros::ok() && ros::Time::now() - start_t < ros::Duration(2.0))
+        // {
+        //   ros::spinOnce();
+        //   ros::Duration(0.01).sleep(); 
+        // }
+        // //##################################################################
 
         plan_status_[goal->trajectory][ee].plan_valid = true;
         plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
@@ -1985,19 +1985,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
                 return;
               }
 
-              //########################  TAKE OUT  ##############################
-              //##################################################################
-              // FIXME even though we are telling the planner NOT to display the 
-              //       grasp plan, it still wants to - especially with this wait
-              //       so if the wait is not in there then it doesn't seem to 
-              //       display the planned grasp at all..
-              // start_t = ros::Time::now();
-              // while(ros::ok() && ros::Time::now() - start_t < ros::Duration(4.0))
-              // {
-              //   ros::Duration(0.01).sleep(); // TODO take out
-              // }
-              //##################################################################
-
               if (!robot_interface_->getPlanner()->getPlan(ee, plan))
               {
                 ROS_FATAL("[AffordanceTemplate::planRequest] couldn't find stored plan for %s waypoint!! this shouldn't happen, something is wrong!.", next_path_str.c_str());
@@ -2050,7 +2037,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         }
 
         // keep track of the current index based on what we planned
-        current_idx = plan_status_[goal->trajectory][ee].current_idx;
+        // current_idx = plan_status_[goal->trajectory][ee].current_idx;
 
         ++planning.progress;
         planning_server_.publishFeedback(planning);
@@ -2128,6 +2115,8 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
         
         // clear out whatever plans we may have
         continuous_plans_[goal->trajectory].clear();
+
+        // @seth TODO 12/30 should increment the current index for the trajectory plan
 
         return;
       }
