@@ -1917,21 +1917,21 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       goals[manipulator_name].push_back(pt);
       plan_status_[goal->trajectory][ee].sequence_poses.push_back(pt);
     
-      if (robot_interface_->getPlanner()->planPaths(goals, false, autoplay_display_)) 
+      if (robot_interface_->getPlanner()->planPaths(goals, false, false))
       {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         ++planning.progress;
         planning_server_.publishFeedback(planning);
 
-        //########################  TAKE OUT  ##############################
-        //##################################################################
-        ros::Time start_t = ros::Time::now();
-        while(ros::ok() && ros::Time::now() - start_t < ros::Duration(2.0))
-        {
-          ros::spinOnce();
-          ros::Duration(0.01).sleep(); 
-        }
-        //##################################################################
+        // //########################  TAKE OUT  ##############################
+        // //##################################################################
+        // ros::Time start_t = ros::Time::now();
+        // while(ros::ok() && ros::Time::now() - start_t < ros::Duration(2.0))
+        // {
+        //   ros::spinOnce();
+        //   ros::Duration(0.01).sleep(); 
+        // }
+        // //##################################################################
 
         plan_status_[goal->trajectory][ee].plan_valid = true;
         // plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx; // <-- what is this
@@ -2002,7 +2002,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
               std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
               ee_goals[ee].push_back(ee_js);
-              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, autoplay_display_))
+              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false)) // @seth TODO autoplay_display_
               {
                 ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
                 planning.progress = -1;
@@ -2080,6 +2080,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       }
     } // waypoint loop
   } // ee loop
+
+  if (autoplay_display_)
+    robot_interface_->getPlanner()->playAnimation();
 
   // ++planning.progress;
   // planning_server_.publishFeedback(planning);
