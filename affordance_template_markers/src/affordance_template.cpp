@@ -1678,7 +1678,7 @@ bool AffordanceTemplate::computePathSequence(const AffordanceTemplateStructure s
   sequence_ids.clear();
   if (direct)
   {
-    sequence_ids.push_back(steps);
+    sequence_ids.push_back(steps-1);
     next_path_idx = steps;
     return true;
   }
@@ -1734,8 +1734,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
   planning.progress = 1;
   planning_server_.publishFeedback(planning);
 
-  // @seth added 12/29
-  // reset prediced display queue
   robot_interface_->getPlanner()->resetAnimation();
 
   for (auto ee : goal->groups) 
@@ -1838,7 +1836,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     // get list of EE pose names related to ID
     std::map<int, std::string> ee_pose_map = robot_interface_->getEEPoseNameMap(ee);
 
-    // testing debug
+    //
+    // find our sequence IDs first - will use these to loop on
     if (!computePathSequence(structure_, goal->trajectory, ee_id, 
                             plan_status_[goal->trajectory][ee].current_idx,
                             goal->steps, goal->direct,
@@ -1853,9 +1852,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       planning_server_.setSucceeded(result);
       return;
     }
-
-    for(auto id : plan_status_[goal->trajectory][ee].sequence_ids)
-        ROS_WARN("sequence_ids out of the loop %d", id);
 
     // // now loop through waypoints setting new start state to the last planned joint values
     // // FIXME - don't like how I'm doing this, just hacking to get it working for now..
@@ -2151,6 +2147,7 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
         // you only increment the counter after you execute
         // so the idea is you start at -1, cause you are not "on" the waypoint trajectory
         // you can plan to the 1st waypoint, or n-steps through from -1
+        plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx; // <-- what is this
     
         return;
       }
