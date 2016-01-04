@@ -252,8 +252,6 @@ bool AffordanceTemplate::switchTrajectory(const std::string& trajectory_name)
       ROS_ERROR("AffordanceTemplate::switchTrajectory() -- %s failed", trajectory_name.c_str());
       return false;
     }
-
-    // robot_interface_->getPlanner()->resetAnimation(); // @seth added 12/29 FIXME
   }
  return true;
 }
@@ -2143,11 +2141,8 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
         continuous_plans_[goal->trajectory].clear();
 
         // @seth TODO 12/30 should increment the current index for the trajectory plan
-        // the plan button is for "from the waypoint i am currently add, i should plan num_steps ahead"
-        // you only increment the counter after you execute
-        // so the idea is you start at -1, cause you are not "on" the waypoint trajectory
-        // you can plan to the 1st waypoint, or n-steps through from -1
-        plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx; // <-- what is this
+        plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
+        robot_interface_->getPlanner()->resetAnimation(); // @seth added 1/4
     
         return;
       }
