@@ -2139,13 +2139,17 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
         
         // clear out whatever plans we may have
         continuous_plans_[goal->trajectory].clear();
-
-        // @seth TODO 12/30 should increment the current index for the trajectory plan
-        plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
         robot_interface_->getPlanner()->resetAnimation(); // @seth added 1/4
     
         return;
       }
+
+      // clear out whatever plans we may have
+      continuous_plans_[goal->trajectory].clear();
+
+      // @seth TODO 12/30 should increment the current index for the trajectory plan
+      plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
+      robot_interface_->getPlanner()->resetAnimation(); // @seth added 1/4
     }
   }
 
