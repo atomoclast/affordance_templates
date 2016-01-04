@@ -795,6 +795,30 @@ bool AffordanceTemplate::insertWaypointInList(affordance_template_object::EndEff
   return true;
 }
 
+bool AffordanceTemplate::getWaypointFromStructure(AffordanceTemplateStructure structure, std::string trajectory, int ee_id, int wp_id, affordance_template_object::EndEffectorWaypoint &wp)
+{
+  bool found = false;
+  for (auto& traj : structure.ee_trajectories)
+  {
+    if (traj.name == trajectory)
+    {
+      for(auto &ee_list : traj.ee_waypoint_list) {
+        if(ee_list.id == ee_id) {
+          if(wp_id < ee_list.waypoints.size()) {
+            wp = ee_list.waypoints[wp_id];
+            return true;
+          } else {
+            ROS_WARN("AffordanceTemplate::getWaypointFromStructure() -- no wp[%d] found for ee[%d] in traj[%s]", wp_id, ee_id, trajectory.c_str());
+            return false;
+          }  
+        }
+      }
+    }
+  }
+  ROS_WARN("AffordanceTemplate::getWaypointFromStructure() -- no traj[%s] found with ee[%d]", trajectory.c_str(), ee_id);
+  return false;
+
+}
 
 void AffordanceTemplate::setupObjectMenu(AffordanceTemplateStructure structure, DisplayObject obj)
 {
@@ -1777,6 +1801,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     int current_idx = plan_status_[goal->trajectory][ee].current_idx;
     std::string manipulator_name = robot_interface_->getManipulator(ee);
     std::map<std::string, std::vector<geometry_msgs::PoseStamped> > goals;
+    std::map<std::string, std::vector<planner_interface::PlanningGoal> > goals_full;
 
     sensor_msgs::JointState set_state;
     ContinuousPlan p;
@@ -1912,8 +1937,29 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       geometry_msgs::PoseStamped pt = frame_store_[next_path_str + "/tf"].second;    
       goals[manipulator_name].push_back(pt);
       plan_status_[goal->trajectory][ee].sequence_poses.push_back(pt);
-    
-      if (robot_interface_->getPlanner()->planPaths(goals, false, false))
+
+      goals_full[manipulator_name].clear();
+      affordance_template_object::EndEffectorWaypoint wp;
+      if(!getWaypointFromStructure(structure_, goal->trajectory, ee_id, plan_seq, wp)) {
+        ROS_ERROR("[AffordanceTemplate::planRequest] -- problem getting waypoint from structure");
+      }
+      planner_interface::PlanningGoal pg;
+      pg.goal = pt;
+      pg.offset = originToPoseMsg(wp.tool_offset);  
+      pg.task_compatibility = taskCompatibilityToPoseMsg(wp.task_compatibility);  
+      pg.conditioning_metric == stringToConditioningMetric(wp.conditioning_metric);
+      pg.type == stringToPlannerType(wp.planner_type);
+     
+      for(int i=0; i<3; i++) {
+        for(int j=0; j<2; j++) {
+          pg.tolerance_bounds[i][j] = wp.bounds.position[i][j];
+          pg.tolerance_bounds[i+3][j] = wp.bounds.orientation[i][j];
+        }
+      }
+
+      goals_full[manipulator_name].push_back(pg);
+      if (robot_interface_->getPlanner()->planPaths(goals_full, false, false))
+      //if (robot_interface_->getPlanner()->planJointPaths(goals, false, false))
       {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         ++planning.progress;
@@ -2240,7 +2286,7 @@ std::map<std::string, bool> AffordanceTemplate::planPathToWaypoints(const std::v
   
   }
 
-  bool result = robot_interface_->getPlanner()->planPaths(goals, false, true);
+  bool result = robot_interface_->getPlanner()->planJointPaths(goals, false, true);
   ROS_INFO("AffordanceTemplate::planPathToWaypoints() -- planner returned with %d", (int)result);
 
   if(result) 
@@ -2468,5 +2514,5 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
     continuous_plans_[trajectory].push_back(plan);
   }
 
-  ROS_DEBUG("[AffordanceTemplate::setContinuousPlan] there are now %d plans", continuous_plans_[trajectory].size());
+  ROS_DEBUG("[AffordanceTemplate::setContinuousPlan] there are now %d plans", (int)continuous_plans_[trajectory].size());
 }

@@ -1,5 +1,5 @@
 {
-  "name": "Wheel",
+  "name": "wheel",
   "image": "package://affordance_template_library/images/torus.jpg",
   "display_objects": [
     {
@@ -7,90 +7,282 @@
       "shape": {
         "type": "mesh",
         "data": "package://affordance_template_library/models/torus.dae",
-        "size": [1.15, 1.15, 1.15]
+        "size": [
+          1.15,
+          1.15,
+          1.15
+        ]
       },
-      "origin" : {
-        "xyz": [0.0, 0.0, 0.0],
-        "rpy": [0.0, 1.57, 0.0]
+      "origin": {
+        "xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rpy": [
+          0.0,
+          1.570000004233985,
+          0.0
+        ]
       },
       "controls": {
-        "xyz": [true, true, true],
-        "rpy": [true, true, true],
+        "xyz": [
+          true,
+          true,
+          true
+        ],
+        "rpy": [
+          true,
+          true,
+          true
+        ],
         "scale": 0.3
       }
     }
   ],
-
   "end_effector_trajectory": [
     {
       "name": "Left Hand Counter Clockwise Turn",
-      "end_effector_group" : [
-        { 
+      "end_effector_group": [
+        {
           "id": 0,
-          "end_effector_waypoint" : [
+          "end_effector_waypoint": [
             {
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, 0.3, 0.0],
-                "rpy": [0.0, -1.57, 0.0]
+                "xyz": [
+                  0.0,
+                  0.30000001192092898,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.570000004233985,
+                  0.0
+                ]
               },
               "controls": {
-                  "xyz": [true, true, true],
-                  "rpy": [false, true, true],
-                  "scale": 0.25
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
+                "scale": 0.25
+              },
+              "tolerances": {
+                "x": [-0.01, 0.01],
+                "y": [-0.01, 0.01],
+                "z": [-0.01, 0.01],
+                "R": [-0.05, 0.05],
+                "P": [-0.05, 0.05],
+                "Y": [-0.05, 0.05]
+              },
+              "planner_type": "CARTESIAN",
+              "conditioning_metric": "MANIPULABILITY_PRODUCT",
+              "task_compatibility": {
+                "xyz": [
+                  1,
+                  0,
+                  0
+                ],
+                "rpy": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "tool_offset": {
+                "xyz": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
               }
             },
             {
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, 0.198, 0.0],
-                "rpy": [0.0, -1.57, 0.0]
+                "xyz": [
+                  0.0,
+                  0.2745000059604645,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.570000004233985,
+                  0.0
+                ]
               },
               "controls": {
-                  "xyz": [true, true, true],
-                  "rpy": [false, true, true],
-                  "scale": 0.25
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
+                "scale": 0.25
+              },
+              "planner_type": "JOINT"
+            },
+            {
+              "ee_pose": 0,
+              "display_object": "wheel",
+              "origin": {
+                "xyz": [
+                  0.0,
+                  0.249,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  0.0
+                ]
+              },
+              "controls": {
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
+                "scale": 0.25
+              }
+            },
+            {
+              "ee_pose": 0,
+              "display_object": "wheel",
+              "origin": {
+                "xyz": [
+                  0.0,
+                  0.198,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  0.0
+                ]
+              },
+              "controls": {
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
+                "scale": 0.25
               }
             },
             {
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, 0.198, 0.0],
-                "rpy": [0.0, -1.57, 0.0]
+                "xyz": [
+                  0.0,
+                  0.198,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  0.0
+                ]
               },
               "controls": {
-                  "xyz": [true, true, true],
-                  "rpy": [false, true, true],
-                  "scale": 0.25
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
+                "scale": 0.25
               }
             },
             {
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.1, 0.173, 0.0],
-                "rpy": [0.0, -1.57, -0.4]
+                "xyz": [
+                  0.1,
+                  0.173,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  -0.4
+                ]
               },
               "controls": {
-                  "xyz": [true, true, true],
-                  "rpy": [false, true, true],
-                  "scale": 0.25
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
+                "scale": 0.25
               }
             },
             {
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.1, 0.173, 0.0],
-                "rpy": [0.0, -1.57, -0.4]
+                "xyz": [
+                  0.1,
+                  0.173,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  -0.4
+                ]
               },
               "controls": {
-                  "xyz": [true, true, true],
-                  "rpy": [false, true, true],
-                  "scale": 0.25
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
+                "scale": 0.25
               }
             }
           ]
@@ -99,20 +291,36 @@
     },
     {
       "name": "Right Hand Counter Clockwise Turn",
-      "end_effector_group" : [
+      "end_effector_group": [
         {
           "id": 1,
-          "end_effector_waypoint" : [
+          "end_effector_waypoint": [
             {
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, -0.3, 0.0],
-                "rpy": [0.0, -1.57, 0.0]
+                "xyz": [
+                  0.0,
+                  -0.3,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  0.0
+                ]
               },
               "controls": {
-                "xyz": [true, true, true],
-                "rpy": [false, true, true],
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
                 "scale": 0.25
               }
             },
@@ -120,12 +328,28 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, -0.198, 0.0],
-                "rpy": [0.0, -1.57, 0.0]
+                "xyz": [
+                  0.0,
+                  -0.198,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  0.0
+                ]
               },
               "controls": {
-                "xyz": [true, true, true],
-                "rpy": [false, true, true],
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
                 "scale": 0.25
               }
             },
@@ -133,12 +357,28 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [0.0, -0.198, 0.0],
-                "rpy": [0.0, -1.57, 0.0]
+                "xyz": [
+                  0.0,
+                  -0.198,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  0.0
+                ]
               },
               "controls": {
-                "xyz": [true, true, true],
-                "rpy": [false, true, true],
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
                 "scale": 0.25
               }
             },
@@ -146,12 +386,28 @@
               "ee_pose": 2,
               "display_object": "wheel",
               "origin": {
-                "xyz": [-0.1, -0.172, 0.0],
-                "rpy": [0.0, -1.57, -0.63]
+                "xyz": [
+                  -0.1,
+                  -0.172,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  -0.63
+                ]
               },
               "controls": {
-                "xyz": [true, true, true],
-                "rpy": [false, true, true],
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
                 "scale": 0.25
               }
             },
@@ -159,12 +415,28 @@
               "ee_pose": 0,
               "display_object": "wheel",
               "origin": {
-                "xyz": [-0.1, -0.172, 0.0],
-                "rpy": [0.0, -1.57, -0.63]
+                "xyz": [
+                  -0.1,
+                  -0.172,
+                  0.0
+                ],
+                "rpy": [
+                  0.0,
+                  -1.57,
+                  -0.63
+                ]
               },
               "controls": {
-                "xyz": [true, true, true],
-                "rpy": [false, true, true],
+                "xyz": [
+                  true,
+                  true,
+                  true
+                ],
+                "rpy": [
+                  false,
+                  true,
+                  true
+                ],
                 "scale": 0.25
               }
             }
@@ -174,5 +446,3 @@
     }
   ]
 }
-
-

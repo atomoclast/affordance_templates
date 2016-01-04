@@ -21,6 +21,8 @@
 #include <moveit_msgs/RobotState.h>
 #include <actionlib/server/simple_action_server.h>
 
+#include <planner_interface/planner_interface.h>
+
 #include <affordance_template_markers/robot_interface.h>
 
 #include <affordance_template_library/affordance_template_structure.h>
@@ -195,6 +197,7 @@ namespace affordance_template
     bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
     bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
     bool insertWaypointInList(affordance_template_object::EndEffectorWaypoint wp, int id, affordance_template_object::EndEffectorWaypointList &wp_list);
+    bool getWaypointFromStructure(affordance_template_object::AffordanceTemplateStructure structure, std::string trajectory, int ee_id, int wp_id, affordance_template_object::EndEffectorWaypoint &wp);
 
     void addInteractiveMarker(visualization_msgs::InteractiveMarker m);
     void removeInteractiveMarker(std::string marker_name);
