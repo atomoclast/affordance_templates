@@ -1,5 +1,5 @@
 robot_name: r2
-planner_type: tracik
+planner_type: moveit
 config_package: r2_upperbody_moveit_config
 config_file: config/r2.srdf
 frame_id: r2/robot_base
