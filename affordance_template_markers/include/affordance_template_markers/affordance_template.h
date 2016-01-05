@@ -21,6 +21,8 @@
 #include <moveit_msgs/RobotState.h>
 #include <actionlib/server/simple_action_server.h>
 
+#include <planner_interface/planner_interface.h>
+
 #include <affordance_template_markers/robot_interface.h>
 
 #include <affordance_template_library/affordance_template_structure.h>
@@ -92,7 +94,7 @@ namespace affordance_template
     bool moveToWaypoints(const std::vector<std::string>&);
     bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
-    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool, bool use_current=true);
+    // std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool, bool use_current=true);
 
     // public getters
     inline int getID() { return id_; }
@@ -195,6 +197,7 @@ namespace affordance_template
     bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
     bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
     bool insertWaypointInList(affordance_template_object::EndEffectorWaypoint wp, int id, affordance_template_object::EndEffectorWaypointList &wp_list);
+    bool getWaypointFromStructure(affordance_template_object::AffordanceTemplateStructure structure, std::string trajectory, int ee_id, int wp_id, affordance_template_object::EndEffectorWaypoint &wp);
 
     void addInteractiveMarker(visualization_msgs::InteractiveMarker m);
     void removeInteractiveMarker(std::string marker_name);

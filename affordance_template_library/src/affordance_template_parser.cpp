@@ -90,9 +90,87 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
               wp.origin = org;
               wp.controls = ctrl;
 
+              ROS_WARN_STREAM("[AffordanceTemplateParser::loadFromFile]     waypoint "<<w+1<<" has ee_pose: "<<wp.ee_pose<<" and display_object: "<<wp.display_object);
+              
+              // get planner type
+              if(waypoints[w].HasMember("planner_type")) {
+                ROS_WARN("  has planner_type");
+                wp.planner_type = waypoints[w]["planner_type"].GetString(); 
+              } else {
+                wp.planner_type = "CARTESIAN";
+              }
+
+              // get conditioning metric
+              if(waypoints[w].HasMember("conditioning_metric")) {
+                ROS_WARN("  has conditioning_metric");
+                wp.conditioning_metric = waypoints[w]["conditioning_metric"].GetString(); 
+              } else {
+                wp.conditioning_metric = "NONE";
+              }
+              
+              // get tolerance bounds
+              if(waypoints[w].HasMember("tolerances")) {
+                ROS_WARN("  has tolerances");
+                ToleranceBounds bounds;
+                const rapidjson::Value& xpos = waypoints[w]["tolerances"]["x"];
+                bounds.position[0][0] = xpos[0].GetDouble();
+                bounds.position[0][1] = xpos[1].GetDouble();
+                const rapidjson::Value& ypos = waypoints[w]["tolerances"]["y"];
+                bounds.position[1][0] = ypos[0].GetDouble();
+                bounds.position[1][1] = ypos[1].GetDouble();
+                const rapidjson::Value& zpos = waypoints[w]["tolerances"]["z"];
+                bounds.position[2][0] = zpos[0].GetDouble();
+                bounds.position[2][1] = zpos[1].GetDouble();
+                const rapidjson::Value& Xrot = waypoints[w]["tolerances"]["R"];
+                bounds.orientation[0][0] = Xrot[0].GetDouble();
+                bounds.orientation[0][1] = Xrot[1].GetDouble();
+                const rapidjson::Value& Yrot = waypoints[w]["tolerances"]["P"];
+                bounds.orientation[1][0] = Yrot[0].GetDouble();
+                bounds.orientation[1][1] = Yrot[1].GetDouble();
+                const rapidjson::Value& Zrot = waypoints[w]["tolerances"]["Y"];
+                bounds.orientation[2][0] = Zrot[0].GetDouble();
+                bounds.orientation[2][1] = Zrot[1].GetDouble();
+              }
+
+              // get task compatibility directions
+              TaskCompatibility tc;
+              if(waypoints[w].HasMember("task_compatibility")) {
+                ROS_WARN("  has task_compatibility");
+                const rapidjson::Value& trans = waypoints[w]["task_compatibility"]["xyz"];
+                tc.position[0] = (trans[0].GetInt() == 0) ? 0 : (trans[0].GetInt() < 0 ? -1 : 1);
+                tc.position[1] = (trans[1].GetInt() == 0) ? 0 : (trans[1].GetInt() < 0 ? -1 : 1);
+                tc.position[2] = (trans[2].GetInt() == 0) ? 0 : (trans[2].GetInt() < 0 ? -1 : 1);
+                const rapidjson::Value& rot = waypoints[w]["task_compatibility"]["rpy"];
+                tc.orientation[0] = (rot[0].GetInt() == 0) ? 0 : (rot[0].GetInt() < 0 ? -1 : 1);
+                tc.orientation[1] = (rot[1].GetInt() == 0) ? 0 : (rot[1].GetInt() < 0 ? -1 : 1);
+                tc.orientation[2] = (rot[2].GetInt() == 0) ? 0 : (rot[2].GetInt() < 0 ? -1 : 1);
+              } else {
+                tc.position[0] = 1; 
+                tc.position[1] = 1; 
+                tc.position[2] = 1; 
+                tc.orientation[0] = 1; 
+                tc.orientation[1] = 1; 
+                tc.orientation[2] = 1; 
+              }
+              wp.task_compatibility = tc;
+
+              // get tool offset
+              if(waypoints[w].HasMember("tool_offset")) {
+                ROS_WARN("  has tool_offset");
+                Origin tool_offset;
+                const rapidjson::Value& pos = waypoints[w]["origin"]["xyz"];
+                tool_offset.position[0] = pos[0].GetDouble();
+                tool_offset.position[1] = pos[1].GetDouble();
+                tool_offset.position[2] = pos[2].GetDouble();
+                const rapidjson::Value& euler = waypoints[w]["origin"]["rpy"];
+                tool_offset.orientation[0] = euler[0].GetDouble();
+                tool_offset.orientation[1] = euler[1].GetDouble();
+                tool_offset.orientation[2] = euler[2].GetDouble();
+                wp.tool_offset = tool_offset;
+              }
+
               ee.waypoints.push_back(wp);
               
-              ROS_DEBUG_STREAM("[AffordanceTemplateParser::loadFromFile]     waypoint "<<w+1<<" has ee_pose: "<<wp.ee_pose<<" and display_object: "<<wp.display_object);
               ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tat origin XYZ: %g %g %g and RPY: %g %g %g", org.position[0], org.position[1], org.position[2], org.orientation[0], org.orientation[1], org.orientation[2]);
               ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: XYZ: %s %s %s", toBoolString(ctrl.translation[0]).c_str(), toBoolString(ctrl.translation[1]).c_str(), toBoolString(ctrl.translation[2]).c_str());
               ROS_DEBUG("[AffordanceTemplateParser::loadFromFile] \tcontrol for axes set to: RPY: %s %s %s", toBoolString(ctrl.rotation[0]).c_str(), toBoolString(ctrl.rotation[1]).c_str(), toBoolString(ctrl.rotation[2]).c_str());
