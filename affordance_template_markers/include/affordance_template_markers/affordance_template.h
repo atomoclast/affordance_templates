@@ -94,7 +94,7 @@ namespace affordance_template
     bool moveToWaypoints(const std::vector<std::string>&);
     bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
-    std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool, bool use_current=true);
+    // std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool, bool use_current=true);
 
     // public getters
     inline int getID() { return id_; }
