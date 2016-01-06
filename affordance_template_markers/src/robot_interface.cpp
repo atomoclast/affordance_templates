@@ -266,6 +266,7 @@ bool RobotInterface::configure() // TODO
 
   ros::NodeHandle nh;
   robot_planner_->initialize(nh, robot_config_.name);
+  robot_planner_->createDisplay("ats");
 
   // root_frame_ = robot_planner_->getRobotPlanningFrame(); TODO - doesn't exist in planner_interface
   ee_groups_ = robot_planner_->getEndEffectorNames();
