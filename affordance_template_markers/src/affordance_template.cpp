@@ -16,7 +16,7 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   template_type_(template_type),
   id_(id),
   root_object_(""),
-  loop_rate_(10.0),
+  loop_rate_(50.0),
   object_controls_display_on_(true),
   planning_server_(nh, (template_type + "_" + std::to_string(id) + "/plan_action"), boost::bind(&AffordanceTemplate::planRequest, this, _1), false),
   execution_server_(nh, (template_type + "_" + std::to_string(id) + "/execute_action"), boost::bind(&AffordanceTemplate::executeRequest, this, _1), false)
@@ -406,6 +406,11 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
   }
   ROS_INFO("AffordanceTemplate::createFromStructure() -- done creating %s", template_type_.c_str());
 
+  server_->applyChanges();          
+  server_->applyChanges();          
+  server_->applyChanges();          
+  server_->applyChanges();          
+  
   return true;
 }
  
@@ -569,6 +574,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
     marker_menus_[obj.name].apply( *server_, obj.name );
   }
+
   server_->applyChanges();
 
   return true;
@@ -765,13 +771,18 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       addInteractiveMarker(int_marker);
 
       marker_menus_[wp_name].apply( *server_, wp_name );
-      server_->applyChanges();          
+      
  
       wp_id++;
     }
   }
   ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- done");
  
+  server_->applyChanges();          
+  server_->applyChanges();          
+  server_->applyChanges();          
+  server_->applyChanges();          
+  server_->applyChanges();          
   return true;
 }
 
