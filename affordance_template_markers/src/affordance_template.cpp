@@ -564,7 +564,6 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
       marker_menus_[obj.name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
     }
 
-    // @seth - temp -- there should be a better way to do this
     key[obj.name] = {"Autoplay"};
     if(autoplay_display_) {
       marker_menus_[obj.name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
@@ -980,26 +979,24 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   MenuHandleKey plan_and_execute_test_key;
   MenuHandleKey knob_test_key;
   MenuHandleKey view_mode_key;
-  
-  MenuHandleKey play_plan_key; // @seth
+  MenuHandleKey play_plan_key;
   MenuHandleKey loop_key;
   MenuHandleKey autoplay_key;
 
-  wp_before_key[feedback->marker_name] = {"Add Waypoint Before"};
-  wp_after_key[feedback->marker_name] = {"Add Waypoint After"};
-  reset_key[feedback->marker_name] = {"Reset"};
-  save_key[feedback->marker_name] = {"Save"};
-  delete_key[feedback->marker_name] = {"Delete Waypoint"};
-  hide_controls_key[feedback->marker_name] = {"Hide Controls"};
-  view_mode_key[feedback->marker_name] = {"Compact View"};
-  plan_test_key[feedback->marker_name] = {"Plan Test"};
-  execute_test_key[feedback->marker_name] = {"Execute Test"};
+  wp_before_key[feedback->marker_name]             = {"Add Waypoint Before"};
+  wp_after_key[feedback->marker_name]              = {"Add Waypoint After"};
+  reset_key[feedback->marker_name]                 = {"Reset"};
+  save_key[feedback->marker_name]                  = {"Save"};
+  delete_key[feedback->marker_name]                = {"Delete Waypoint"};
+  hide_controls_key[feedback->marker_name]         = {"Hide Controls"};
+  view_mode_key[feedback->marker_name]             = {"Compact View"};
+  plan_test_key[feedback->marker_name]             = {"Plan Test"};
+  execute_test_key[feedback->marker_name]          = {"Execute Test"};
   plan_and_execute_test_key[feedback->marker_name] = {"Plan and Execute Test"};
-  knob_test_key[feedback->marker_name] = {"Knob Test"};
-  
-  play_plan_key[feedback->marker_name] = {"(Re)Play Plan"}; // @seth 
-  loop_key[feedback->marker_name] = {"Loop Animation"};
-  autoplay_key[feedback->marker_name] = {"Autoplay"};
+  knob_test_key[feedback->marker_name]             = {"Knob Test"};
+  play_plan_key[feedback->marker_name]             = {"(Re)Play Plan"};
+  loop_key[feedback->marker_name]                  = {"Loop Animation"};
+  autoplay_key[feedback->marker_name]              = {"Autoplay"};
 
   if(hasObjectFrame(feedback->marker_name) || hasWaypointFrame(feedback->marker_name)) {
     geometry_msgs::Pose p = feedback->pose;
