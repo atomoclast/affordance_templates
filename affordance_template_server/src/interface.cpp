@@ -237,6 +237,7 @@ void AffordanceTemplateInterface::runPlanAction()
             else
                 ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] Action did not finish before the time out.");            
         }   
+        loop_rate.sleep();
     }
 }
 
@@ -287,6 +288,7 @@ void AffordanceTemplateInterface::runExecuteAction()
             else
                 ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] Action did not finish before the time out.");            
         }
+        loop_rate.sleep();
     }
 }
 

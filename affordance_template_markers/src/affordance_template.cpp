@@ -16,7 +16,7 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   template_type_(template_type),
   id_(id),
   root_object_(""),
-  loop_rate_(50.0),
+  loop_rate_(10.0),
   object_controls_display_on_(true),
   planning_server_(nh, (template_type + "_" + std::to_string(id) + "/plan_action"), boost::bind(&AffordanceTemplate::planRequest, this, _1), false),
   execution_server_(nh, (template_type + "_" + std::to_string(id) + "/execute_action"), boost::bind(&AffordanceTemplate::executeRequest, this, _1), false)
