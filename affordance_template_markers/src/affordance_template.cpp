@@ -1649,20 +1649,15 @@ bool AffordanceTemplate::computePathSequence(const AffordanceTemplateStructure s
                                              int &next_path_idx)
 { 
   sequence_ids.clear();
-  if (direct)
-  {
+  if (direct) {
     sequence_ids.push_back(steps-1);
     next_path_idx = steps;
     return true;
-  }
-  else if (steps == 0) 
-  {
+  } else if (steps == 0) {
     sequence_ids.push_back(idx);
     next_path_idx = idx;
     return true;
-  } 
-  else 
-  {
+  } else {
     int max_idx = getNumWaypoints(structure, traj_name, ee_id)-1;
     int cap = max_idx+1;
     int inc = 1;
@@ -1709,8 +1704,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
   robot_interface_->getPlanner()->resetAnimation();
 
-  for (auto ee : goal->groups) 
-  {
+  for (auto ee : goal->groups) {
     ++planning.progress;
     planning_server_.publishFeedback(planning);
 
@@ -1721,19 +1715,19 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     plan_status_[goal->trajectory][ee].sequence_ids.clear();
     plan_status_[goal->trajectory][ee].sequence_poses.clear();
 
+    // DEBUG
+    ROS_WARN("have new plan goal with backwards: %s, direct: %s, and steps %d", (goal->backwards?"true":"false"), (goal->direct?"true":"false"), goal->steps);
+    // DEBUG
+
     bool skip = true;
     
     // get our waypoints for this trajectory so we can get the EE pose IDs
     int ee_id = robot_interface_->getEEID(ee);
     std::vector<affordance_template_object::EndEffectorWaypoint> wp_vec;
-    for(auto &traj : structure_.ee_trajectories) 
-    {
-      if(traj.name == goal->trajectory)
-      {
-        for(auto &ee_list : traj.ee_waypoint_list) 
-        {
-          if(ee_list.id == ee_id) 
-          {
+    for(auto &traj : structure_.ee_trajectories) {
+      if(traj.name == goal->trajectory) {
+        for(auto &ee_list : traj.ee_waypoint_list) {
+          if(ee_list.id == ee_id) {
             wp_vec = ee_list.waypoints;
             skip = false;
           }
@@ -1741,7 +1735,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       }
     }
 
-    //
     // make sure the ee_id (thus, the EE) is in the WP list, if not move onto next EE
     if (skip)
       continue;
@@ -1754,16 +1747,14 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
     sensor_msgs::JointState set_state;
     ContinuousPlan p;
-    if (getContinuousPlan( goal->trajectory, (current_idx-1), manipulator_name, PlanningGroup::MANIPULATOR, p))
-    {
+    if (getContinuousPlan( goal->trajectory, (current_idx-1), manipulator_name, PlanningGroup::MANIPULATOR, p)) {
       // index already has been planned for, get the start state
       set_state.header = p.plan.trajectory_.joint_trajectory.header;
       set_state.name = p.plan.trajectory_.joint_trajectory.joint_names;
       set_state.position = p.plan.trajectory_.joint_trajectory.points.back().positions;
       set_state.velocity = p.plan.trajectory_.joint_trajectory.points.back().velocities;
       set_state.effort = p.plan.trajectory_.joint_trajectory.points.back().effort;
-      if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state))
-      {
+      if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state)) {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
         planning.progress = -1;
         planning_server_.publishFeedback(planning);
@@ -1771,22 +1762,16 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         planning_server_.setSucceeded(result);
         return;
       }
-    }
-    else
-    {
-      //
-      // set the first start state to current state because we don't have a previous plan
-      if (!robot_interface_->getPlanner()->getCurrentState(manipulator_name, set_state))
-      {
+    } else { // set the first start state to current state because we don't have a previous plan
+      if (!robot_interface_->getPlanner()->getCurrentState(manipulator_name, set_state)) {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to get initial state for %s", manipulator_name.c_str());
         planning.progress = -1;
         planning_server_.publishFeedback(planning);
         result.succeeded = false;
         planning_server_.setSucceeded(result);
         return; 
-      }
-      if (!robot_interface_->getPlanner()->setStartState(manipulator_name))
-      {
+      } 
+      if (!robot_interface_->getPlanner()->setStartState(manipulator_name)) {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
         planning.progress = -1;
         planning_server_.publishFeedback(planning);
@@ -1797,8 +1782,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     }
 
     // make sure it matches our max idx number because that is max num waypoints
-    if (wp_vec.size() != max_idx)
-    {
+    if (wp_vec.size() != max_idx) {
       ROS_ERROR("[AffordanceTemplate::planRequest] waypoint vector size does not match up!!");
       planning.progress = -1;
       planning_server_.publishFeedback(planning);
@@ -1810,15 +1794,13 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     // get list of EE pose names related to ID
     std::map<int, std::string> ee_pose_map = robot_interface_->getEEPoseNameMap(ee);
 
-    //
     // find our sequence IDs first - will use these to loop on
     if (!computePathSequence(structure_, goal->trajectory, ee_id, 
                             plan_status_[goal->trajectory][ee].current_idx,
                             goal->steps, goal->direct,
                             plan_status_[goal->trajectory][ee].backwards, 
                             plan_status_[goal->trajectory][ee].sequence_ids, 
-                            plan_status_[goal->trajectory][ee].goal_idx))
-    {
+                            plan_status_[goal->trajectory][ee].goal_idx)) {
       ROS_ERROR("[AffordanceTemplate::planRequest] failed to get path sequence!!");
       planning.progress = -1;
       planning_server_.publishFeedback(planning);
@@ -1827,9 +1809,11 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       return;
     }
 
+    for (auto a : plan_status_[goal->trajectory][ee].sequence_ids)
+      ROS_WARN("after computing path, we have sequence IDs %d", a);
+
     // now loop through waypoints setting new start state to the last planned joint values
-    for (auto plan_seq : plan_status_[goal->trajectory][ee].sequence_ids)
-    {
+    for (auto plan_seq : plan_status_[goal->trajectory][ee].sequence_ids) {
       ++planning.progress;
       planning_server_.publishFeedback(planning);
 
@@ -1844,9 +1828,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       plan_status_[goal->trajectory][ee].sequence_poses.push_back(pt);
 
       affordance_template_object::EndEffectorWaypoint wp;
-      if(!getWaypointFromStructure(structure_, goal->trajectory, ee_id, plan_seq, wp)) {
+      if(!getWaypointFromStructure(structure_, goal->trajectory, ee_id, plan_seq, wp))
         ROS_ERROR("[AffordanceTemplate::planRequest] problem getting waypoint from structure");
-      }
 
       planner_interface::PlanningGoal pg;
       pg.goal = pt;
@@ -1855,18 +1838,15 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       pg.conditioning_metric == stringToConditioningMetric(wp.conditioning_metric);
       pg.type == stringToPlannerType(wp.planner_type);
      
-      for(int i = 0; i < 3; ++i) 
-      {
-        for(int j = 0; j < 2; ++j) 
-        {
+      for(int i = 0; i < 3; ++i)  {
+        for(int j = 0; j < 2; ++j) {
           pg.tolerance_bounds[i][j] = wp.bounds.position[i][j];
           pg.tolerance_bounds[i+3][j] = wp.bounds.orientation[i][j];
         }
       }
 
       goals_full[manipulator_name] = pg;
-      if (robot_interface_->getPlanner()->plan(goals_full, false, false))
-      {
+      if (robot_interface_->getPlanner()->plan(goals_full, false, false)) {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         
         ++planning.progress;
@@ -1910,37 +1890,29 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         }
 
         // find and add EE joint state to goal
-        if (ee_pose_map.find(wp_vec[plan_seq].ee_pose) == ee_pose_map.end())
-        {
+        if (ee_pose_map.find(wp_vec[plan_seq].ee_pose) == ee_pose_map.end()) {
           ROS_WARN("[AffordanceTemplate::planRequest] couldn't find EE Pose ID %d in robot interface map!!", plan_seq);
-        }
-        else
-        {
+        } else {
           ++planning.progress;
           planning_server_.publishFeedback(planning);
 
           ROS_INFO("[AffordanceTemplate::planRequest] setting EE goal pose to %s", ee_pose_map[wp_vec[plan_seq].ee_pose].c_str());
           sensor_msgs::JointState ee_js;
-          try 
-          {
-            if (!robot_interface_->getPlanner()->getRDFModel()->getGroupState( ee, ee_pose_map[wp_vec[plan_seq].ee_pose], ee_js)) // this is the reason for the try{} block, TODO should put null pointer detection in
-            {
+          try {
+            if (!robot_interface_->getPlanner()->getRDFModel()->getGroupState( ee, ee_pose_map[wp_vec[plan_seq].ee_pose], ee_js)) { // this is the reason for the try{} block, TODO should put null pointer detection in
               ROS_ERROR("[AffordanceTemplate::planRequest] couldn't get group state!!");
               planning.progress = -1;
               planning_server_.publishFeedback(planning);
               result.succeeded = false;
               planning_server_.setSucceeded(result);
               return;
-            }
-            else
-            {
+            } else {
               ++planning.progress;
               planning_server_.publishFeedback(planning);
 
               std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
               ee_goals[ee].push_back(ee_js);
-              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false))
-              {
+              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false)) {
                 ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
                 planning.progress = -1;
                 planning_server_.publishFeedback(planning);
@@ -1949,8 +1921,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
                 return;
               }
 
-              if (!robot_interface_->getPlanner()->getPlan(ee, plan))
-              {
+              if (!robot_interface_->getPlanner()->getPlan(ee, plan)) {
                 ROS_FATAL("[AffordanceTemplate::planRequest] couldn't find stored plan for %s waypoint!! this shouldn't happen, something is wrong!.", next_path_str.c_str());
                 planning.progress = -1;
                 planning_server_.publishFeedback(planning);
@@ -1977,8 +1948,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
               set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
               set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
-              if (!robot_interface_->getPlanner()->setStartState(ee, set_state))
-              {
+              if (!robot_interface_->getPlanner()->setStartState(ee, set_state)) {
                 ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee.c_str());
                 planning.progress = -1;
                 planning_server_.publishFeedback(planning);
@@ -1987,9 +1957,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
                 return;
               }
             }
-          } 
-          catch(...)
-          {
+          } catch(...) {
             ROS_FATAL("[AffordanceTemplate::planRequest] couldn't get planner or RDF model -- bad pointer somewhere!!");
             planning.progress = -1;
             planning_server_.publishFeedback(planning);
@@ -1998,9 +1966,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
             return;
           }
         }
-      } 
-      else
-      {
+      } else {
         ROS_ERROR("[AffordanceTemplate::planRequest] planning failed for waypoint %s", next_path_str.c_str());
         planning.progress = -1;
         planning_server_.publishFeedback(planning);
@@ -2010,6 +1976,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       }
     } // waypoint loop
   } // ee loop
+
+  if (autoplay_display_)
+    robot_interface_->getPlanner()->playAnimation();
 
   // ++planning.progress;
   // planning_server_.publishFeedback(planning);
@@ -2058,12 +2027,9 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
   exe.progress = 1;
   execution_server_.publishFeedback(exe);
   
-  for (auto ee : goal->groups)
-  {
-    if ( plan_status_[goal->trajectory][ee].plan_valid)
-    {
-      if (!continuousMoveToWaypoints(goal->trajectory, ee))
-      {
+  for (auto ee : goal->groups) {
+    if ( plan_status_[goal->trajectory][ee].plan_valid) {
+      if (!continuousMoveToWaypoints(goal->trajectory, ee)) {
         ROS_ERROR("[AffordanceTemplate::executeRequest] execution of plan failed!!");
         exe.progress = -1;
         execution_server_.publishFeedback(exe);

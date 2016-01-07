@@ -67,17 +67,13 @@ bool Controls::requestPlan(Controls::CommandType command_type)
             int steps = 0;
 
             if(command_type==CommandType::START) {
-                if(idx==-1) {
-                    steps = 1;
-                } else {
-                    steps = idx;
+                steps = 1;
+                if(idx != -1) {
                     srv.request.backwards = true;
                 }
             } else if(command_type==CommandType::END) {
-                if(idx==-1) {
-                    steps = N;
-                } else {
-                    steps = N - idx - 1;
+                steps = N;
+                if(idx !=-1) {
                     srv.request.backwards = false;
                 }
             }
