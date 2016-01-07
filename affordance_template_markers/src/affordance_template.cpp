@@ -1674,6 +1674,9 @@ bool AffordanceTemplate::computePathSequence(const AffordanceTemplateStructure s
       }
       steps--;
     }
+    if (steps == -1) {
+      sequence_ids.push_back(idx);
+    }
     for(int s=0; s<steps; s++) {
       idx += inc;
       if(idx == -1) {
@@ -1714,13 +1717,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     plan_status_[goal->trajectory][ee].backwards  = goal->backwards;
     plan_status_[goal->trajectory][ee].sequence_ids.clear();
     plan_status_[goal->trajectory][ee].sequence_poses.clear();
-
-    // DEBUG
-    ROS_WARN("have new plan goal with backwards: %s, direct: %s, and steps %d", (goal->backwards?"true":"false"), (goal->direct?"true":"false"), goal->steps);
-    // DEBUG
-
-    bool skip = true;
     
+    bool skip = true;
     // get our waypoints for this trajectory so we can get the EE pose IDs
     int ee_id = robot_interface_->getEEID(ee);
     std::vector<affordance_template_object::EndEffectorWaypoint> wp_vec;
@@ -1730,6 +1728,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
           if(ee_list.id == ee_id) {
             wp_vec = ee_list.waypoints;
             skip = false;
+            break;
           }
         }
       }
@@ -1809,9 +1808,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       return;
     }
 
-    for (auto a : plan_status_[goal->trajectory][ee].sequence_ids)
-      ROS_WARN("after computing path, we have sequence IDs %d", a);
-
     // now loop through waypoints setting new start state to the last planned joint values
     for (auto plan_seq : plan_status_[goal->trajectory][ee].sequence_ids) {
       ++planning.progress;
@@ -1845,6 +1841,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         }
       }
 
+      // do plan
       goals_full[manipulator_name] = pg;
       if (robot_interface_->getPlanner()->plan(goals_full, false, false)) {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
