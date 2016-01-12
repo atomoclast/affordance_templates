@@ -1554,7 +1554,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             }
               
             marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
-            robot_interface_->getPlanner()->loopAnimation(loop);
+            robot_interface_->getPlanner()->loopAnimation(feedback->marker_name, loop);
           }
           else
           {
