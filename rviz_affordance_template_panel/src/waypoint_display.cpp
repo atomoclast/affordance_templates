@@ -9,23 +9,6 @@ WaypointDisplay::WaypointDisplay(QObject *_parent) : QObject(_parent) {}
 void WaypointDisplay::setupWaypointDisplayInfo(AffordanceTemplateStatusInfo::EndEffectorInfo wp_info) {
 
     ROS_DEBUG("WaypointDisplay::setupWaypointDisplayInfo()");
-    // try {
-    //     // preserve expansion level
-    //     int n = ui_->waypointDisplayTree->topLevelItemCount();
-    //     cout << "  test 1" << endl;
-    //     for(int i=0; i<n; i++) {
-    //         cout << "  test 2  " << i << endl;
-    //         QTreeWidgetItem *eeTreeItem = ui_->waypointDisplayTree->itemAt(i,0);
-    //         cout << "  test 3  " << i << endl;
-    //         QString eeItemStr = eeTreeItem->text(0);
-    //         cout << "  test 4  " << i << endl;
-    //         expandStatus_[eeItemStr.toStdString()] = eeTreeItem->isExpanded();
-    //         cout << "  test 5  " << i << endl;
-    //     }
-    // } catch (int e) {
-    //     cout << "An exception occurred. Exception Nr. " << e << '\n';
-    // }
-
            
     ui_->waypointDisplayTree->clear();
     eeNameMap_.clear();
@@ -62,13 +45,6 @@ void WaypointDisplay::setupWaypointDisplayInfo(AffordanceTemplateStatusInfo::End
                         waypointDisplayItems_[p] = wpTreeItem;
                         eeNameMap_[ee_name] = e.second->id();
                     }
-
-                    // // reinstate expansions
-                    // auto search = expandStatus_.find(ee_name);
-                    // if(search != expandStatus_.end()) {
-                    //     eeTreeItem->setExpanded(expandStatus_[ee_name]);
-                    // }
-
                 }
             }
         }

@@ -363,14 +363,8 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
 
 bool AffordanceTemplate::setTemplatePose(geometry_msgs::PoseStamped ps)
 {
-
   key_ = structure_.name;
-
-    //ps.pose = robot_interface_->getRobotConfig().root_offset;
-    //ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
   frame_store_[key_] = FrameInfo(key_, ps);
-
-
   return true;
 }
     
@@ -404,9 +398,7 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
   }
   ROS_INFO("AffordanceTemplate::createFromStructure() -- done creating %s", template_type_.c_str());
 
-  server_->applyChanges();          
-  server_->applyChanges();          
-  server_->applyChanges();          
+  ros::Duration(0.25).sleep();
   server_->applyChanges();          
   
   return true;
@@ -1130,6 +1122,9 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     eewp.controls.scale = 1.0;
                     wp_list.waypoints.insert(wp_list.waypoints.begin(), eewp);
 
+                    removeAllMarkers();
+                    createFromStructure(structure_, true, true, current_trajectory_);             
+
                     found = true;
                     break;
                   }
@@ -1180,6 +1175,8 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     wp_list.waypoints.insert(wp_list.waypoints.begin(), wp);
 
                     found = true;
+                    removeAllMarkers();
+                    createFromStructure(structure_, true, true, current_trajectory_);
                     break;
                   }
                 }
@@ -1243,7 +1240,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     insertWaypointInList(eewp, wp_id+1, wp_list);
 
                     removeAllMarkers();
-                    createFromStructure(structure_, true, true, current_trajectory_); 
+                    createFromStructure(structure_, true, true, current_trajectory_);             
 
                     found = true;
                     break;
@@ -1312,21 +1309,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
                     removeAllMarkers();
                     createFromStructure(structure_, true, true, current_trajectory_); 
-
-                    // ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint After] for trajectory: %s and end effector: %s", current_trajectory_.c_str(), robot_interface_->getReadableEEName(ee.second).c_str());
-                    // // TODO and FIXME - this is all just testing insertion
-                    // affordance_template_object::EndEffectorWaypoint wp;
-                    // wp.ee_pose = 1; 
-                    // wp.display_object = wp.display_object;
-                    // wp.origin.position[0] = wp.origin.position[1] = wp.origin.position[2] = 1.0;
-                    // wp.origin.orientation[0] = wp.origin.orientation[1] = wp.origin.orientation[2] = 0.0;
-                    // wp.controls.translation[0] = wp.controls.translation[1] = wp.controls.translation[2] = true;
-                    // wp.controls.rotation[0] = wp.controls.rotation[1] = wp.controls.rotation[2] = true;
-                    // wp.controls.scale = 1.0;
-                    // wp_list.waypoints.push_back(wp);
-
-                    // removeAllMarkers();
-                    // createFromStructure(structure_, true, true, current_trajectory_); 
 
                     found = true;
                     break;
@@ -1999,35 +1981,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
   if (autoplay_display_)
     robot_interface_->getPlanner()->playAnimation();
-
-  // ++planning.progress;
-  // planning_server_.publishFeedback(planning);
-
-  // if (goal->execute_on_plan)
-  // {
-  //   ++planning.progress;
-  //   planning_server_.publishFeedback(planning);
-
-  //   for (auto ee : goal->groups)
-  //   {
-  //     if ( plan_status_[goal->trajectory][ee].plan_valid)
-  //     {
-  //       if (!continuousMoveToWaypoints(goal->trajectory, ee, plan_status_[goal->trajectory][ee].current_idx, goal->steps))
-  //       {
-  //         ROS_ERROR("[AffordanceTemplate::planRequest] execution of plan failed!!");
-  //         planning.progress = -1;
-  //         planning_server_.publishFeedback(planning);
-  //         result.succeeded = false;
-  //         planning_server_.setSucceeded(result);
-  //         return;
-  //       }
-  //     }
-  //     else
-  //     {
-  //       ROS_WARN("[AffordanceTemplate::planRequest] no valid plan found for EE %s to execute", ee.c_str());
-  //     }
-  //   }
-  // }
 
   ++planning.progress;
   planning_server_.publishFeedback(planning);

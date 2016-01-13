@@ -90,7 +90,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
               wp.origin = org;
               wp.controls = ctrl;
 
-              ROS_WARN_STREAM("[AffordanceTemplateParser::loadFromFile]     waypoint "<<w+1<<" has ee_pose: "<<wp.ee_pose<<" and display_object: "<<wp.display_object);
+              ROS_DEBUG_STREAM("[AffordanceTemplateParser::loadFromFile]     waypoint "<<w+1<<" has ee_pose: "<<wp.ee_pose<<" and display_object: "<<wp.display_object);
               
               // get planner type
               if(waypoints[w].HasMember("planner_type")) {
@@ -105,7 +105,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
                 ROS_WARN("  has conditioning_metric");
                 wp.conditioning_metric = waypoints[w]["conditioning_metric"].GetString(); 
               } else {
-                wp.conditioning_metric = "NONE";
+                wp.conditioning_metric = "MIN_DISTANCE";
               }
               
               // get tolerance bounds
