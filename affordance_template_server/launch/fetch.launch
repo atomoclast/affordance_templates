@@ -1,5 +1,11 @@
 <?xml version="1.0"?>
 <launch>
+
+  <include file="$(find utils)/launch/robot_display.launch">
+    <arg name="prefix" value="ats"/>
+    <arg name="base_frame" value="base_link"/>
+  </include>
+
   <node name="affordance_template_server" pkg="affordance_template_server" type="affordance_template_server_node" respawn="false" output="screen">
     <param name="robot_config" value="fetch.yaml"/>
   </node>
