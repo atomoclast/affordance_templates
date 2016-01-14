@@ -7,6 +7,8 @@
 
   <node name="affordance_template_server" pkg="affordance_template_server" type="affordance_template_server_node" respawn="false" output="screen">
     <param name="robot_config" value="r2_roscontrol.yaml"/>
+    <param name="param/trajectory_scaler" value="0.5"/>
+    <param name="param/trajectory_density" value="0.01"/>
   </node>
 
 </launch>
