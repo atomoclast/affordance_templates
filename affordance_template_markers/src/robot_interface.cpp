@@ -37,7 +37,6 @@ bool RobotInterface::load(const std::string &yaml)
     boost::split(tokens, yaml, boost::is_any_of("/"));
     std::string yaml_base = tokens.back();
 
-    ros::NodeHandle nh;
     nh_.setParam("/affordance_templates/robot_yaml", yaml);
    
     YAML::Node yaml_doc = YAML::LoadFile(yaml);
@@ -201,7 +200,6 @@ bool RobotInterface::load(const affordance_template_msgs::RobotConfig &config)
   ROS_INFO("[RobotInterface::load] loading with robot_config msg");
   robot_config_ = config;
 
-  ros::NodeHandle nh;
   nh_.setParam("/affordance_templates/robot_yaml", "");
 
   for (auto config : robot_config_.end_effectors)
@@ -264,8 +262,7 @@ bool RobotInterface::configure() // TODO
     return false;
   }
 
-  ros::NodeHandle nh;
-  robot_planner_->initialize(nh, robot_config_.name);
+  robot_planner_->initialize(nh_, robot_config_.name);
   robot_planner_->createDisplay("ats");
 
   // root_frame_ = robot_planner_->getRobotPlanningFrame(); TODO - doesn't exist in planner_interface
