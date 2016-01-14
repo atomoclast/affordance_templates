@@ -60,6 +60,12 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
           {
               // find the origin
               Origin org;
+              if(!waypoints[w].HasMember("origin")) {
+                ROS_ERROR_STREAM("[AffordanceTemplateParser::loadFromFile]    cant define waypoint " <<w+1<< " without origin");
+                std::fclose(f_pnt);
+                return false;
+              }
+
               const rapidjson::Value& pos = waypoints[w]["origin"]["xyz"];
               org.position[0] = pos[0].GetDouble();
               org.position[1] = pos[1].GetDouble();
@@ -92,21 +98,21 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
               // get planner type
               std::string planner_type = "CARTESIAN";
               if(waypoints[w].HasMember("planner_type")) {
-                ROS_WARN("  has planner_type");
+                ROS_DEBUG_STREAM("  has planner_type");
                 planner_type = waypoints[w]["planner_type"].GetString(); 
               } 
 
               // get conditioning metric
               std::string conditioning_metric = "MIN_DISTANCE";
               if(waypoints[w].HasMember("conditioning_metric")) {
-                ROS_WARN("  has conditioning_metric");
+                ROS_DEBUG_STREAM("  has conditioning_metric");
                 conditioning_metric = waypoints[w]["conditioning_metric"].GetString(); 
               } 
               
               // get tolerance bounds
               ToleranceBounds bounds;
               if(waypoints[w].HasMember("tolerances")) {
-                ROS_WARN("  has tolerances");
+                ROS_DEBUG_STREAM("  has tolerances");
                 const rapidjson::Value& xpos = waypoints[w]["tolerances"]["x"];
                 bounds.position[0][0] = xpos[0].GetDouble();
                 bounds.position[0][1] = xpos[1].GetDouble();
@@ -137,7 +143,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
               // get task compatibility directions
               TaskCompatibility tc;
               if(waypoints[w].HasMember("task_compatibility")) {
-                ROS_WARN("  has task_compatibility");
+                ROS_DEBUG_STREAM("  has task_compatibility");
                 const rapidjson::Value& trans = waypoints[w]["task_compatibility"]["xyz"];
                 tc.position[0] = (trans[0].GetInt() == 0) ? 0 : (trans[0].GetInt() < 0 ? -1 : 1);
                 tc.position[1] = (trans[1].GetInt() == 0) ? 0 : (trans[1].GetInt() < 0 ? -1 : 1);
@@ -158,7 +164,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
               // get tool offset
               Origin tool_offset;
               if(waypoints[w].HasMember("tool_offset")) {
-                ROS_WARN("  has tool_offset");
+                ROS_DEBUG_STREAM("  has tool_offset");
                 const rapidjson::Value& pos = waypoints[w]["origin"]["xyz"];
                 tool_offset.position[0] = pos[0].GetDouble();
                 tool_offset.position[1] = pos[1].GetDouble();
