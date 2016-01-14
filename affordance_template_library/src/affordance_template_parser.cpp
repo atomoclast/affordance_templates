@@ -89,7 +89,6 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
                 ctrl.scale = 0.25;
               }
 
-             
               // get planner type
               std::string planner_type = "CARTESIAN";
               if(waypoints[w].HasMember("planner_type")) {
@@ -157,9 +156,9 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
               }
 
               // get tool offset
+              Origin tool_offset;
               if(waypoints[w].HasMember("tool_offset")) {
                 ROS_WARN("  has tool_offset");
-                Origin tool_offset;
                 const rapidjson::Value& pos = waypoints[w]["origin"]["xyz"];
                 tool_offset.position[0] = pos[0].GetDouble();
                 tool_offset.position[1] = pos[1].GetDouble();
@@ -168,7 +167,9 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
                 tool_offset.orientation[0] = euler[0].GetDouble();
                 tool_offset.orientation[1] = euler[1].GetDouble();
                 tool_offset.orientation[2] = euler[2].GetDouble();
-                wp.tool_offset = tool_offset;
+              } else {
+                tool_offset.position[0] = tool_offset.position[1] = tool_offset.position[2] = 0.0;
+                tool_offset.orientation[0] = tool_offset.orientation[1] = tool_offset.orientation[2] = 0.0;
               }
 
                // fill out the waypoint
@@ -178,6 +179,7 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
               wp.origin = org;
               wp.controls = ctrl;
               wp.bounds = bounds;
+              wp.tool_offset = tool_offset;
               wp.task_compatibility = tc;
               wp.conditioning_metric = conditioning_metric;
               wp.planner_type = planner_type;
