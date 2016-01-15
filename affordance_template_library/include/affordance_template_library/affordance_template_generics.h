@@ -53,16 +53,6 @@ namespace affordance_template_object
         }
     }    
 
-    inline planner_interface::ConditioningMetric stringToConditioningMetric(std::string conditioning_metric) {
-        if(conditioning_metric == "NONE") {
-            return planner_interface::NONE;
-        } else if(conditioning_metric == "MANIPULABILITY_RATIO") {
-            return planner_interface::MANIPULABILITY_RATIO;  
-        } else if(conditioning_metric == "MANIPULABILITY_PRODUCT") {
-            return planner_interface::MANIPULABILITY_PRODUCT;  
-        }
-    }    
-
     struct Shape
     {
         std::string color;

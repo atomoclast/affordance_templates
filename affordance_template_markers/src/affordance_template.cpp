@@ -1813,7 +1813,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       pg.goal = pt;
       pg.offset = originToPoseMsg(wp.tool_offset);  
       pg.task_compatibility = taskCompatibilityToPoseMsg(wp.task_compatibility);  
-      pg.conditioning_metric == stringToConditioningMetric(wp.conditioning_metric);
+      pg.conditioning_metric = wp.conditioning_metric;
       pg.type == stringToPlannerType(wp.planner_type);
      
       for(int i = 0; i < 3; ++i)  {
