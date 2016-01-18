@@ -1687,7 +1687,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
   planning.progress = 1;
   planning_server_.publishFeedback(planning);
 
-  robot_interface_->getPlanner()->resetAnimation();
+  robot_interface_->getPlanner()->resetAnimation(true);
 
   for (auto ee : goal->groups) {
     ++planning.progress;
@@ -1754,6 +1754,14 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       } 
       if (!robot_interface_->getPlanner()->setStartState(manipulator_name)) {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
+        planning.progress = -1;
+        planning_server_.publishFeedback(planning);
+        result.succeeded = false;
+        planning_server_.setSucceeded(result);
+        return;
+      }
+      if (!robot_interface_->getPlanner()->setStartState(ee)) {
+        ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", ee.c_str());
         planning.progress = -1;
         planning_server_.publishFeedback(planning);
         result.succeeded = false;
@@ -2010,7 +2018,7 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
         execution_server_.setSucceeded(result);
         
         continuous_plans_[goal->trajectory].clear();
-        robot_interface_->getPlanner()->resetAnimation();
+        robot_interface_->getPlanner()->resetAnimation(true);
     
         return;
       }
@@ -2020,7 +2028,7 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
 
   // clear out whatever plans we may have
   continuous_plans_[goal->trajectory].clear();
-  robot_interface_->getPlanner()->resetAnimation();
+  robot_interface_->getPlanner()->resetAnimation(true);
   
   result.succeeded = true;
   execution_server_.setSucceeded(result);
