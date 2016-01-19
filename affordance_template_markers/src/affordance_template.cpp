@@ -1727,31 +1727,31 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     std::map<std::string, planner_interface::PlanningGoal> goals_full;
 
     sensor_msgs::JointState set_state;
-    ContinuousPlan p;
-    if (getContinuousPlan( goal->trajectory, (current_idx-1), manipulator_name, PlanningGroup::MANIPULATOR, p)) {
-      // index already has been planned for, get the start state
-      set_state.header = p.plan.trajectory_.joint_trajectory.header;
-      set_state.name = p.plan.trajectory_.joint_trajectory.joint_names;
-      set_state.position = p.plan.trajectory_.joint_trajectory.points.back().positions;
-      set_state.velocity = p.plan.trajectory_.joint_trajectory.points.back().velocities;
-      set_state.effort = p.plan.trajectory_.joint_trajectory.points.back().effort;
-      if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state)) {
-        ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
-        planning.progress = -1;
-        planning_server_.publishFeedback(planning);
-        result.succeeded = false;
-        planning_server_.setSucceeded(result);
-        return;
-      }
-    } else { // set the first start state to current state because we don't have a previous plan
-      if (!robot_interface_->getPlanner()->getCurrentState(manipulator_name, set_state)) {
-        ROS_ERROR("[AffordanceTemplate::planRequest] failed to get initial state for %s", manipulator_name.c_str());
-        planning.progress = -1;
-        planning_server_.publishFeedback(planning);
-        result.succeeded = false;
-        planning_server_.setSucceeded(result);
-        return; 
-      } 
+    // ContinuousPlan p;
+    // if (getContinuousPlan( goal->trajectory, (current_idx-1), manipulator_name, PlanningGroup::MANIPULATOR, p)) {
+    //   // index already has been planned for, get the start state
+    //   set_state.header = p.plan.trajectory_.joint_trajectory.header;
+    //   set_state.name = p.plan.trajectory_.joint_trajectory.joint_names;
+    //   set_state.position = p.plan.trajectory_.joint_trajectory.points.back().positions;
+    //   set_state.velocity = p.plan.trajectory_.joint_trajectory.points.back().velocities;
+    //   set_state.effort = p.plan.trajectory_.joint_trajectory.points.back().effort;
+    //   if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state)) {
+    //     ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
+    //     planning.progress = -1;
+    //     planning_server_.publishFeedback(planning);
+    //     result.succeeded = false;
+    //     planning_server_.setSucceeded(result);
+    //     return;
+    //   }
+    // } else { // set the first start state to current state because we don't have a previous plan
+    //   if (!robot_interface_->getPlanner()->getCurrentState(manipulator_name, set_state)) {
+    //     ROS_ERROR("[AffordanceTemplate::planRequest] failed to get initial state for %s", manipulator_name.c_str());
+    //     planning.progress = -1;
+    //     planning_server_.publishFeedback(planning);
+    //     result.succeeded = false;
+    //     planning_server_.setSucceeded(result);
+    //     return; 
+    //   } 
       if (!robot_interface_->getPlanner()->setStartState(manipulator_name)) {
         ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
         planning.progress = -1;
@@ -1768,7 +1768,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         planning_server_.setSucceeded(result);
         return;
       }
-    }
+    // }
 
     // make sure it matches our max idx number because that is max num waypoints
     if (wp_vec.size() != max_idx) {
@@ -1832,8 +1832,10 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       }
 
       // do plan
+      std::map<std::string, sensor_msgs::JointState> group_seed_states;
+      group_seed_states[manipulator_name] = set_state;
       goals_full[manipulator_name] = pg;
-      if (robot_interface_->getPlanner()->plan(goals_full, false, false)) {
+      if (robot_interface_->getPlanner()->plan(goals_full, false, false, group_seed_states)) {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         
         ++planning.progress;
@@ -1940,32 +1942,32 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               p.plan.trajectory_.joint_trajectory.points.push_back(plan.trajectory_.joint_trajectory.points.back());
 
               // set the start state for next iteration
-              set_state.header = plan.trajectory_.joint_trajectory.header;
-              set_state.name = plan.trajectory_.joint_trajectory.joint_names;
+              // set_state.header = plan.trajectory_.joint_trajectory.header;
+              // set_state.name = plan.trajectory_.joint_trajectory.joint_names;
 
-              if (plan.trajectory_.joint_trajectory.points.size()) {
-                set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
-                set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
-                set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
-                if (!robot_interface_->getPlanner()->setStartState(ee, set_state)) {
-                  ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee.c_str());
-                  planning.progress = -1;
-                  planning_server_.publishFeedback(planning);
-                  result.succeeded = false;
-                  planning_server_.setSucceeded(result);
-                  return;
-                }
-              } else {
-                ROS_ERROR("[AffordanceTemplate::planRequest] the resulting plan generated 0 joint trajectory points!!");
-                if (!robot_interface_->getPlanner()->setStartState(ee)) {
-                  ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee.c_str());
-                  planning.progress = -1;
-                  planning_server_.publishFeedback(planning);
-                  result.succeeded = false;
-                  planning_server_.setSucceeded(result);
-                  return;
-                }
-              }
+              // if (plan.trajectory_.joint_trajectory.points.size()) {
+              //   set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
+              //   set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
+              //   set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
+              //   if (!robot_interface_->getPlanner()->setStartState(ee, set_state)) {
+              //     ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee.c_str());
+              //     planning.progress = -1;
+              //     planning_server_.publishFeedback(planning);
+              //     result.succeeded = false;
+              //     planning_server_.setSucceeded(result);
+              //     return;
+              //   }
+              // } else {
+              //   ROS_ERROR("[AffordanceTemplate::planRequest] the resulting plan generated 0 joint trajectory points!!");
+              //   if (!robot_interface_->getPlanner()->setStartState(ee)) {
+              //     ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee.c_str());
+              //     planning.progress = -1;
+              //     planning_server_.publishFeedback(planning);
+              //     result.succeeded = false;
+              //     planning_server_.setSucceeded(result);
+              //     return;
+              //   }
+              // }
             }
           } catch(...) {
             ROS_FATAL("[AffordanceTemplate::planRequest] couldn't get planner or RDF model -- bad pointer somewhere!!");
