@@ -224,7 +224,7 @@ void AffordanceTemplateInterface::runPlanAction()
             goal.steps = req.steps.front();
             goal.direct = req.direct;
             goal.backwards = req.backwards;
-            goal.execute_on_plan = false; // TODO
+            goal.execute = req.execute;
             plan_client.sendGoal(goal);
 
             //wait for the action to return
@@ -235,7 +235,7 @@ void AffordanceTemplateInterface::runPlanAction()
                 ROS_INFO("[AffordanceTemplateInterface::runPlanAction] Action finished: %s",state.toString().c_str());
             }
             else
-                ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] Action did not finish before the time out.");            
+                ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] Action did not finish before the time out.");
         }   
         loop_rate.sleep();
     }

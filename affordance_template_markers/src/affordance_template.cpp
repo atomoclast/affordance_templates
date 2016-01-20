@@ -1679,7 +1679,7 @@ bool AffordanceTemplate::computePathSequence(const AffordanceTemplateStructure s
 
 void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 {
-  ROS_INFO("[AffordanceTemplate::planRequest] request to plan for \"%s\" trajectory...", goal->trajectory.c_str());
+  ROS_INFO("[AffordanceTemplate::planRequest] request to plan %sfor \"%s\" trajectory...", (goal->execute?"and execute ":""), goal->trajectory.c_str());
 
   PlanResult result;
   PlanFeedback planning;
@@ -1690,6 +1690,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
   robot_interface_->getPlanner()->resetAnimation(true);
 
   for (auto ee : goal->groups) {
+
     ++planning.progress;
     planning_server_.publishFeedback(planning);
 
@@ -1727,31 +1728,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     std::map<std::string, planner_interface::PlanningGoal> goals_full;
 
     sensor_msgs::JointState set_state;
-    // ContinuousPlan p;
-    // if (getContinuousPlan( goal->trajectory, (current_idx-1), manipulator_name, PlanningGroup::MANIPULATOR, p)) {
-    //   // index already has been planned for, get the start state
-    //   set_state.header = p.plan.trajectory_.joint_trajectory.header;
-    //   set_state.name = p.plan.trajectory_.joint_trajectory.joint_names;
-    //   set_state.position = p.plan.trajectory_.joint_trajectory.points.back().positions;
-    //   set_state.velocity = p.plan.trajectory_.joint_trajectory.points.back().velocities;
-    //   set_state.effort = p.plan.trajectory_.joint_trajectory.points.back().effort;
-    //   if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state)) {
-    //     ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
-    //     planning.progress = -1;
-    //     planning_server_.publishFeedback(planning);
-    //     result.succeeded = false;
-    //     planning_server_.setSucceeded(result);
-    //     return;
-    //   }
-    // } else { // set the first start state to current state because we don't have a previous plan
-    //   if (!robot_interface_->getPlanner()->getCurrentState(manipulator_name, set_state)) {
-    //     ROS_ERROR("[AffordanceTemplate::planRequest] failed to get initial state for %s", manipulator_name.c_str());
-    //     planning.progress = -1;
-    //     planning_server_.publishFeedback(planning);
-    //     result.succeeded = false;
-    //     planning_server_.setSucceeded(result);
-    //     return; 
-    //   } 
     if (!robot_interface_->getPlanner()->setStartState(manipulator_name) ||
         !robot_interface_->getPlanner()->setStartState(ee)) {
       ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
@@ -1761,8 +1737,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       planning_server_.setSucceeded(result);
       return;
     }
-    
-    // }
 
     // make sure it matches our max idx number because that is max num waypoints
     if (wp_vec.size() != max_idx) {
@@ -1978,6 +1952,29 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
   if (autoplay_display_)
     robot_interface_->getPlanner()->playAnimation();
+
+  if (goal->execute) {
+    ROS_WARN("[AffordanceTemplate::planRequest] planning complete. executing generated plans!"); //info
+
+    for (auto ee : goal->groups) {
+      if ( plan_status_[goal->trajectory][ee].plan_valid) {
+        if (!continuousMoveToWaypoints(goal->trajectory, ee)) {
+          
+          ROS_ERROR("[AffordanceTemplate::planRequest] execution of plan failed!!");
+          
+          continuous_plans_[goal->trajectory].clear();
+          robot_interface_->getPlanner()->resetAnimation(true);
+      
+          return;
+        }
+        plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
+      }
+    }
+
+    // clear out whatever plans we may have
+    continuous_plans_[goal->trajectory].clear();
+    robot_interface_->getPlanner()->resetAnimation(true);
+  }
 
   ++planning.progress;
   planning_server_.publishFeedback(planning);
