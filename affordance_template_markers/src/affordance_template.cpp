@@ -1807,7 +1807,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       group_seed_states[ee] = gripper_state;
       goals_full[manipulator_name] = pg;
       if (robot_interface_->getPlanner()->plan(goals_full, false, false, group_seed_states)) {
-
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         
         ++planning.progress;
@@ -1954,7 +1953,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     robot_interface_->getPlanner()->playAnimation();
 
   if (goal->execute) {
-    ROS_WARN("[AffordanceTemplate::planRequest] planning complete. executing generated plans!"); //info
+    ROS_INFO("[AffordanceTemplate::planRequest] planning complete. executing generated plans!");
 
     for (auto ee : goal->groups) {
       if ( plan_status_[goal->trajectory][ee].plan_valid) {
