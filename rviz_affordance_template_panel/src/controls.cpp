@@ -6,7 +6,7 @@ using namespace std;
 Controls::Controls() {}
 
 
-bool Controls::requestPlan(Controls::CommandType command_type) 
+bool Controls::requestPlan(Controls::CommandType command_type, bool exe_on_plan) 
 {
     affordance_template_msgs::AffordanceTemplatePlanCommand srv;
     string key = ui_->control_template_box->currentText().toUtf8().constData();
@@ -17,6 +17,7 @@ bool Controls::requestPlan(Controls::CommandType command_type)
     srv.request.id = int(atoi(stuff[1].c_str()));
     srv.request.trajectory_name = template_status_->getCurrentTrajectory();
     srv.request.backwards = (command_type==CommandType::STEP_BACKWARD);
+    srv.request.execute = exe_on_plan;
 
     vector<pair<string,int> > ee_info = getSelectedEndEffectorInfo();
     for(auto &ee : ee_info) {

@@ -1136,14 +1136,9 @@ void AffordanceTemplateRVizClient::doCommand(Controls::CommandType command_type)
     ROS_INFO("being called from docommand");
     controlStatusUpdate(); // this is probably inefficient. we could store whether things have been updated, but this is safer.
 
-    bool ret = controls_->requestPlan(command_type); 
+    bool ret = controls_->requestPlan(command_type, ui_->execute_on_plan->isChecked()); 
     if (ret) {
-        if (ui_->execute_on_plan->isChecked()) {
-            ret = controls_->executePlan();
-            if(!ret) {
-                ROS_ERROR("AffordanceTemplateRVizClient::doCommand(%d) -- executing plan failed", (int)command_type);
-            }
-        } 
+        ROS_INFO("[AffordanceTemplateRVizClient::doCommand(%d)] plan found", (int)command_type);
     } else {
         ROS_ERROR("AffordanceTemplateRVizClient::doCommand(%d) -- computing plan failed", (int)command_type);
     }
