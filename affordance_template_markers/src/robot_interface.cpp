@@ -284,11 +284,9 @@ bool RobotInterface::configure() // TODO
     ROS_WARN("[RobotInterface::configure] setting up ee group: %s", g.c_str());
     try
     {
-      std::vector<double> pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
-      // pos_tol.push_back(0.01); // FIXME
-      pos_tol.resize(3, 0.01);
-      // orientation_tol.push_back(0.005); // FIXME
-      orientation_tol.resize(3, 0.005);
+      double pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
+      pos_tol=0.01;
+      orientation_tol=0.005;
       if (robot_planner_->addPlanningGroup(g, "endeffector", 0.01, pos_tol, orientation_tol)) {
         std::string ee_root_frame = robot_planner_->getControlFrame(g);
         ROS_INFO("[RobotInterface::configure] control frame: %s", ee_root_frame.c_str());
@@ -319,11 +317,9 @@ bool RobotInterface::configure() // TODO
     ROS_WARN("[RobotInterface::configure] setting up arm group: %s", g.c_str());
     try
     {
-      std::vector<double> pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
-      // pos_tol.push_back(0.01);
-      pos_tol.resize(3, 0.01);
-      // orientation_tol.push_back(0.005);
-      orientation_tol.resize(3, 0.005);
+      double pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
+      pos_tol=0.01;
+      orientation_tol=0.005;
       if (robot_planner_->addPlanningGroup(g, "cartesian", 0.01, pos_tol, orientation_tol)) {
       } else {
         ROS_ERROR("[RobotInterface::configure] problem adding arm group %s to planner", g.c_str());
