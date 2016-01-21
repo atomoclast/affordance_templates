@@ -1775,8 +1775,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
       std::string next_path_str = createWaypointID(ee_id, plan_seq);
 
-      ROS_INFO("[AffordanceTemplate::planRequest] configuring plan goal for waypoint %s [%d/%d] for %s[%d] on manipulator %s", next_path_str.c_str(), plan_seq+1, max_idx, ee.c_str(), ee_id, manipulator_name.c_str());
-
       // create goal
       goals[manipulator_name].clear();
       geometry_msgs::PoseStamped pt = frame_store_[next_path_str + "/tf"].second;    
@@ -1792,14 +1790,17 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       pg.offset = originToPoseMsg(wp.tool_offset);  
       pg.task_compatibility = taskCompatibilityToPoseMsg(wp.task_compatibility);  
       pg.conditioning_metric = wp.conditioning_metric;
-      pg.type == stringToPlannerType(wp.planner_type);
-     
+      pg.type = stringToPlannerType(wp.planner_type);
+      
       for(int i = 0; i < 3; ++i)  {
         for(int j = 0; j < 2; ++j) {
           pg.tolerance_bounds[i][j] = wp.bounds.position[i][j];
           pg.tolerance_bounds[i+3][j] = wp.bounds.orientation[i][j];
         }
       }
+
+      ROS_INFO("[AffordanceTemplate::planRequest] configuring plan goal for waypoint %s [%d/%d] for %s[%d] on manipulator %s, type: %s", next_path_str.c_str(), plan_seq+1, max_idx, ee.c_str(), ee_id, manipulator_name.c_str(), wp.planner_type.c_str());
+
 
       // do plan
       std::map<std::string, sensor_msgs::JointState> group_seed_states;

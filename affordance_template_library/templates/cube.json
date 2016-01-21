@@ -39,9 +39,10 @@
                   "xyz": [true, true, true],
                   "rpy": [true, true, true],
                   "scale": 0.1
-              }
+              },
+              "planner_type": "JOINT"
             },
-	    {
+	          {
               "ee_pose": 3,
               "display_object": "cube",
               "origin": {
@@ -54,7 +55,7 @@
                   "scale": 0.1
               }
             },
-	    {
+	          {
               "ee_pose": 3,
               "display_object": "cube",
               "origin": {
@@ -68,7 +69,7 @@
               }
             }
 
-	  ]
+	        ]
         }
       ]
     }

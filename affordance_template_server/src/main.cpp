@@ -5,11 +5,11 @@ int main(int argc, char **argv)
 
   ros::init(argc, argv, "affordance_template_server_node");
   ros::AsyncSpinner spinner(10);
-  //ros::NodeHandle pnh("~");
+  ros::NodeHandle pnh("~");
   ros::NodeHandle nh;
   std::string robot_name = "";
 
-  nh.getParam("robot_config", robot_name);
+  pnh.getParam("robot_config", robot_name);
 
   ROS_INFO("ROBOT NAME: %s", robot_name.c_str());
   if (robot_name.empty())
