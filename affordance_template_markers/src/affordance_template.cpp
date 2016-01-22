@@ -725,20 +725,29 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         m.color.g = 0.0;
         m.color.b = wp_id/(N-1.0);
         m.color.a = 0.5;
-        m.pose.orientation.w = 1;
+        //m.pose.orientation.w = 1;
+
+        tf::Transform T;
+        tf::poseMsgToTF(originToPoseMsg(wp.tool_offset),T);
+        tf::poseTFToMsg(T.inverse(), m.pose);
+
         menu_control.markers.push_back( m );
       } else {
         ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in FULL mode", wp_name.c_str());
+
+        tf::Transform wpTm, wpTto, toTm;
+        tf::poseMsgToTF(originToPoseMsg(wp.tool_offset),wpTto);
         for(auto &m: markers.markers) {
           visualization_msgs::Marker ee_m = m;
           ee_m.header.frame_id = tf_frame_name;
           ee_m.ns = name_;
-          ee_m.pose = m.pose;
+          tf::poseMsgToTF(m.pose,wpTm);
+          toTm = wpTto.inverse()*wpTm;
+          tf::poseTFToMsg(toTm, ee_m.pose);
+          // ee_m.pose = m.pose;
           menu_control.markers.push_back( ee_m );
         }
-        // scale = 1.0
-        // if wp in self.waypoint_controls[trajectory] :
-        //     scale = self.waypoint_controls[trajectory][wp]['scale']
+
       }
 
       int_marker.controls.push_back(menu_control);
@@ -1788,6 +1797,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       planner_interface::PlanningGoal pg;
       pg.goal = pt;
       pg.offset = originToPoseMsg(wp.tool_offset);  
+      robot_interface_->getPlanner()->setToolOffset(manipulator_name, pg.offset);
       pg.task_compatibility = taskCompatibilityToPoseMsg(wp.task_compatibility);  
       pg.conditioning_metric = wp.conditioning_metric;
       pg.type = stringToPlannerType(wp.planner_type);

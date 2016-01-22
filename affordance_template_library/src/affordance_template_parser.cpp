@@ -165,11 +165,11 @@ bool AffordanceTemplateParser::loadFromFile(const std::string& filename, Afforda
               Origin tool_offset;
               if(waypoints[w].HasMember("tool_offset")) {
                 ROS_DEBUG_STREAM("  has tool_offset");
-                const rapidjson::Value& pos = waypoints[w]["origin"]["xyz"];
+                const rapidjson::Value& pos = waypoints[w]["tool_offset"]["xyz"];
                 tool_offset.position[0] = pos[0].GetDouble();
                 tool_offset.position[1] = pos[1].GetDouble();
                 tool_offset.position[2] = pos[2].GetDouble();
-                const rapidjson::Value& euler = waypoints[w]["origin"]["rpy"];
+                const rapidjson::Value& euler = waypoints[w]["tool_offset"]["rpy"];
                 tool_offset.orientation[0] = euler[0].GetDouble();
                 tool_offset.orientation[1] = euler[1].GetDouble();
                 tool_offset.orientation[2] = euler[2].GetDouble();
