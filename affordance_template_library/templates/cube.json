@@ -4,9 +4,12 @@
   "display_objects": [
     {
       "name": "cube",
-      "shape": {
-        "type": "mesh",
-        "data": "package://affordance_template_library/models/cube.dae",
+       "shape": {
+        "type": "box",
+        "material": {
+          "color": "red",
+          "rgba": [0.0, 1.0, 0.0, 1.0]
+        },
         "size": [0.04, 0.08, 0.08]
       },
       "origin" : {
