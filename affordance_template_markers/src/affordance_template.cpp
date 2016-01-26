@@ -1642,7 +1642,7 @@ bool AffordanceTemplate::computePathSequence(const AffordanceTemplateStructure s
   sequence_ids.clear();
   if (direct) {
     sequence_ids.push_back(steps-1);
-    next_path_idx = steps;
+    next_path_idx = steps-1;
     return true;
   } else if (steps == 0) {
     sequence_ids.push_back(idx);
@@ -1811,7 +1811,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
       ROS_INFO("[AffordanceTemplate::planRequest] configuring plan goal for waypoint %s [%d/%d] for %s[%d] on manipulator %s, type: %s", next_path_str.c_str(), plan_seq+1, max_idx, ee.c_str(), ee_id, manipulator_name.c_str(), wp.planner_type.c_str());
 
-
       // do plan
       std::map<std::string, sensor_msgs::JointState> group_seed_states;
       group_seed_states[manipulator_name] = set_state;
@@ -1977,6 +1976,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       
           return;
         }
+
         plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
       }
     }
