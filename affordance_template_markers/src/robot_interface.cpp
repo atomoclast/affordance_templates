@@ -368,7 +368,7 @@ void RobotInterface::tearDown()
 {
   // for (auto ee : ee_link_data_) // TODO
   //   ee.stop_offset_update_thread();
-  robot_planner_->tearDown();
+  // robot_planner_->tearDown();
   configured_ = false;
 }
 
