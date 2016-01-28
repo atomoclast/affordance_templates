@@ -49,7 +49,7 @@ namespace rviz_affordance_template_panel
         inline void setUI(Ui::RVizAffordanceTemplatePanel* ui) { ui_ = ui; }
         inline AffordanceTemplateStatusInfo * getTemplateStatusInfo() { return template_status_; }
         
-        bool requestPlan(Controls::CommandType command_type);
+        bool requestPlan(Controls::CommandType command_type, bool exe_on_plan=false);
         bool executePlan();
         std::vector<std::pair<std::string,int> > getSelectedEndEffectorInfo();
 

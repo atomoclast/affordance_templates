@@ -37,7 +37,6 @@ bool RobotInterface::load(const std::string &yaml)
     boost::split(tokens, yaml, boost::is_any_of("/"));
     std::string yaml_base = tokens.back();
 
-    ros::NodeHandle nh;
     nh_.setParam("/affordance_templates/robot_yaml", yaml);
    
     YAML::Node yaml_doc = YAML::LoadFile(yaml);
@@ -201,7 +200,6 @@ bool RobotInterface::load(const affordance_template_msgs::RobotConfig &config)
   ROS_INFO("[RobotInterface::load] loading with robot_config msg");
   robot_config_ = config;
 
-  ros::NodeHandle nh;
   nh_.setParam("/affordance_templates/robot_yaml", "");
 
   for (auto config : robot_config_.end_effectors)
@@ -264,8 +262,8 @@ bool RobotInterface::configure() // TODO
     return false;
   }
 
-  ros::NodeHandle nh;
-  robot_planner_->initialize(nh, robot_config_.name);
+  robot_planner_->initialize(nh_, robot_config_.name);
+  robot_planner_->createDisplay("ats");
 
   // root_frame_ = robot_planner_->getRobotPlanningFrame(); TODO - doesn't exist in planner_interface
   ee_groups_ = robot_planner_->getEndEffectorNames();
@@ -286,9 +284,9 @@ bool RobotInterface::configure() // TODO
     ROS_WARN("[RobotInterface::configure] setting up ee group: %s", g.c_str());
     try
     {
-      std::vector<double> pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
-      pos_tol.push_back(0.01);
-      orientation_tol.push_back(0.005);
+      double pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
+      pos_tol=0.01;
+      orientation_tol=0.005;
       if (robot_planner_->addPlanningGroup(g, "endeffector", 0.01, pos_tol, orientation_tol)) {
         std::string ee_root_frame = robot_planner_->getControlFrame(g);
         ROS_INFO("[RobotInterface::configure] control frame: %s", ee_root_frame.c_str());
@@ -319,9 +317,9 @@ bool RobotInterface::configure() // TODO
     ROS_WARN("[RobotInterface::configure] setting up arm group: %s", g.c_str());
     try
     {
-      std::vector<double> pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
-      pos_tol.push_back(0.01);
-      orientation_tol.push_back(0.005);
+      double pos_tol, orientation_tol; // TODO TEMP, need overloaded method  for just group name and group type?? in planner interface???
+      pos_tol=0.01;
+      orientation_tol=0.005;
       if (robot_planner_->addPlanningGroup(g, "cartesian", 0.01, pos_tol, orientation_tol)) {
       } else {
         ROS_ERROR("[RobotInterface::configure] problem adding arm group %s to planner", g.c_str());
@@ -370,7 +368,7 @@ void RobotInterface::tearDown()
 {
   // for (auto ee : ee_link_data_) // TODO
   //   ee.stop_offset_update_thread();
-  robot_planner_->tearDown();
+  // robot_planner_->tearDown();
   configured_ = false;
 }
 

@@ -1571,7 +1571,7 @@
           <number>5</number>
          </property>
          <attribute name="horizontalHeaderCascadingSectionResizes">
-          <bool>false</bool>
+          <bool>true</bool>
          </attribute>
          <attribute name="horizontalHeaderDefaultSectionSize">
           <number>10</number>
@@ -1583,7 +1583,7 @@
           <number>5</number>
          </attribute>
          <attribute name="verticalHeaderCascadingSectionResizes">
-          <bool>false</bool>
+          <bool>true</bool>
          </attribute>
          <attribute name="verticalHeaderDefaultSectionSize">
           <number>5</number>

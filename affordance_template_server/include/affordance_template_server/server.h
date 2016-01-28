@@ -55,7 +55,7 @@ namespace affordance_template_server
     
   public:
     AffordanceTemplateServer(){} // default constructor 
-    AffordanceTemplateServer(const std::string&);
+    AffordanceTemplateServer(const ros::NodeHandle &, const std::string&);
     ~AffordanceTemplateServer(){}
      
     inline bool getStatus() { return status_; }

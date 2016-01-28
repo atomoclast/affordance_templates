@@ -9,8 +9,13 @@ namespace affordance_template_object
     {
       int ee_pose;
       std::string display_object;
+      std::string planner_type;
+      std::string conditioning_metric;
       Origin origin;
-      Control controls;
+      Origin tool_offset;
+      ToleranceBounds bounds;
+      TaskCompatibility task_compatibility;
+      Control controls;     
     };
 
     struct EndEffectorWaypointList

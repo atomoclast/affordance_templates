@@ -6,7 +6,7 @@ using namespace std;
 Controls::Controls() {}
 
 
-bool Controls::requestPlan(Controls::CommandType command_type) 
+bool Controls::requestPlan(Controls::CommandType command_type, bool exe_on_plan) 
 {
     affordance_template_msgs::AffordanceTemplatePlanCommand srv;
     string key = ui_->control_template_box->currentText().toUtf8().constData();
@@ -17,6 +17,7 @@ bool Controls::requestPlan(Controls::CommandType command_type)
     srv.request.id = int(atoi(stuff[1].c_str()));
     srv.request.trajectory_name = template_status_->getCurrentTrajectory();
     srv.request.backwards = (command_type==CommandType::STEP_BACKWARD);
+    srv.request.execute = exe_on_plan;
 
     vector<pair<string,int> > ee_info = getSelectedEndEffectorInfo();
     for(auto &ee : ee_info) {
@@ -66,22 +67,16 @@ bool Controls::requestPlan(Controls::CommandType command_type)
             int N = template_status_->getTrajectoryInfo()[srv.request.trajectory_name][ee.first]->num_waypoints;
             int steps = 0;
 
-            // @seth 12/14/2015 -- kind of a hack to have the code match my understanding of what is needing to happen when we move direct
-            // if(command_type==CommandType::START) {
-                // if(idx==-1) {
-                //     steps = 1;
-                // } else {
-                //     steps = idx;
-                //     srv.request.backwards = true;
-                // }
-            // } else 
-            if(command_type==CommandType::END) {
-                // if(idx==-1) {
-                    steps = N;
-                // } else {
-                //     steps = N - idx - 1;
-                //     srv.request.backwards = false;
-                // }
+            if(command_type==CommandType::START) {
+                steps = 1;
+                if(idx != -1) {
+                    srv.request.backwards = true;
+                }
+            } else if(command_type==CommandType::END) {
+                steps = N;
+                if(idx !=-1) {
+                    srv.request.backwards = false;
+                }
             }
             srv.request.steps.push_back(steps);
         }

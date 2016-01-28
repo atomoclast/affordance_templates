@@ -1,10 +1,10 @@
 #goal
 string[] groups
 string trajectory
-int32 steps # 0 to plan for all steps in trajectory
+int32 steps
 bool direct
-bool backwards # UNDEFINED ACTION - not really implemented as of 12/9/2015 @seth
-bool execute_on_plan
+bool backwards
+bool execute
 ---
 #result
 bool succeeded

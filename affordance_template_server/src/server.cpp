@@ -2,7 +2,8 @@
 
 using namespace affordance_template_server;
 
-AffordanceTemplateServer::AffordanceTemplateServer(const std::string &_robot_yaml="") :
+AffordanceTemplateServer::AffordanceTemplateServer(const ros::NodeHandle &nh, const std::string &_robot_yaml="") :
+    nh_(nh),
     robot_yaml_(_robot_yaml)
 {
     

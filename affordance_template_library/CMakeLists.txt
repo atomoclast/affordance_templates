@@ -7,11 +7,12 @@ endif()
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  planner_interface
 )
 
 catkin_package(
     INCLUDE_DIRS include
-    CATKIN_DEPENDS roscpp
+    CATKIN_DEPENDS roscpp planner_interface
     LIBRARIES ${PROJECT_NAME}
     DEPENDS system_lib 
 )

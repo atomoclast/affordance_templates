@@ -21,6 +21,9 @@ bool direct
 # go backwards in the plan
 bool backwards
 
+# execute on plan checkbox in rviz
+bool execute
+
 ---
 
 # return status

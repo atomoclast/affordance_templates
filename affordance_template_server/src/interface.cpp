@@ -11,7 +11,7 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const ros::NodeHandle &
 
     if (!_robot_yaml.empty())
         ROS_INFO("[AffordanceTemplateInterface] creating server using robot yaml %s", _robot_yaml.c_str());
-    at_server_.reset(new AffordanceTemplateServer(_robot_yaml));
+    at_server_.reset(new AffordanceTemplateServer(nh_, _robot_yaml));
 
     const std::string base_srv = "/affordance_template_server/";
     at_srv_map_["get_robots"]              = nh_.advertiseService(base_srv + "get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
@@ -224,7 +224,7 @@ void AffordanceTemplateInterface::runPlanAction()
             goal.steps = req.steps.front();
             goal.direct = req.direct;
             goal.backwards = req.backwards;
-            goal.execute_on_plan = false; // TODO
+            goal.execute = req.execute;
             plan_client.sendGoal(goal);
 
             //wait for the action to return
@@ -235,8 +235,9 @@ void AffordanceTemplateInterface::runPlanAction()
                 ROS_INFO("[AffordanceTemplateInterface::runPlanAction] Action finished: %s",state.toString().c_str());
             }
             else
-                ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] Action did not finish before the time out.");            
+                ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] Action did not finish before the time out.");
         }   
+        loop_rate.sleep();
     }
 }
 
@@ -287,6 +288,7 @@ void AffordanceTemplateInterface::runExecuteAction()
             else
                 ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] Action did not finish before the time out.");            
         }
+        loop_rate.sleep();
     }
 }
 
