@@ -698,11 +698,12 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       std::string ee_frame_name = wp_name + "/ee";
       frame_store_[ee_frame_name] = FrameInfo(ee_frame_name, ee_ps);
 
-      geometry_msgs::PoseStamped tf_ps;
-      tf_ps.header.frame_id = ee_frame_name;
-      tf_ps.pose = robot_interface_->getToolOffsetPose(ee_name);
-      std::string tf_frame_name = wp_name + "/tf";
-      frame_store_[tf_frame_name] = FrameInfo(tf_frame_name, tf_ps);
+      // get control point for EE
+      geometry_msgs::PoseStamped cp_ps;
+      cp_ps.header.frame_id = ee_frame_name;
+      cp_ps.pose = robot_interface_->getToolOffsetPose(ee_name);
+      std::string cp_frame_name = wp_name + "/cp";
+      frame_store_[cp_frame_name] = FrameInfo(cp_frame_name, cp_ps);
     
       try {
         tf::poseMsgToTF(robot_interface_->getManipulatorOffsetPose(ee_name),wpTee);
@@ -1786,7 +1787,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
       // create goal
       goals[manipulator_name].clear();
-      geometry_msgs::PoseStamped pt = frame_store_[next_path_str + "/tf"].second;    
+      geometry_msgs::PoseStamped pt = frame_store_[next_path_str + "/cp"].second;    
       goals[manipulator_name].push_back(pt);
       plan_status_[goal->trajectory][ee].sequence_poses.push_back(pt);
 
