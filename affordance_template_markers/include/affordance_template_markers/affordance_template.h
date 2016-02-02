@@ -43,6 +43,7 @@ namespace affordance_template
     bool loop;
     std::map<std::string, bool> controls_on;
     std::map<std::string, bool> compact_view;
+    std::map<std::string, bool> adjust_offset;
   };
 
   struct PlanStatus {
@@ -213,9 +214,11 @@ namespace affordance_template
 
     bool hasObjectFrame(std::string obj);
     bool hasWaypointFrame(std::string wp);
-    
+    bool hasToolPointFrame(std::string tp);
+
     bool isWaypoint(const std::string& wp);
     bool isObject(const std::string& obj);
+    bool isToolPoint(const std::string& tp);
 
     geometry_msgs::Pose originToPose(affordance_template_object::Origin origin);
 

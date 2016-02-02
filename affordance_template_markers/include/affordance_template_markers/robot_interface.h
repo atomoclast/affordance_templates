@@ -6,14 +6,14 @@
 
 #include <ros/ros.h>
 #include <ros/package.h>
+#include <pluginlib/class_loader.h>
 
 #include <tf/transform_listener.h>
 
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose.h>
 
-#include <moveit_planner/moveit_planner.h>
-#include <tracik_planner/tracik_planner.h>
+#include <planner_interface/planner_interface.h>
 
 #include <end_effector_helper/end_effector_helper.h>
 
@@ -33,8 +33,9 @@ namespace affordance_template_markers
     sensor_msgs::JointState joint_data_;
     affordance_template_msgs::RobotConfig robot_config_;
     tf::TransformListener listener_;
-    planner_interface::PlannerInterface *robot_planner_; 
-    
+    boost::shared_ptr<planner_interface::PlannerInterface> robot_planner_;
+    pluginlib::ClassLoader<planner_interface::PlannerInterface> planner_loader_;
+
     bool configured_;
     bool reload_attempted_;
     bool planner_created_;
@@ -91,7 +92,7 @@ namespace affordance_template_markers
     void tearDown();
     void reset();
 
-    planner_interface::PlannerInterface * getPlanner() { return robot_planner_; }
+    boost::shared_ptr<planner_interface::PlannerInterface> getPlanner() { return robot_planner_; }
   };
 }
 

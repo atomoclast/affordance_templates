@@ -10,8 +10,6 @@ find_package(catkin REQUIRED COMPONENTS
     affordance_template_library
     interactive_markers
     planner_interface
-    moveit_planner
-    tracik_planner
     end_effector_helper
     geometry_msgs
     nav_msgs
@@ -23,7 +21,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem)
 
 catkin_package(
     INCLUDE_DIRS include
-	CATKIN_DEPENDS affordance_template_msgs affordance_template_library end_effector_helper geometry_msgs interactive_markers nav_msgs roscpp std_msgs planner_interface moveit_planner tracik_planner actionlib
+	CATKIN_DEPENDS affordance_template_msgs affordance_template_library end_effector_helper geometry_msgs interactive_markers nav_msgs roscpp std_msgs planner_interface actionlib
     LIBRARIES robot_interface affordance_template
     DEPENDS system_lib yaml-cpp
 )

@@ -4,7 +4,8 @@ using namespace affordance_template_markers;
 using namespace end_effector_helper;
 
 RobotInterface::RobotInterface(const ros::NodeHandle& nh) :
-  nh_(nh)
+  nh_(nh),
+  planner_loader_("planner_interface", "planner_interface::PlannerInterface")
 {
   reset();
   nh_.subscribe("joint_states", 10, &RobotInterface::jointStateCallback, this);
@@ -12,7 +13,8 @@ RobotInterface::RobotInterface(const ros::NodeHandle& nh) :
 }
 
 RobotInterface::RobotInterface(const ros::NodeHandle& nh, const std::string &_joint_states_topic="joint_states") :
-  nh_(nh)
+  nh_(nh),
+  planner_loader_("planner_interface", "planner_interface::PlannerInterface")
 {
   reset();
   nh_.subscribe(_joint_states_topic, 10, &RobotInterface::jointStateCallback, this);
@@ -21,8 +23,6 @@ RobotInterface::RobotInterface(const ros::NodeHandle& nh, const std::string &_jo
 
 RobotInterface::~RobotInterface() 
 {
-  if (planner_created_)
-    delete robot_planner_;
 }
 
 bool RobotInterface::load(const std::string &yaml)
@@ -234,36 +234,14 @@ bool RobotInterface::configure() // TODO
   //ROS_INFO("[RobotInterface::configure] package: %s", config_file_.c_str());
   ROS_INFO("[RobotInterface::configure] using planner type: %s", robot_config_.planner_type.c_str());
 
-  if (robot_config_.planner_type == "moveit")
-  {
-    // robot_planner_ = new moveit_planner::MoveItPlanner(robot_config_.name, config_file_); // TODO?? not implemented this way with cpp rewrite
-    robot_planner_ = new moveit_planner::MoveItPlanner();
+  try {
+    ROS_INFO("Setup %s plugin for: %s", robot_config_.planner_type.c_str(), robot_config_.name.c_str());
+    robot_planner_ = planner_loader_.createInstance(robot_config_.planner_type);
+    robot_planner_->initialize(nh_, robot_config_.name);
+    robot_planner_->createDisplay("ats");
+  } catch(pluginlib::PluginlibException& ex) {
+    ROS_ERROR("RobotInterface::configure() -- The planner plugin failed to load for some reason. Error: %s", ex.what());
   }
-  else if (robot_config_.planner_type == "trac_ik")
-  {
-    // robot_planner_ = new moveit_planner::MoveItPlanner(robot_config_.name, config_file_); // TODO?? not implemented this way with cpp rewrite
-    robot_planner_ = new tracik_planner::TracIKPlanner();
-  }
-  else if (robot_config_.planner_type == "atlas")
-  {
-    ROS_WARN("[RobotInterface::configure] nothing for atlas planner yet...");
-    return false;
-    // robot_planner_ = AtlasPathPlanner(robot_config_.name, config_file_);
-  }
-  else if (robot_config_.planner_type == "hybrid")
-  {
-    ROS_WARN("[RobotInterface::configure] nothing for hybrid planner yet...");
-    return false;
-    // robot_planner_ = AtlasHybridPathPlanner(robot_config_.name, config_file_);
-  }
-  else
-  {
-    ROS_FATAL("[RobotInterface::configure] %s is an unrecognized planner type!!", robot_config_.planner_type.c_str());
-    return false;
-  }
-
-  robot_planner_->initialize(nh_, robot_config_.name);
-  robot_planner_->createDisplay("ats");
 
   // root_frame_ = robot_planner_->getRobotPlanningFrame(); TODO - doesn't exist in planner_interface
   ee_groups_ = robot_planner_->getEndEffectorNames();
