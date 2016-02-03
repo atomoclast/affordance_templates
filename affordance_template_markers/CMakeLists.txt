@@ -16,12 +16,13 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     roscpp
     actionlib
+    end_effector_helper
 )
 find_package(Boost REQUIRED COMPONENTS filesystem)
 
 catkin_package(
     INCLUDE_DIRS include
-	CATKIN_DEPENDS affordance_template_msgs affordance_template_library end_effector_helper geometry_msgs interactive_markers nav_msgs roscpp std_msgs planner_interface actionlib
+	CATKIN_DEPENDS affordance_template_msgs affordance_template_library end_effector_helper geometry_msgs interactive_markers nav_msgs roscpp std_msgs planner_interface actionlib end_effector_helper 
     LIBRARIES robot_interface affordance_template
     DEPENDS system_lib yaml-cpp
 )
@@ -34,7 +35,18 @@ include_directories(
 )
 
 add_library(robot_interface src/robot_interface.cpp)
-target_link_libraries(robot_interface ${catkin_LIBRARIES} yaml-cpp end_effector_helper)
+target_link_libraries(robot_interface ${catkin_LIBRARIES} yaml-cpp)
 
 add_library(affordance_template src/affordance_template.cpp)
-target_link_libraries(affordance_template ${catkin_LIBRARIES} yaml-cpp robot_interface affordance_template_library ${Boost_FILESYSTEM_LIBRARY})
+target_link_libraries(affordance_template ${catkin_LIBRARIES} yaml-cpp ${Boost_FILESYSTEM_LIBRARY})
+
+install(TARGETS affordance_template robot_interface
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)

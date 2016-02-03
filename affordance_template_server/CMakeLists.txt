@@ -30,12 +30,21 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME} src/interface.cpp src/server.cpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} affordance_template)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 add_executable(${PROJECT_NAME}_node src/interface.cpp src/server.cpp src/main.cpp)
-target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} affordance_template)
+target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
 
 #add_executable(plan_test src/test_plan.cpp)
 #target_link_libraries(plan_test ${catkin_LIBRARIES} affordance_template)
 #add_executable(exe_test src/test_exe.cpp)
 #target_link_libraries(exe_test ${catkin_LIBRARIES} affordance_template)
+
+install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
+  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  )
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)

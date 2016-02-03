@@ -25,4 +25,11 @@ include_directories(
 add_library(${PROJECT_NAME} src/affordance_template_parser.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
+install(TARGETS ${PROJECT_NAME}
+  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
 
+install(DIRECTORY include/
+  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
