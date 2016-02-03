@@ -13,7 +13,6 @@
 
   <build_depend>affordance_template_msgs</build_depend>
   <build_depend>affordance_template_library</build_depend>
-  <build_depend>robot_interaction_tools</build_depend>
   <build_depend>interactive_markers</build_depend>
   <build_depend>planner_interface</build_depend>
   <build_depend>moveit_planner</build_depend>
@@ -27,7 +26,6 @@
 
   <run_depend>affordance_template_msgs</run_depend>
   <run_depend>affordance_template_library</run_depend>
-  <run_depend>robot_interaction_tools</run_depend>
   <run_depend>interactive_markers</run_depend>
   <run_depend>planner_interface</run_depend>
   <run_depend>moveit_planner</run_depend>
