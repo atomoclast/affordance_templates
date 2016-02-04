@@ -1977,17 +1977,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     std::map<std::string, std::vector<geometry_msgs::PoseStamped> > goals;
     std::map<std::string, planner_interface::PlanningGoal> goals_full;
 
-    sensor_msgs::JointState set_state;
-    if (!robot_interface_->getPlanner()->setStartState(manipulator_name) ||
-        !robot_interface_->getPlanner()->setStartState(ee)) {
-      ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
-      planning.progress = -1;
-      planning_server_.publishFeedback(planning);
-      result.succeeded = false;
-      planning_server_.setSucceeded(result);
-      return;
-    }
-
     // make sure it matches our max idx number because that is max num waypoints
     if (wp_vec.size() != max_idx) {
       ROS_ERROR("[AffordanceTemplate::planRequest] waypoint vector size does not match up!!");
@@ -2016,7 +2005,11 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       return;
     }
 
+    // use to set the seed states during planning
+    sensor_msgs::JointState manipulator_state;
     sensor_msgs::JointState gripper_state;
+    std::map<std::string, sensor_msgs::JointState> group_seed_states;
+
     // now loop through waypoints setting new start state to the last planned joint values
     for (auto plan_seq : plan_status_[goal->trajectory][ee].sequence_ids) {
 
@@ -2036,11 +2029,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       tf::poseMsgToTF(frame_store_[cp_frame_name].second.pose,eeTcp);
       tf::poseMsgToTF(frame_store_[tp_frame_name].second.pose,wpTtp); 
       
-
       // create goal
       planner_interface::PlanningGoal pg;
       goals[manipulator_name].clear();
-  
 
       geometry_msgs::PoseStamped pt = frame_store_[tp_frame_name].second;    
       goals[manipulator_name].push_back(pt);
@@ -2060,7 +2051,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       if(!getWaypointFromStructure(structure_, goal->trajectory, ee_id, plan_seq, wp))
         ROS_ERROR("[AffordanceTemplate::planRequest] problem getting waypoint from structure");
 
-
       pg.task_compatibility = taskCompatibilityToPoseMsg(wp.task_compatibility);  
       pg.conditioning_metric = wp.conditioning_metric;
       pg.type = stringToPlannerType(wp.planner_type);
@@ -2075,10 +2065,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       ROS_INFO("[AffordanceTemplate::planRequest] configuring plan goal for waypoint %s [%d/%d] for %s[%d] on manipulator %s, type: %s", next_path_str.c_str(), plan_seq+1, max_idx, ee.c_str(), ee_id, manipulator_name.c_str(), wp.planner_type.c_str());
 
       // do plan
-      std::map<std::string, sensor_msgs::JointState> group_seed_states;
-      group_seed_states[manipulator_name] = set_state;
-      group_seed_states[ee] = gripper_state;
       goals_full[manipulator_name] = pg;
+      group_seed_states[ee] = gripper_state;
+      group_seed_states[manipulator_name] = manipulator_state;
       if (robot_interface_->getPlanner()->plan(goals_full, false, false, group_seed_states)) {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         
@@ -2101,35 +2090,19 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         cp.step = plan_seq;
         cp.group = manipulator_name;
         cp.type = PlanningGroup::MANIPULATOR;
-        cp.start_state = set_state;
+        cp.start_state = manipulator_state;
         cp.plan = plan;
         setContinuousPlan(goal->trajectory, cp);
 
         // set the start state for ee planning
-        set_state.header = plan.trajectory_.joint_trajectory.header;
-        set_state.name = plan.trajectory_.joint_trajectory.joint_names;
+        manipulator_state.header = plan.trajectory_.joint_trajectory.header;
+        manipulator_state.name = plan.trajectory_.joint_trajectory.joint_names;
         if (plan.trajectory_.joint_trajectory.points.size()) {
-          set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
-          set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
-          set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
-          if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state)) {
-            ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
-            planning.progress = -1;
-            planning_server_.publishFeedback(planning);
-            result.succeeded = false;
-            planning_server_.setSucceeded(result);
-            return;
-          }
+          manipulator_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
+          manipulator_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
+          manipulator_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
         } else {
           ROS_ERROR("[AffordanceTemplate::planRequest] the resulting plan generated 0 joint trajectory points!!");
-          if (!robot_interface_->getPlanner()->setStartState(manipulator_name)) {
-            ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
-            planning.progress = -1;
-            planning_server_.publishFeedback(planning);
-            result.succeeded = false;
-            planning_server_.setSucceeded(result);
-            return;
-          }
         }
         
         // find and add EE joint state to goal
@@ -2176,13 +2149,13 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
               cp.step = plan_seq;
               cp.group = ee;
               cp.type = PlanningGroup::EE;
-              cp.start_state = set_state;
+              cp.start_state = manipulator_state;
               cp.plan = plan;
               setContinuousPlan(goal->trajectory, cp);
 
               // doing this lets us append the grasp pose without having the arm go back to init start state
               ContinuousPlan p;
-              getContinuousPlan( goal->trajectory, plan_seq, manipulator_name, PlanningGroup::MANIPULATOR, p);
+              getContinuousPlan( goal->trajectory, plan_seq, ee, PlanningGroup::EE, p);
               p.plan.trajectory_.joint_trajectory.points.push_back(plan.trajectory_.joint_trajectory.points.back());
               gripper_state.header = plan.trajectory_.joint_trajectory.header;
               gripper_state.name = plan.trajectory_.joint_trajectory.joint_names;
@@ -2191,15 +2164,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
                 gripper_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
                 gripper_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
                 gripper_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
-
-                if (!robot_interface_->getPlanner()->setStartState(ee, gripper_state)) {
-                  ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee.c_str());
-                  planning.progress = -1;
-                  planning_server_.publishFeedback(planning);
-                  result.succeeded = false;
-                  planning_server_.setSucceeded(result);
-                  return;
-                }
+              } else {
+                ROS_ERROR("[AffordanceTemplate::planRequest] the resulting plan generated 0 joint trajectory points!!");
               }
             }
           } catch(...) {
