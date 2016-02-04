@@ -1046,7 +1046,7 @@ void AffordanceTemplate::removeAllMarkers()
 
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
-  ROS_INFO("AffordanceTemplate::processFeedback(%s) -- %s", robot_name_.c_str(), feedback->marker_name.c_str());
+  ROS_DEBUG("AffordanceTemplate::processFeedback(%s) -- %s", robot_name_.c_str(), feedback->marker_name.c_str());
 
   interactive_markers::MenuHandler::CheckState state;
 
@@ -1106,7 +1106,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
       p = ps.pose;
     }
-    ROS_INFO("storing pose for %s", feedback->marker_name.c_str());
+    ROS_DEBUG("storing pose for %s", feedback->marker_name.c_str());
     frame_store_[feedback->marker_name].second.pose = p;
     
   }
@@ -1120,7 +1120,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
     if(waypoint_flags_[current_trajectory_].adjust_offset[wp_frame]) {
 
-      ROS_INFO("adjusting tool frame: %s", feedback->marker_name.c_str());
+      ROS_DEBUG("adjusting tool frame: %s", feedback->marker_name.c_str());
 
       geometry_msgs::Pose p = feedback->pose;
       if(feedback->header.frame_id != frame_store_[feedback->marker_name].second.header.frame_id) {
@@ -1130,7 +1130,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
         p = ps.pose;
       }
-      // ROS_INFO("storing pose for %s", feedback->marker_name.c_str());
+      // ROS_DEBUG("storing pose for %s", feedback->marker_name.c_str());
       frame_store_[feedback->marker_name].second.pose = p;
 
     } else if (waypoint_flags_[current_trajectory_].move_offset[wp_frame]) {
@@ -1139,7 +1139,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       if(true) {
         if(hasToolPointFrame(feedback->marker_name)) {
 
-          ROS_INFO("moving tool frame: %s", feedback->marker_name.c_str());
+          ROS_DEBUG("moving tool frame: %s", feedback->marker_name.c_str());
 
           std::string obj_frame = frame_store_[wp_frame].second.header.frame_id;
           // std::cout << wp_frame << std::endl;
