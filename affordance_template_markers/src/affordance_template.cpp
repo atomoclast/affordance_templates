@@ -2007,7 +2007,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
               // doing this lets us append the grasp pose without having the arm go back to init start state
               ContinuousPlan p;
-              getContinuousPlan( goal->trajectory, plan_seq, manipulator_name, PlanningGroup::MANIPULATOR, p);
+              getContinuousPlan( goal->trajectory, plan_seq, ee, PlanningGroup::EE, p);
               p.plan.trajectory_.joint_trajectory.points.push_back(plan.trajectory_.joint_trajectory.points.back());
               gripper_state.header = plan.trajectory_.joint_trajectory.header;
               gripper_state.name = plan.trajectory_.joint_trajectory.joint_names;
