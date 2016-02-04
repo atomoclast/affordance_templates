@@ -1829,16 +1829,6 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
     std::map<std::string, std::vector<geometry_msgs::PoseStamped> > goals;
     std::map<std::string, planner_interface::PlanningGoal> goals_full;
 
-    // if (!robot_interface_->getPlanner()->setStartState(manipulator_name) ||
-    //     !robot_interface_->getPlanner()->setStartState(ee)) {
-    //   ROS_ERROR("[AffordanceTemplate::planRequest] failed to set initial state for %s", manipulator_name.c_str());
-    //   planning.progress = -1;
-    //   planning_server_.publishFeedback(planning);
-    //   result.succeeded = false;
-    //   planning_server_.setSucceeded(result);
-    //   return;
-    // }
-
     // make sure it matches our max idx number because that is max num waypoints
     if (wp_vec.size() != max_idx) {
       ROS_ERROR("[AffordanceTemplate::planRequest] waypoint vector size does not match up!!");
@@ -1963,34 +1953,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
           manipulator_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
           manipulator_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
           manipulator_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
-
-          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-          // this is seems to be the culprit but why??
-
-          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-          // if (!robot_interface_->getPlanner()->setStartState(manipulator_name, manipulator_state)) {
-          //   ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
-          //   planning.progress = -1;
-          //   planning_server_.publishFeedback(planning);
-          //   result.succeeded = false;
-          //   planning_server_.setSucceeded(result);
-          //   return;
-          // }
         } else {
           ROS_ERROR("[AffordanceTemplate::planRequest] the resulting plan generated 0 joint trajectory points!!");
-          // if (!robot_interface_->getPlanner()->setStartState(manipulator_name)) {
-          //   ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
-          //   planning.progress = -1;
-          //   planning_server_.publishFeedback(planning);
-          //   result.succeeded = false;
-          //   planning_server_.setSucceeded(result);
-          //   return;
-          // }
         }
         
         // find and add EE joint state to goal
@@ -2052,15 +2016,8 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
                 gripper_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
                 gripper_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
                 gripper_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
-
-                // if (!robot_interface_->getPlanner()->setStartState(ee, gripper_state)) {
-                //   ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", ee.c_str());
-                //   planning.progress = -1;
-                //   planning_server_.publishFeedback(planning);
-                //   result.succeeded = false;
-                //   planning_server_.setSucceeded(result);
-                //   return;
-                // }
+              } else {
+                ROS_ERROR("[AffordanceTemplate::planRequest] the resulting plan generated 0 joint trajectory points!!");
               }
             }
           } catch(...) {
