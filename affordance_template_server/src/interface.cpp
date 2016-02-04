@@ -596,8 +596,32 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
     {
         ObjectInfo oi;
         oi.object_name = obj.name;
-        // oi.object_pose -- may not be necessary according to @swhart 10/27/2015
+
+        geometry_msgs::PoseStamped ps;
+        if(at->getPoseFromFrameStore(obj.name, ps)) {
+            oi.object_pose = ps;
+        } else {
+            ROS_WARN("AffordanceTemplateInterface::getTemplateStatus() -- problem getting pose for object: %s",obj.name.c_str());
+        }
+        oi.type = obj.shape.type;
+        if(oi.type=="mesh") {
+            oi.mesh_resource = obj.shape.mesh;
+            oi.size.x = obj.shape.size[0];
+            oi.size.y = obj.shape.size[1];
+            oi.size.z = obj.shape.size[2];
+        } else if(oi.type=="sphere") {
+            oi.size.x = obj.shape.radius;
+        } else if(oi.type=="cylinder") {
+            oi.size.x = obj.shape.radius;
+            oi.size.y = obj.shape.length;
+        } else if(oi.type=="box") {
+            oi.size.x = obj.shape.size[0];
+            oi.size.y = obj.shape.size[1];
+            oi.size.z = obj.shape.size[2];
+        }
         ats.object_info.push_back(oi);
+
+
     }
 
     std::map<std::string, int> ee_names = at->getRobotInterface()->getEEIDMap();
