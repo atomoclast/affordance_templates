@@ -464,10 +464,14 @@ bool AffordanceTemplateInterface::handleSetObject(SetObjectPose::Request& req, S
 bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, GetObjectPose::Response& res)
 {
     ATPointer at;
-    if (at_server_->getTemplateInstance(req.name, at))
+    std::string at_key = req.type + ":" + std::to_string(req.id);
+    std::string obj_key = req.name + ":" + std::to_string(req.id);
+    // ROS_WARN("Handle get object AT %s",at_key.c_str());
+
+    if (at_server_->getTemplateInstance(at_key, at))
     {
         affordance_template_object::AffordanceTemplateStructure ats = at->getCurrentStructure();
-        ROS_INFO("[AffordanceTemplateInterface::handleGetObject] getting pose for object %s", req.name.c_str());
+        ROS_DEBUG("[AffordanceTemplateInterface::handleGetObject] getting pose for object %s", req.name.c_str());
         for (auto d : ats.display_objects)
         {
             ObjectInfo obj; 
@@ -480,9 +484,9 @@ bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, G
             ps.pose = affordance_template_object::originToPoseMsg(d.origin);
             obj.object_pose = ps;
 
-            if (req.name.empty())
+            if (obj_key.empty())
                 res.objects.push_back(obj);
-            else if (d.name == req.name)
+            else if (d.name == obj_key)
             {
                 res.objects.push_back(obj);
                 break;
