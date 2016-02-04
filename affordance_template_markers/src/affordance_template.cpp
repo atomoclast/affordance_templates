@@ -425,7 +425,9 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
   for(auto &obj: structure.display_objects) {
 
-    ROS_INFO("AffordanceTemplate::createDisplayObjectsFromStructure() creating Display Object: %s", obj.name.c_str());
+    ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() creating Display Object: %s", obj.name.c_str());
+    ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() key: %s", key_.c_str());
+    ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() obj.parent: %s", obj.parent.c_str());
 
     setupObjectMenu(structure, obj);
 
@@ -435,7 +437,8 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     } else {
       root_frame_ = key_;
     }
-
+    ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() root_frame: %s", root_frame_.c_str());
+    
     // set scale factor if not already set
     if(object_scale_factor_.find(obj.name) == std::end(object_scale_factor_)) {
       object_scale_factor_[obj.name] = 1.0;
@@ -2362,6 +2365,16 @@ bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_name
   return false;
 }
 
+bool AffordanceTemplate::getPoseFromFrameStore(const std::string &frame, geometry_msgs::PoseStamped &ps) {
+
+  auto search = frame_store_.find(frame);
+  if(search != frame_store_.end()) {
+    ps = frame_store_[frame].second;
+    return true;
+  }
+  return false;
+}
+
 
 void AffordanceTemplate::update() {
   ros::Rate loop_rate(loop_rate_);
@@ -2369,7 +2382,7 @@ void AffordanceTemplate::update() {
   FrameInfo fi;
   ros::Time t = ros::Time::now();
   
-  ROS_INFO("AffordanceTemplate::udpate() -- updating...");
+  ROS_INFO("AffordanceTemplate::update() -- updating...");
   if(running_)
   {
     for(auto &f: frame_store_) 

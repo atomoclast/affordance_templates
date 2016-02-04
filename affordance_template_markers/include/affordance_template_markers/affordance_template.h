@@ -119,6 +119,8 @@ namespace affordance_template
     bool setWaypointViewMode(int ee, int wp, bool m);
     bool setTemplatePose(geometry_msgs::PoseStamped ps);
     
+    bool getPoseFromFrameStore(const std::string &frame, geometry_msgs::PoseStamped &ps);
+    
   private:
     
     // menu config will hold the menu text as well as bool for whether it should have a checkbox

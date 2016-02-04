@@ -465,33 +465,35 @@ bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, G
 {
     ATPointer at;
     std::string at_key = req.type + ":" + std::to_string(req.id);
-    std::string obj_key = req.name + ":" + std::to_string(req.id);
-    // ROS_WARN("Handle get object AT %s",at_key.c_str());
+    std::string obj_key = "";
+
+    if (!req.name.empty())
+        obj_key = req.name + ":" + std::to_string(req.id);
+    
+    ROS_DEBUG("Handle get object AT %s",at_key.c_str());
+    ROS_DEBUG("Handle get object %s", obj_key.c_str());
 
     if (at_server_->getTemplateInstance(at_key, at))
     {
         affordance_template_object::AffordanceTemplateStructure ats = at->getCurrentStructure();
-        ROS_DEBUG("[AffordanceTemplateInterface::handleGetObject] getting pose for object %s", req.name.c_str());
         for (auto d : ats.display_objects)
         {
             ObjectInfo obj; 
             obj.object_name = d.name;
             geometry_msgs::PoseStamped ps;
-            if (d.parent.empty())
-                ps.header.frame_id = d.name;
-            else
-                ps.header.frame_id = d.parent;
-            ps.pose = affordance_template_object::originToPoseMsg(d.origin);
-            obj.object_pose = ps;
-
-            if (obj_key.empty())
-                res.objects.push_back(obj);
-            else if (d.name == obj_key)
-            {
-                res.objects.push_back(obj);
-                break;
+            if(at->getPoseFromFrameStore(d.name, ps)) {
+                obj.object_pose = ps;
+                if (obj_key.empty())
+                    res.objects.push_back(obj);
+                else if (d.name == obj_key)
+                {
+                    res.objects.push_back(obj);
+                    break;
+                }
             }
         }
+    } else {
+        return false;
     }
 
     return true;
