@@ -1964,14 +1964,24 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
           set_state.position = plan.trajectory_.joint_trajectory.points.back().positions;
           set_state.velocity = plan.trajectory_.joint_trajectory.points.back().velocities;
           set_state.effort = plan.trajectory_.joint_trajectory.points.back().effort;
-          if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state)) {
-            ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
-            planning.progress = -1;
-            planning_server_.publishFeedback(planning);
-            result.succeeded = false;
-            planning_server_.setSucceeded(result);
-            return;
-          }
+
+          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+          // this is seems to be the culprit but why??
+
+          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+          // if (!robot_interface_->getPlanner()->setStartState(manipulator_name, set_state)) {
+          //   ROS_ERROR("[AffordanceTemplate::planRequest] failed to set start state for %s", manipulator_name.c_str());
+          //   planning.progress = -1;
+          //   planning_server_.publishFeedback(planning);
+          //   result.succeeded = false;
+          //   planning_server_.setSucceeded(result);
+          //   return;
+          // }
         } else {
           ROS_ERROR("[AffordanceTemplate::planRequest] the resulting plan generated 0 joint trajectory points!!");
           if (!robot_interface_->getPlanner()->setStartState(manipulator_name)) {
