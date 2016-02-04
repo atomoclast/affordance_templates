@@ -16,7 +16,7 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   template_type_(template_type),
   id_(id),
   root_object_(""),
-  loop_rate_(50.0),
+  loop_rate_(25.0),
   object_controls_display_on_(true),
   planning_server_(nh, (template_type + "_" + std::to_string(id) + "/plan_action"), boost::bind(&AffordanceTemplate::planRequest, this, _1), false),
   execution_server_(nh, (template_type + "_" + std::to_string(id) + "/execute_action"), boost::bind(&AffordanceTemplate::executeRequest, this, _1), false)
@@ -72,8 +72,8 @@ void AffordanceTemplate::setupMenuOptions()
   waypoint_menu_options_.push_back(MenuConfig("Delete Waypoint", false));
   waypoint_menu_options_.push_back(MenuConfig("Move Forward", false));
   waypoint_menu_options_.push_back(MenuConfig("Move Back", false));
-  waypoint_menu_options_.push_back(MenuConfig("Adjust Tool Offset", true));
-  waypoint_menu_options_.push_back(MenuConfig("Move Tool Offset", true));
+  waypoint_menu_options_.push_back(MenuConfig("Change Tool Offset", true));
+  waypoint_menu_options_.push_back(MenuConfig("Move Tool Point", true));
   
   object_menu_options_.clear();
   object_menu_options_.push_back(MenuConfig("Add Waypoint Before", false));
@@ -669,17 +669,17 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
       }
       if(waypoint_flags_[current_trajectory_].adjust_offset[wp_name]) {
-        key[wp_name] = {"Adjust Tool Offset"};
+        key[wp_name] = {"Change Tool Offset"};
         marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
       }  else {
-        key[wp_name] = {"Adjust Tool Offset"};
+        key[wp_name] = {"Change Tool Offset"};
         marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
       }
       if(waypoint_flags_[current_trajectory_].move_offset[wp_name]) {
-        key[wp_name] = {"Move Tool Offset"};
+        key[wp_name] = {"Move Tool Point"};
         marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
       }  else {
-        key[wp_name] = {"Move Tool Offset"};
+        key[wp_name] = {"Move Tool Point"};
         marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
       }
 
@@ -1094,8 +1094,8 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   play_plan_key[feedback->marker_name]             = {"(Re)Play Plan"};
   loop_key[feedback->marker_name]                  = {"Loop Animation"};
   autoplay_key[feedback->marker_name]              = {"Autoplay"};
-  adjust_offset_key[feedback->marker_name]         = {"Adjust Tool Offset"};
-  move_offset_key[feedback->marker_name]           = {"Move Tool Offset"};
+  adjust_offset_key[feedback->marker_name]         = {"Change Tool Offset"};
+  move_offset_key[feedback->marker_name]           = {"Move Tool Point"};
 
   if(hasObjectFrame(feedback->marker_name) || hasWaypointFrame(feedback->marker_name)) {
     geometry_msgs::Pose p = feedback->pose;
@@ -1817,7 +1817,12 @@ bool AffordanceTemplate::isObject(const std::string& obj) {
 }
 
 bool AffordanceTemplate::isWaypoint(const std::string& wp) {
-  return !isObject(wp) && !isToolPoint(wp);
+  if(!isObject(wp)) {
+     return wp.find("/tp")==std::string::npos && 
+            wp.find("/cp")==std::string::npos && 
+            wp.find("/ee")==std::string::npos;
+  }
+  return false;
 }
 
 bool AffordanceTemplate::isToolPoint(const std::string& tp) {
@@ -2354,8 +2359,9 @@ void AffordanceTemplate::update() {
       fi = f.second;
       tf::poseMsgToTF(fi.second.pose, transform);
       tf_broadcaster_.sendTransform(tf::StampedTransform(transform, t, fi.second.header.frame_id, fi.first));
-      loop_rate.sleep();
     }
+    server_->applyChanges();
+    loop_rate.sleep();
   }
 }
 
@@ -2378,7 +2384,13 @@ void AffordanceTemplate::run()
       fi = f.second;
       tf::poseMsgToTF(fi.second.pose, transform);
       tf_broadcaster_.sendTransform(tf::StampedTransform(transform, t, fi.second.header.frame_id, fi.first));
+    
+      if(isObject(f.first) || isWaypoint(f.first)) {
+        server_->setPose(f.first, fi.second.pose);
+      }
     }
+
+    server_->applyChanges();
     loop_rate.sleep();
   }
   mutex_.unlock();
@@ -2420,7 +2432,7 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
       geometry_msgs::PoseStamped ps;
       try {
         ros::Time now = ros::Time::now();
-        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, now, ros::Duration(3.0));
+        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, ros::Time(0), ros::Duration(3.0));
         tf_listener_.transformPose(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
       } catch(...) {
         ROS_WARN("tf lookup error");  
