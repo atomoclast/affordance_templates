@@ -44,6 +44,7 @@ namespace affordance_template
     std::map<std::string, bool> controls_on;
     std::map<std::string, bool> compact_view;
     std::map<std::string, bool> adjust_offset;
+    std::map<std::string, bool> move_offset;
   };
 
   struct PlanStatus {
