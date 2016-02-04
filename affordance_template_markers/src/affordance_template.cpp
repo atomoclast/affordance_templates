@@ -534,7 +534,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     int_marker.controls.push_back(control);
     if(object_controls_display_on_) {
       std::vector<visualization_msgs::InteractiveMarkerControl> dof_controls;
-      dof_controls = utils::MarkerHelper::makeCustomDOFControls(obj.controls.translation[0], 
+      dof_controls = rit_utils::MarkerHelper::makeCustomDOFControls(obj.controls.translation[0], 
                                                                 obj.controls.translation[1], 
                                                                 obj.controls.translation[2],
                                                                 obj.controls.rotation[0],
@@ -826,7 +826,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       int_marker.controls.push_back(menu_control);
       if(waypoint_flags_[current_trajectory_].controls_on[wp_name]) {
         std::vector<visualization_msgs::InteractiveMarkerControl> dof_controls;
-        dof_controls = utils::MarkerHelper::makeCustomDOFControls(wp.controls.translation[0], 
+        dof_controls = rit_utils::MarkerHelper::makeCustomDOFControls(wp.controls.translation[0], 
                                                                   wp.controls.translation[1], 
                                                                   wp.controls.translation[2],
                                                                   wp.controls.rotation[0],
@@ -857,7 +857,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         // tool_offset_marker.controls.push_back(menu_control);
 
         std::vector<visualization_msgs::InteractiveMarkerControl> dof_controls;
-        dof_controls = utils::MarkerHelper::makeCustomDOFControls(true,true,true,true,true,true);
+        dof_controls = rit_utils::MarkerHelper::makeCustomDOFControls(true,true,true,true,true,true);
 
         for (auto &c: dof_controls) {
           tool_offset_marker.controls.push_back(c);
