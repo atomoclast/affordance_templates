@@ -1225,10 +1225,9 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()
         int id = ui_->control_trajectory_box->findText(QString(srv.response.current_trajectory.c_str()));
         ui_->control_trajectory_box->setCurrentIndex(id);
 
-        ui_->control_trajectory_box->blockSignals(false);
-
         updateTables(srv.request.name, srv.response.current_trajectory);
-
+        
+        ui_->control_trajectory_box->blockSignals(false);
     }   
     else
     {
