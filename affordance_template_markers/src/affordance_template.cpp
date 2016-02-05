@@ -579,7 +579,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
 
 bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses) 
 {
-  ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- trajectory: %s", current_trajectory_.c_str());
+  ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- trajectory: %s", current_trajectory_.c_str());
 
   int wp_ids = 0;
 
@@ -608,6 +608,9 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
       setupWaypointMenu(structure, wp_name);
       geometry_msgs::Pose display_pose = originToPoseMsg(wp.origin);  
+      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- pose: (%.3f,%.3f,%.3f),(%.3f,%.3f,%.3f,%.3f)", 
+        display_pose.position.x,display_pose.position.y,display_pose.position.z,
+        display_pose.orientation.x,display_pose.orientation.y,display_pose.orientation.z,display_pose.orientation.w);
 
       std::string parent_obj = appendID(wp.display_object);
       double parent_scale = object_scale_factor_[parent_obj]*ee_scale_factor_[parent_obj];  
@@ -617,20 +620,28 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       display_pose.position.z *= parent_scale;
 
       visualization_msgs::InteractiveMarker int_marker;
+
+      if(server_->get(wp_name, int_marker)) {
+        ROS_INFO("erasing old IM %s", wp_name.c_str());
+        server_->erase(wp_name);
+        server_->applyChanges();
+      } 
+
       int_marker.header.frame_id = parent_obj;
       int_marker.header.stamp = ros::Time(0);
       int_marker.name = wp_name;
       int_marker.description = wp_name;
       int_marker.scale = wp.controls.scale;
-
     
       if(!keep_poses || !hasWaypointFrame(wp_name) ) {
         //store base WP pose to publish by TF
         geometry_msgs::PoseStamped ps;
         ps.header.frame_id = parent_obj;
+        ps.header.stamp = ros::Time(0);
         ps.pose = display_pose;
         frame_store_[wp_name] = FrameInfo(wp_name, ps);
         int_marker.pose = ps.pose;
+        server_->setPose(int_marker.name, int_marker.pose);
       } else {
         int_marker.pose = frame_store_[wp_name].second.pose;
         // if(parent_obj != "") {
@@ -639,6 +650,15 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         //   int_marker.pose.position.z /= object_scale_factor_[obj.name];
         // }
       }
+
+
+      ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- setPose(%s): (%.3f,%.3f,%.3f),(%.3f,%.3f,%.3f,%.3f)", 
+        int_marker.name.c_str(),
+        frame_store_[wp_name].second.pose.position.x,frame_store_[wp_name].second.pose.position.y,frame_store_[wp_name].second.pose.position.z,
+        frame_store_[wp_name].second.pose.orientation.x,frame_store_[wp_name].second.pose.orientation.y,frame_store_[wp_name].second.pose.orientation.z,frame_store_[wp_name].second.pose.orientation.w);
+
+      server_->setPose(int_marker.name, frame_store_[wp_name].second.pose);
+      server_->applyChanges();
 
       visualization_msgs::InteractiveMarkerControl menu_control;
       menu_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;    
@@ -716,6 +736,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
        // get waypoint (tool) offset point for WP
       geometry_msgs::PoseStamped tp_ps;
       tp_ps.header.frame_id = wp_name;
+      tp_ps.header.stamp = ros::Time(0);
       std::string tp_frame_name = wp_name + "/tp";
       if(!keep_poses || !hasToolPointFrame(tp_frame_name)) {
         tp_ps.pose = originToPoseMsg(wp.tool_offset); // TODO: Need to scale this probably - SH
@@ -756,7 +777,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       std_msgs::ColorRGBA ee_color;
 
       if(waypoint_flags_[current_trajectory_].compact_view[wp_name]) {
-        ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in COMPACT mode", wp_name.c_str());
+        ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- displaying %s in COMPACT mode", wp_name.c_str());
         visualization_msgs::Marker m;
         m.header.frame_id = cp_frame_name;
         m.ns = name_;
@@ -781,7 +802,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
           ee_color.r = 0.0;
           ee_color.g = 0.0;
           ee_color.b = 0.25;
-          ee_color.a = 0.25;
+          ee_color.a = 0.1;
         } else {
           ee_color.r = 0.0;
           ee_color.g = (0.9-range)+inc*(N-1.0-wp_id);
@@ -883,7 +904,7 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       wp_id++;
     }
   }
-  ROS_DEBUG("AffordanceTemplate::createWaypointsFromStructure() -- done");
+  ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- done");
  
   server_->applyChanges();          
   server_->applyChanges();          
@@ -893,21 +914,128 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
 
 bool AffordanceTemplate::insertWaypointInList(affordance_template_object::EndEffectorWaypoint wp, int id, affordance_template_object::EndEffectorWaypointList &wp_list) {
   
+  ROS_INFO("AffordanceTemplate::insertWaypointInList() -- %d", id);
+
   wp_list.waypoints.insert(wp_list.waypoints.begin()+id, wp);
 
-  std::string wp_name_1, wp_name_2; 
-  for(size_t k=wp_list.waypoints.size()-1; (int)k>=(int)id; --k) {
+  std::string wp_name, wp_name_1, wp_name_2, wp_name_last; 
+  for(size_t k=wp_list.waypoints.size()-1; (int)k>(int)id; --k) {
 
-    wp_name_1 = createWaypointID(wp_list.id, k);
-    wp_name_2 = createWaypointID(wp_list.id, k+1);
+    wp_name_1 = createWaypointID(wp_list.id, k-1);
+    wp_name_2 = createWaypointID(wp_list.id, k);
 
     ROS_WARN("ID=%d, k=%d -- moving \'%s\' data to \'%s\'", id, (int)k, wp_name_1.c_str(), wp_name_2.c_str());
     waypoint_flags_[current_trajectory_].controls_on[wp_name_2] = waypoint_flags_[current_trajectory_].controls_on[wp_name_1];
     waypoint_flags_[current_trajectory_].compact_view[wp_name_2] = waypoint_flags_[current_trajectory_].compact_view[wp_name_1];
     waypoint_flags_[current_trajectory_].adjust_offset[wp_name_2] = waypoint_flags_[current_trajectory_].adjust_offset[wp_name_1];
     waypoint_flags_[current_trajectory_].move_offset[wp_name_2] = waypoint_flags_[current_trajectory_].move_offset[wp_name_1];
+
+    ROS_WARN("Changing FrameInfo key %s to %s",  frame_store_[wp_name_1].first.c_str(), wp_name_2.c_str());
+
+    std::string wp_name_1_cp = wp_name_1 + "/cp";
+    std::string wp_name_1_tp = wp_name_1 + "/tp";
+    std::string wp_name_1_ee = wp_name_1 + "/ee";
+
+    std::string wp_name_2_cp = wp_name_2 + "/cp";
+    std::string wp_name_2_tp = wp_name_2 + "/tp";
+    std::string wp_name_2_ee = wp_name_2 + "/ee";
+
+    frame_store_[wp_name_1].first = wp_name_2;
+    frame_store_[wp_name_1_ee].first = wp_name_2_ee;
+    frame_store_[wp_name_1_cp].first = wp_name_2_cp;
+    frame_store_[wp_name_1_tp].first = wp_name_2_tp;
+
+    frame_store_[wp_name_2] = frame_store_[wp_name_1];
+    frame_store_[wp_name_2_ee] = frame_store_[wp_name_1_ee];
+    frame_store_[wp_name_2_cp] = frame_store_[wp_name_1_cp];
+    frame_store_[wp_name_2_tp] = frame_store_[wp_name_1_tp];
+
+    frame_store_[wp_name_1].second.header.stamp = ros::Time::now();
+    server_->setPose(wp_name_1,frame_store_[wp_name_1].second.pose);
+    server_->setPose(wp_name_1_tp,frame_store_[wp_name_1_tp].second.pose);
+
+    frame_store_[wp_name_2].second.header.stamp = ros::Time::now();
+    server_->setPose(wp_name_2,frame_store_[wp_name_2].second.pose);
+    server_->setPose(wp_name_2_tp,frame_store_[wp_name_2_tp].second.pose);
+
+    
   }
+
+  wp_name = createWaypointID(wp_list.id, id);
+  std::string wp_name_cp = wp_name + "/cp";
+  std::string wp_name_tp = wp_name + "/tp";
+  std::string wp_name_ee = wp_name + "/ee";
+
+  std::string frame_id = wp.display_object + ":" + std::to_string(id_);
+
+  ROS_WARN("Updating FrameInfo pose for %s (%d), in frame: %s",  wp_name.c_str(), id, frame_id.c_str());
+  frame_store_[wp_name].first = wp_name;
+  frame_store_[wp_name_cp].first = wp_name_cp;
+  frame_store_[wp_name_tp].first = wp_name_tp;
+  frame_store_[wp_name_ee].first = wp_name_ee;
+  frame_store_[wp_name].second.pose = originToPoseMsg(wp.origin);
+  frame_store_[wp_name].second.header.frame_id = frame_id;
+  frame_store_[wp_name].second.header.stamp = ros::Time::now();
+  frame_store_[wp_name_tp].second.pose = originToPoseMsg(wp.tool_offset);
+  frame_store_[wp_name_tp].second.header.frame_id = wp_name;
+  frame_store_[wp_name_tp].second.header.stamp = ros::Time::now();
+  
+  server_->setPose(wp_name,frame_store_[wp_name].second.pose);
+  server_->setPose(wp_name_tp,frame_store_[wp_name_tp].second.pose);
+  
+  // wp_name_last = wp_name + ":" + std::to_string(wp_list.waypoints.size()-1);
+  // server_->setPose(wp_name_last,frame_store_[wp_name_last].second.pose);
+
+  server_->applyChanges();
+  server_->applyChanges();
+  server_->applyChanges();
+  server_->applyChanges();
+  server_->applyChanges();
+  server_->applyChanges();
+  
   return true;
+}
+
+bool AffordanceTemplate::deleteWaypointFromList(int ee_id, int wp_id, affordance_template_object::EndEffectorWaypointList &wp_list) {
+
+  std::string wp_name, wp_name_1, wp_name_2, wp_name_old; 
+  
+  wp_name = createWaypointID(ee_id, wp_id);
+  ROS_WARN("AffordanceTemplate::deleteWaypointFromList() -- deleting wp %s (%d)",  wp_name.c_str(), wp_id);
+ 
+  wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
+  
+
+  for(size_t k=0; k<wp_list.waypoints.size()-1; k++) {
+
+    wp_name_1 = createWaypointID(wp_list.id, k);
+    wp_name_2 = createWaypointID(wp_list.id, k+1);
+
+    ROS_WARN("ID=%d, k=%d -- moving \'%s\' data to \'%s\'", wp_id, (int)k, wp_name_2.c_str(), wp_name_1.c_str());
+    waypoint_flags_[current_trajectory_].controls_on[wp_name_1] = waypoint_flags_[current_trajectory_].controls_on[wp_name_2];
+    waypoint_flags_[current_trajectory_].compact_view[wp_name_1] = waypoint_flags_[current_trajectory_].compact_view[wp_name_2];
+    waypoint_flags_[current_trajectory_].adjust_offset[wp_name_1] = waypoint_flags_[current_trajectory_].adjust_offset[wp_name_2];
+    waypoint_flags_[current_trajectory_].move_offset[wp_name_1] = waypoint_flags_[current_trajectory_].move_offset[wp_name_2];
+
+    ROS_WARN("Changing FrameInfo key %s to %s",  frame_store_[wp_name_1].first.c_str(), wp_name_2.c_str());
+
+    frame_store_[wp_name_2].first = wp_name_1;
+    frame_store_[wp_name_1] = frame_store_[wp_name_2];
+    
+  }
+
+  wp_name_old = createWaypointID(wp_list.id, wp_list.waypoints.size());
+  std::string wp_name_old_cp = wp_name_old + "/cp";
+  std::string wp_name_old_tp = wp_name_old + "/tp";
+  std::string wp_name_old_ee = wp_name_old + "/ee";
+
+  ROS_WARN("Removing FrameInfo %s",  wp_name_old.c_str());
+  frame_store_.erase(wp_name_old);
+  frame_store_.erase(wp_name_old_ee);
+  frame_store_.erase(wp_name_old_tp);
+  frame_store_.erase(wp_name_old_cp);
+
+
 }
 
 bool AffordanceTemplate::getWaypointFromStructure(AffordanceTemplateStructure structure, std::string trajectory, int ee_id, int wp_id, affordance_template_object::EndEffectorWaypoint &wp)
@@ -1053,6 +1181,7 @@ void AffordanceTemplate::removeAllMarkers()
   group_menu_handles_.clear();
   int_markers_.clear();
   marker_menus_.clear();
+  server_->clear();
   server_->applyChanges();
 }
 
@@ -1115,12 +1244,11 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       geometry_msgs::PoseStamped ps;
       ps.pose = feedback->pose;
       ps.header = feedback->header;
-      tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
+      tf_listener_.transformPose(frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
       p = ps.pose;
     }
     ROS_DEBUG("storing pose for %s", feedback->marker_name.c_str());
-    frame_store_[feedback->marker_name].second.pose = p;
-    
+    frame_store_[feedback->marker_name].second.pose = p;   
   }
 
 
@@ -1139,50 +1267,37 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         geometry_msgs::PoseStamped ps;
         ps.pose = feedback->pose;
         ps.header = feedback->header;
-        tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
+        tf_listener_.transformPose(frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
         p = ps.pose;
       }
-      // ROS_DEBUG("storing pose for %s", feedback->marker_name.c_str());
       frame_store_[feedback->marker_name].second.pose = p;
 
     } else if (waypoint_flags_[current_trajectory_].move_offset[wp_frame]) {
 
-      // if(feedback->event_type == visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP ) {
-      if(true) {
-        if(hasToolPointFrame(feedback->marker_name)) {
+      if(hasToolPointFrame(feedback->marker_name)) {
 
-          ROS_DEBUG("moving tool frame: %s", feedback->marker_name.c_str());
+        ROS_DEBUG("moving tool frame: %s", feedback->marker_name.c_str());
 
-          std::string obj_frame = frame_store_[wp_frame].second.header.frame_id;
-          // std::cout << wp_frame << std::endl;
+        std::string obj_frame = frame_store_[wp_frame].second.header.frame_id;
+        geometry_msgs::Pose p = feedback->pose;
+        geometry_msgs::PoseStamped tool_pose, wp_pose, fresh_pose, tool_delta_in_origin_frame, tp_in_obj_frame;
+        fresh_pose.pose.orientation.w = 1.0;
+        tool_pose.pose = feedback->pose;
+        tool_pose.header = feedback->header;
+        tf_listener_.transformPose(obj_frame, tool_pose, tp_in_obj_frame);
 
-          geometry_msgs::Pose p = feedback->pose;
-          geometry_msgs::PoseStamped tool_pose, wp_pose, fresh_pose, tool_delta_in_origin_frame, tp_in_obj_frame;
-          fresh_pose.pose.orientation.w = 1.0;
-          tool_pose.pose = feedback->pose;
-          tool_pose.header = feedback->header;
-          // tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, tool_pose, tool_pose);
-          tf_listener_.transformPose (obj_frame, tool_pose, tp_in_obj_frame);
-
-          // std::cout << "tool_pose[" << obj_frame << "]:" << std::endl;
-          // std::cout << tp_in_obj_frame << std::endl;
-
-          geometry_msgs::Pose wp_pose_new;
-          tf::Transform origTtp_new, origTwp_new, wpTtp;
-          
-          tf::poseMsgToTF(frame_store_[feedback->marker_name].second.pose,wpTtp);
-          tf::poseMsgToTF(tp_in_obj_frame.pose,origTtp_new);
-          origTwp_new = origTtp_new*wpTtp.inverse();
-          tf::poseTFToMsg(origTwp_new, wp_pose_new);
-
-          // std::cout << "updated wp pose:" << std::endl;
-          // std::cout << wp_pose_new << std::endl;
+        geometry_msgs::Pose wp_pose_new;
+        tf::Transform origTtp_new, origTwp_new, wpTtp;
         
-          frame_store_[wp_frame].second.pose = wp_pose_new;
-          
-          server_->setPose(feedback->marker_name, fresh_pose.pose);
-          server_->applyChanges();
-        }
+        tf::poseMsgToTF(frame_store_[feedback->marker_name].second.pose,wpTtp);
+        tf::poseMsgToTF(tp_in_obj_frame.pose,origTtp_new);
+        origTwp_new = origTtp_new*wpTtp.inverse();
+        tf::poseTFToMsg(origTwp_new, wp_pose_new);
+        frame_store_[wp_frame].second.pose = wp_pose_new;
+
+        // this shouldnt be necessary, but if we dont do this, the poses get off when you turn on the offset 6dof. FIXME
+        server_->setPose(feedback->marker_name, fresh_pose.pose);
+        server_->applyChanges();
       }
     }
   }
@@ -1278,6 +1393,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       // check for 'Add Waypoint Before' for EE objects
       if (group_menu_handles_.find(wp_before_key) != std::end(group_menu_handles_)) 
       {
+        ROS_INFO("---------------------------");
         if (group_menu_handles_[wp_before_key] == feedback->menu_entry_id)
         {
           // Trajectory traj;
@@ -1296,17 +1412,44 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                   std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
                   if (wp_name == feedback->marker_name)
                   {
-                    ROS_DEBUG("[AffordanceTemplate::processFeedback::Add Waypoint Before] for EE waypoint %s", feedback->marker_name.c_str());
-                    // TODO and FIXME - this is all just testing insertion
-                    affordance_template_object::EndEffectorWaypoint eewp;
-                    eewp.ee_pose = 1;
-                    eewp.display_object = "test_before_object";
-                    eewp.origin.position[0] = eewp.origin.position[1] = eewp.origin.position[2] = 1.0;
-                    eewp.origin.orientation[0] = eewp.origin.orientation[1] = eewp.origin.orientation[2] = 0.0;
-                    eewp.controls.translation[0] = eewp.controls.translation[1] = eewp.controls.translation[2] = true;
-                    eewp.controls.rotation[0] = eewp.controls.rotation[1] = eewp.controls.rotation[2] = true;
-                    eewp.controls.scale = 1.0;
-                    wp_list.waypoints.insert(wp_list.waypoints.begin(), eewp);
+                    ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] for EE waypoint %s", feedback->marker_name.c_str());
+                    ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] -- display object: %s",  appendID(wp.display_object).c_str());
+                    ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] -- ee_pose: %d", wp.ee_pose);
+
+
+                    affordance_template_object::EndEffectorWaypoint eewp, wp_prev;
+                    eewp.ee_pose = wp.ee_pose;
+                    eewp.display_object = wp.display_object;//appendID(wp.display_object);
+ 
+                    eewp.origin = wp.origin;
+ 
+                    eewp.tool_offset.position[0] = 0; 
+                    eewp.tool_offset.position[1] = 0; 
+                    eewp.tool_offset.position[2] = 0; 
+                    eewp.tool_offset.orientation[0] = 0; 
+                    eewp.tool_offset.orientation[1] = 0; 
+                    eewp.tool_offset.orientation[2] = 0; 
+
+                   if(wp_id > 0) {
+                      ROS_WARN("averging position with wp %d", wp_id-1);
+                      wp_prev = wp_list.waypoints[wp_id-1];
+
+                      eewp.origin.position[0] = (wp_prev.origin.position[0] + wp.origin.position[0])/2.0;
+                      eewp.origin.position[1] = (wp_prev.origin.position[1] + wp.origin.position[1])/2.0;
+                      eewp.origin.position[2] = (wp_prev.origin.position[2] + wp.origin.position[2])/2.0;
+
+                      ROS_WARN("wp_%d pose  = (%.3f,%.3f,%.3f)",wp_id-1,wp_prev.origin.position[0],wp_prev.origin.position[1],wp_prev.origin.position[2]);
+                      ROS_WARN("wp_%d pose  = (%.3f,%.3f,%.3f)",wp_id,wp.origin.position[0],wp.origin.position[1],wp.origin.position[2]);
+                      ROS_WARN("new wp pose = (%.3f,%.3f,%.3f)",eewp.origin.position[0],eewp.origin.position[1],eewp.origin.position[2]);
+                    } else {
+                      eewp.origin.position[0] = wp.origin.position[0] + 0.025;
+                      eewp.origin.position[1] = wp.origin.position[1] + 0.025;
+                      eewp.origin.position[2] = wp.origin.position[2] + 0.025;
+                    }
+
+                    eewp.controls = wp.controls;
+                    // wp_list.waypoints.insert(wp_list.waypoints.begin()+wp_id+1, eewp);
+                    insertWaypointInList(eewp, wp_id, wp_list);
 
                     removeAllMarkers();
                     createFromStructure(structure_, true, true, current_trajectory_);             
@@ -1381,6 +1524,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       // check for 'Add Waypoint After' for EE objects
       if (group_menu_handles_.find(wp_after_key) != std::end(group_menu_handles_)) 
       {
+        ROS_INFO("---------------------------");
         if (group_menu_handles_[wp_after_key] == feedback->menu_entry_id)
         {
           // Trajectory traj;
@@ -1399,6 +1543,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                   std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
                   if (wp_name == feedback->marker_name)
                   {
+
                     ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint After] for EE waypoint: %s", feedback->marker_name.c_str());
                     ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint After] -- display object: %s",  appendID(wp.display_object).c_str());
                     ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint After] -- ee_pose: %d", wp.ee_pose);
@@ -1409,12 +1554,25 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
  
                     eewp.origin = wp.origin;
                     
+                    eewp.tool_offset.position[0] = 0; 
+                    eewp.tool_offset.position[1] = 0; 
+                    eewp.tool_offset.position[2] = 0; 
+                    eewp.tool_offset.orientation[0] = 0; 
+                    eewp.tool_offset.orientation[1] = 0; 
+                    eewp.tool_offset.orientation[2] = 0; 
+
                     if(wp_id < wp_list.waypoints.size()-1) {
                       ROS_WARN("averging position with wp %d", wp_id+1);
                       wp_next = wp_list.waypoints[wp_id+1];
+
                       eewp.origin.position[0] = (wp_next.origin.position[0] +  wp.origin.position[0])/2.0;
                       eewp.origin.position[1] = (wp_next.origin.position[1] +  wp.origin.position[1])/2.0;
                       eewp.origin.position[2] = (wp_next.origin.position[2] +  wp.origin.position[2])/2.0;
+
+                      ROS_WARN("wp_%d pose = (%.3f,%.3f,%.3f)",wp_id,wp.origin.position[0],wp.origin.position[1],wp.origin.position[2]);
+                      ROS_WARN("wp_%d pose = (%.3f,%.3f,%.3f)",wp_id+1,wp_next.origin.position[0],wp_next.origin.position[1],wp_next.origin.position[2]);
+                      ROS_WARN("new wp pose = (%.3f,%.3f,%.3f)",eewp.origin.position[0],eewp.origin.position[1],eewp.origin.position[2]);
+
                     } else {
                       eewp.origin.position[0] = wp.origin.position[0] - 0.025;
                       eewp.origin.position[1] = wp.origin.position[1] - 0.025;
@@ -1533,10 +1691,11 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                   std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
                   if (wp_name == feedback->marker_name)
                   {
-                    if (wp_list.waypoints.size() == 1)
-                      wp_list.waypoints.clear();
-                    else
-                      wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
+                    deleteWaypointFromList(wp_list.id, wp_id, wp_list);
+                    // if (wp_list.waypoints.size() == 1)
+                    //   wp_list.waypoints.clear();
+                    // else
+                    //   wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
 
                     found = true;
 
@@ -2344,27 +2503,6 @@ bool AffordanceTemplate::getPoseFromFrameStore(const std::string &frame, geometr
 }
 
 
-void AffordanceTemplate::update() {
-  ros::Rate loop_rate(loop_rate_);
-  tf::Transform transform;
-  FrameInfo fi;
-  ros::Time t = ros::Time::now();
-  
-  ROS_INFO("AffordanceTemplate::update() -- updating...");
-  if(running_)
-  {
-    for(auto &f: frame_store_) 
-    {
-      fi = f.second;
-      tf::poseMsgToTF(fi.second.pose, transform);
-      tf_broadcaster_.sendTransform(tf::StampedTransform(transform, t, fi.second.header.frame_id, fi.first));
-    }
-    server_->applyChanges();
-    loop_rate.sleep();
-  }
-}
-
-
 void AffordanceTemplate::run()
 {
   ros::Rate loop_rate(loop_rate_);
@@ -2372,27 +2510,28 @@ void AffordanceTemplate::run()
   FrameInfo fi;
   ros::Time t;
   
-  mutex_.lock();
   
   ROS_INFO("AffordanceTemplate::run() -- spinning...");
   while(running_ && ros::ok())
   {
+    mutex_.lock();
     t = ros::Time::now();
     for(auto &f: frame_store_) 
     {
       fi = f.second;
+      fi.second.header.stamp = t;
       tf::poseMsgToTF(fi.second.pose, transform);
       tf_broadcaster_.sendTransform(tf::StampedTransform(transform, t, fi.second.header.frame_id, fi.first));
     
-      if(isObject(f.first) || isWaypoint(f.first)) {
+      if(isObject(f.first) || isWaypoint(f.first) ) {
         server_->setPose(f.first, fi.second.pose);
       }
     }
 
     server_->applyChanges();
+    mutex_.unlock();
     loop_rate.sleep();
   }
-  mutex_.unlock();
   ROS_INFO("AffordanceTemplate::run() -- leaving spin thread. template must be shutting down...");
 }
 
