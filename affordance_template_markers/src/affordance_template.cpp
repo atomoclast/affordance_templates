@@ -291,15 +291,6 @@ void AffordanceTemplate::setTrajectoryFlags(Trajectory traj)
     waypoint_flags_[traj.name] = wp_flags;
   }
 
-  // if(plan_status_.find(traj.name) == std::end(plan_status_)) {
-  //   plan_status_[traj.name][ee].direct     = false;
-  //   plan_status_[traj.name][ee].plan_valid = false;
-  //   plan_status_[traj.name][ee].exec_valid = false;
-  //   plan_status_[traj.name][ee].backwards  = false;
-  //   plan_status_[traj.name][ee].sequence_ids.clear();
-  //   plan_status_[traj.name][ee].sequence_poses.clear();
-  // }
-
 }
 
 bool AffordanceTemplate::isValidTrajectory(Trajectory traj)  
@@ -377,7 +368,7 @@ bool AffordanceTemplate::setWaypointViewMode(int ee, int wp, bool m)
   std::string wp_name = createWaypointID(ee, wp);
   waypoint_flags_[current_trajectory_].compact_view[wp_name] = m;
   ROS_DEBUG("AffordanceTemplate::setWaypointViewMode() -- setting compact_view for [%s] to %d", wp_name.c_str(), (int)m);
-  removeAllMarkers();
+  // removeAllMarkers();
   createFromStructure(structure_, true, true, current_trajectory_);
   server_->applyChanges();
   return true;
@@ -429,7 +420,7 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() key: %s", key_.c_str());
     ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() obj.parent: %s", obj.parent.c_str());
 
-    setupObjectMenu(structure, obj);
+    
 
     root_frame_ = template_type_;
     if(obj.parent != "") {
@@ -453,6 +444,13 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     //   ee_scale_factor_[obj.name] = 1.0;
 
     visualization_msgs::InteractiveMarker int_marker;
+
+    if(server_->get(obj.name, int_marker)) {
+      ROS_INFO("updating old obj IM %s", obj.name.c_str());
+    } else {
+      setupObjectMenu(structure, obj);
+    }
+
     int_marker.header.frame_id = root_frame_;
     int_marker.header.stamp = ros::Time(0);
     int_marker.name = obj.name;
@@ -534,8 +532,10 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
     //     scale = self.object_controls[obj]['scale']*self.object_scale_factor[obj]
 
     //  # int_marker = CreateInteractiveMarker(self.frame_id, obj.name, scale)
+    int_marker.controls.clear();
     int_marker.controls.push_back(control);
     if(object_controls_display_on_) {
+      ROS_WARN("setting obj controls ON");
       std::vector<visualization_msgs::InteractiveMarkerControl> dof_controls;
       dof_controls = rit_utils::MarkerHelper::makeCustomDOFControls(obj.controls.translation[0], 
                                                                 obj.controls.translation[1], 
@@ -547,10 +547,12 @@ bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_o
       for (auto &c: dof_controls) {
         int_marker.controls.push_back(c);
       }
-    }   
+    }  else {
+      ROS_WARN("setting obj controls OFF");
+      
+    }
 
     //self.marker_pose_offset[obj] = self.pose_from_origin(self.object_origin[obj])
-
     addInteractiveMarker(int_marker);
 
     MenuHandleKey key;
@@ -606,7 +608,6 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       std::string wp_name = createWaypointID(ee_id, wp_id);
       ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() creating Waypoint: %s", wp_name.c_str());
 
-      setupWaypointMenu(structure, wp_name);
       geometry_msgs::Pose display_pose = originToPoseMsg(wp.origin);  
       ROS_INFO("AffordanceTemplate::createWaypointsFromStructure() -- pose: (%.3f,%.3f,%.3f),(%.3f,%.3f,%.3f,%.3f)", 
         display_pose.position.x,display_pose.position.y,display_pose.position.z,
@@ -622,10 +623,14 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
       visualization_msgs::InteractiveMarker int_marker;
 
       if(server_->get(wp_name, int_marker)) {
-        ROS_INFO("erasing old IM %s", wp_name.c_str());
-        server_->erase(wp_name);
-        server_->applyChanges();
-      } 
+        ROS_INFO("updating old IM %s", wp_name.c_str());
+        // server_->erase(wp_name);
+        // server_->applyChanges();
+        int_marker.controls.clear();
+      } else {
+        // only setup menu the first time
+        setupWaypointMenu(structure, wp_name);
+      }
 
       int_marker.header.frame_id = parent_obj;
       int_marker.header.stamp = ros::Time(0);
@@ -657,13 +662,14 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         frame_store_[wp_name].second.pose.position.x,frame_store_[wp_name].second.pose.position.y,frame_store_[wp_name].second.pose.position.z,
         frame_store_[wp_name].second.pose.orientation.x,frame_store_[wp_name].second.pose.orientation.y,frame_store_[wp_name].second.pose.orientation.z,frame_store_[wp_name].second.pose.orientation.w);
 
-      server_->setPose(int_marker.name, frame_store_[wp_name].second.pose);
-      server_->applyChanges();
+      // server_->setPose(int_marker.name, frame_store_[wp_name].second.pose);
+      // server_->applyChanges();
 
       visualization_msgs::InteractiveMarkerControl menu_control;
       menu_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;    
       menu_control.always_visible = true;
-      
+      menu_control.markers.clear();
+
       MenuHandleKey key;
       if(waypoint_flags_[current_trajectory_].run_backwards) {
         key[wp_name] = {"Compute Backwards Path"};
@@ -871,11 +877,8 @@ bool AffordanceTemplate::createWaypointsFromStructure(affordance_template_object
         }
       }
 
-
-
       // std::cout << int_marker << std::endl;
       addInteractiveMarker(int_marker);
-
 
 
       // add tool offset marker
@@ -958,6 +961,12 @@ bool AffordanceTemplate::insertWaypointInList(affordance_template_object::EndEff
     server_->setPose(wp_name_2,frame_store_[wp_name_2].second.pose);
     server_->setPose(wp_name_2_tp,frame_store_[wp_name_2_tp].second.pose);
 
+    removeInteractiveMarker(wp_name_1);
+    removeInteractiveMarker(wp_name_2);
+
+    removeInteractiveMarker(wp_name_1_tp);
+    removeInteractiveMarker(wp_name_2_tp);
+
     
   }
 
@@ -965,6 +974,12 @@ bool AffordanceTemplate::insertWaypointInList(affordance_template_object::EndEff
   std::string wp_name_cp = wp_name + "/cp";
   std::string wp_name_tp = wp_name + "/tp";
   std::string wp_name_ee = wp_name + "/ee";
+
+  ROS_WARN("Setting waypoint flags for %s",  wp_name.c_str());
+  waypoint_flags_[current_trajectory_].controls_on[wp_name] = true;
+  waypoint_flags_[current_trajectory_].compact_view[wp_name] = false;
+  waypoint_flags_[current_trajectory_].adjust_offset[wp_name] = false;
+  waypoint_flags_[current_trajectory_].move_offset[wp_name] = false;
 
   std::string frame_id = wp.display_object + ":" + std::to_string(id_);
 
@@ -1003,11 +1018,16 @@ bool AffordanceTemplate::deleteWaypointFromList(int ee_id, int wp_id, affordance
   wp_name = createWaypointID(ee_id, wp_id);
   ROS_WARN("AffordanceTemplate::deleteWaypointFromList() -- deleting wp %s (%d)",  wp_name.c_str(), wp_id);
  
+  // for(size_t k=0; k<wp_list.waypoints.size()-1; k++) {
+  //   wp_list.waypoints[k] = wp_list.waypoints[k+1]; // THIS IS WRONG
+  // }
+
   wp_list.waypoints.erase(wp_list.waypoints.begin() + wp_id);
   
+  for(size_t k=wp_list.waypoints.size()-1; (int)k>=(int)wp_id; --k) {
+  // for(size_t k=0; k<wp_list.waypoints.size()-1; k++) {
 
-  for(size_t k=0; k<wp_list.waypoints.size()-1; k++) {
-
+    wp_list.waypoints[k] = wp_list.waypoints[k+1]; // is this right?
     wp_name_1 = createWaypointID(wp_list.id, k);
     wp_name_2 = createWaypointID(wp_list.id, k+1);
 
@@ -1035,6 +1055,13 @@ bool AffordanceTemplate::deleteWaypointFromList(int ee_id, int wp_id, affordance
   frame_store_.erase(wp_name_old_tp);
   frame_store_.erase(wp_name_old_cp);
 
+  for(size_t k=wp_list.waypoints.size(); (int)k>=(int)wp_id; --k) {
+    wp_name = createWaypointID(wp_list.id, k);
+    ROS_WARN("  Removing IM %s",  wp_name.c_str());
+    removeInteractiveMarker(wp_name);
+  }
+  // removeInteractiveMarker(wp_name_old);
+  // removeInteractiveMarker(wp_name_old_tp);
 
 }
 
@@ -1162,16 +1189,26 @@ void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMar
 {
   ROS_DEBUG("AffordanceTemplate::addInteractiveMarker() -- %s with frame: %s", m.name.c_str(), m.header.frame_id.c_str());
   std::string name = m.name;
+
+  visualization_msgs::InteractiveMarker im;
+  if(server_->get(name, im)) {
+    im = m;
+  } else {
+    server_->insert(m);
+    server_->setCallback(m.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ));
+  }
   int_markers_[m.name] = m;
-  server_->insert(m);
-  server_->setCallback(m.name, boost::bind( &AffordanceTemplate::processFeedback, this, _1 ));
+
 }
 
 void AffordanceTemplate::removeInteractiveMarker(std::string marker_name) 
 {
   ROS_DEBUG("[AffordanceTemplate::removeInteractiveMarker] removing marker %s", marker_name.c_str());
   server_->erase(marker_name);
+  marker_menus_.erase(marker_name);
+
   server_->applyChanges();
+  ros::Duration(0.2).sleep();
 }
 
 void AffordanceTemplate::removeAllMarkers() 
@@ -1448,10 +1485,10 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     }
 
                     eewp.controls = wp.controls;
-                    // wp_list.waypoints.insert(wp_list.waypoints.begin()+wp_id+1, eewp);
+                    
                     insertWaypointInList(eewp, wp_id, wp_list);
 
-                    removeAllMarkers();
+                    // removeAllMarkers();
                     createFromStructure(structure_, true, true, current_trajectory_);             
 
                     found = true;
@@ -1504,7 +1541,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     wp_list.waypoints.insert(wp_list.waypoints.begin(), wp);
 
                     found = true;
-                    removeAllMarkers();
+                    // removeAllMarkers();
                     createFromStructure(structure_, true, true, current_trajectory_);
                     break;
                   }
@@ -1580,10 +1617,9 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     }
 
                     eewp.controls = wp.controls;
-                    // wp_list.waypoints.insert(wp_list.waypoints.begin()+wp_id+1, eewp);
                     insertWaypointInList(eewp, wp_id+1, wp_list);
 
-                    removeAllMarkers();
+                    // removeAllMarkers();
                     createFromStructure(structure_, true, true, current_trajectory_);             
 
                     found = true;
@@ -1648,10 +1684,10 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     eewp.origin.position[2] = wp.origin.position[2] - 0.025;
                     
                     eewp.controls = wp.controls;
-                    //wp_list.waypoints.push_back(eewp);
+                    
                     insertWaypointInList(eewp, wp_list.waypoints.size(), wp_list);
 
-                    removeAllMarkers();
+                    // removeAllMarkers();
                     createFromStructure(structure_, true, true, current_trajectory_); 
 
                     found = true;
@@ -1702,7 +1738,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     //FIXME:: is this the best way to handle methods like these?? 
                     //        should these be called at the end of the processFeedback
                     //        or should we be using server->apply() instead??
-                    removeAllMarkers();
+                    // removeAllMarkers();
                     createFromStructure(structure_, true, false, current_trajectory_); 
                     break;
                   }
@@ -1753,19 +1789,24 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );
               if(isObject(feedback->marker_name)) {
                 object_controls_display_on_ = true;
+                ROS_INFO("AffordanceTemplate::processFeedback() --   TURNING OBJECT CONTROLS ON");
               } else {
                 waypoint_flags_[current_trajectory_].controls_on[feedback->marker_name] = true;
+                ROS_INFO("AffordanceTemplate::processFeedback() --   TURNING WAYPOINT CONTROLS ON (%s)", feedback->marker_name.c_str());
               }
             } else {
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
               if(isObject(feedback->marker_name)) {
                 object_controls_display_on_ = false;
+                ROS_INFO("AffordanceTemplate::processFeedback() --   TURNING OBJECT CONTROLS OFF");
               } else {
                 waypoint_flags_[current_trajectory_].controls_on[feedback->marker_name] = false;
+                ROS_INFO("AffordanceTemplate::processFeedback() --   TURNING WAYPOINT CONTROLS OFF (%s)", feedback->marker_name.c_str());
               }
             }
           }
-          removeAllMarkers();
+          // removeAllMarkers();
+          removeInteractiveMarker(feedback->marker_name);
           createFromStructure(structure_, true, true, current_trajectory_);
         }
       }
@@ -1787,7 +1828,8 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               }
             }
           }
-          removeAllMarkers();
+          // removeAllMarkers();
+          removeInteractiveMarker(feedback->marker_name);
           createFromStructure(structure_, true, true, current_trajectory_);
         }
       }
@@ -1807,10 +1849,12 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
               if(!isObject(feedback->marker_name)) {
                 waypoint_flags_[current_trajectory_].adjust_offset[feedback->marker_name] = false;
+                removeInteractiveMarker(feedback->marker_name + "/tp");
               }
             }
           }
-          removeAllMarkers();
+          // removeAllMarkers();
+          removeInteractiveMarker(feedback->marker_name);
           createFromStructure(structure_, true, true, current_trajectory_);
         }
       }
@@ -1831,10 +1875,12 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
               if(!isObject(feedback->marker_name)) {
                 waypoint_flags_[current_trajectory_].move_offset[feedback->marker_name] = false;
+                removeInteractiveMarker(feedback->marker_name + "/tp");
               }
             }
           }
-          removeAllMarkers();
+          // removeAllMarkers();
+          removeInteractiveMarker(feedback->marker_name);
           createFromStructure(structure_, true, true, current_trajectory_);
         }
       }
@@ -1879,7 +1925,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                       if (wp_name == feedback->marker_name) {
                         wp.ee_pose = robot_interface_->getEEPoseIDMap(ee_name)[pn];
                         found = true;
-                        removeAllMarkers();
+                        removeInteractiveMarker(feedback->marker_name);
                         if(!createFromStructure(structure_, true, true)){
                           ROS_ERROR("AffordanceTemplate::processFeedback() -- failed creating structure with new EE pose");
                         }
@@ -2369,7 +2415,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
         plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
 
-        removeAllMarkers();
+        // removeAllMarkers();
         createFromStructure(structure_, true, true, goal->trajectory);
         server_->applyChanges();        
       }
@@ -2457,7 +2503,7 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
 
   ROS_INFO("AffordanceTemplate::moveToWaypoints() execution of %s to %d succeeded, traj=%s!!", ee.c_str(), plan_status_[trajectory][ee].current_idx, trajectory.c_str());
 
-  removeAllMarkers();
+  // removeAllMarkers();
   createFromStructure(structure_, true, true, trajectory);
   server_->applyChanges();        
   
@@ -2550,7 +2596,7 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   object_scale_factor_[key] = scale_factor;
   ee_scale_factor_[key] = ee_scale_factor;
 
-  removeAllMarkers();
+  // removeAllMarkers();
   return createFromStructure(structure_, true, false, current_trajectory_);
 }
 
