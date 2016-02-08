@@ -1299,8 +1299,12 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         geometry_msgs::PoseStamped ps;
         ps.pose = feedback->pose;
         ps.header = feedback->header;
-        tf_listener_.transformPose(frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
-        p = ps.pose;
+        try {
+          tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
+          p = ps.pose;
+        } catch (...) {
+          ROS_WARN("[AffordanceTemplate::processFeedback(%s)] %s transform error while adjusting tool frame", robot_name_.c_str(), feedback->marker_name.c_str());
+        }
       }
       frame_store_[feedback->marker_name].second.pose = p;
 
@@ -1311,25 +1315,37 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         ROS_DEBUG("moving tool frame: %s", feedback->marker_name.c_str());
 
         std::string obj_frame = frame_store_[wp_frame].second.header.frame_id;
+
         geometry_msgs::Pose p = feedback->pose;
         geometry_msgs::PoseStamped tool_pose, wp_pose, fresh_pose, tool_delta_in_origin_frame, tp_in_obj_frame;
         fresh_pose.pose.orientation.w = 1.0;
         tool_pose.pose = feedback->pose;
         tool_pose.header = feedback->header;
-        tf_listener_.transformPose(obj_frame, tool_pose, tp_in_obj_frame);
+        // tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, tool_pose, tool_pose);
+        try {
+          tf_listener_.transformPose (obj_frame, tool_pose, tp_in_obj_frame);
 
-        geometry_msgs::Pose wp_pose_new;
-        tf::Transform origTtp_new, origTwp_new, wpTtp;
+          // std::cout << "tool_pose[" << obj_frame << "]:" << std::endl;
+          // std::cout << tp_in_obj_frame << std::endl;
+
+          geometry_msgs::Pose wp_pose_new;
+          tf::Transform origTtp_new, origTwp_new, wpTtp;
+          
+          tf::poseMsgToTF(frame_store_[feedback->marker_name].second.pose,wpTtp);
+          tf::poseMsgToTF(tp_in_obj_frame.pose,origTtp_new);
+          origTwp_new = origTtp_new*wpTtp.inverse();
+          tf::poseTFToMsg(origTwp_new, wp_pose_new);
+
+          // std::cout << "updated wp pose:" << std::endl;
+          // std::cout << wp_pose_new << std::endl;
         
-        tf::poseMsgToTF(frame_store_[feedback->marker_name].second.pose,wpTtp);
-        tf::poseMsgToTF(tp_in_obj_frame.pose,origTtp_new);
-        origTwp_new = origTtp_new*wpTtp.inverse();
-        tf::poseTFToMsg(origTwp_new, wp_pose_new);
-        frame_store_[wp_frame].second.pose = wp_pose_new;
-
-        // this shouldnt be necessary, but if we dont do this, the poses get off when you turn on the offset 6dof. FIXME
-        server_->setPose(feedback->marker_name, fresh_pose.pose);
-        server_->applyChanges();
+          frame_store_[wp_frame].second.pose = wp_pose_new;
+          
+          server_->setPose(feedback->marker_name, fresh_pose.pose);
+          server_->applyChanges();
+        } catch(...) {
+          ROS_WARN("[AffordanceTemplate::processFeedback(%s)] %s transform error while moving tool frame", robot_name_.c_str(), feedback->marker_name.c_str());
+        }
       }
     }
   }
