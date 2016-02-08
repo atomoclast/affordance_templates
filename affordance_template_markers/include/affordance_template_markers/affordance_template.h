@@ -7,6 +7,9 @@
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
 
+#include <std_msgs/ColorRGBA.h>
+#include <geometry_msgs/Vector3.h>
+
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -120,6 +123,10 @@ namespace affordance_template
     
     bool getPoseFromFrameStore(const std::string &frame, geometry_msgs::PoseStamped &ps);
     
+    std::string getToolPointFrameName(std::string wp_name) { return wp_name + "/tp"; }
+    std::string getControlPointFrameName(std::string wp_name) { return wp_name + "/cp"; }
+    std::string getEEFrameName(std::string wp_name) { return wp_name + "/ee"; }
+    
   private:
     
     // menu config will hold the menu text as well as bool for whether it should have a checkbox
@@ -166,6 +173,7 @@ namespace affordance_template
 
     std::vector<MenuConfig> object_menu_options_;
     std::vector<MenuConfig> waypoint_menu_options_;
+    std::vector<MenuConfig> toolpoint_menu_options_;
       
     affordance_template_object::AffordanceTemplateParser at_parser_;
     affordance_template_object::AffordanceTemplateStructure initial_structure_;
@@ -196,13 +204,17 @@ namespace affordance_template
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
     int getEEIDfromWaypointName(const std::string wp_name);
 
-    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_object_poses=false, bool keep_waypoint_poses=false, std::string traj="");
-    bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
-    bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure, bool keep_poses);
+    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, std::string traj="");
+    bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure);
+    bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure);
+   
+    bool createWaypointFromStructure(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::EndEffectorWaypoint wp, int ee_id, int wp_id); 
+    bool createToolpointFromStructure(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::EndEffectorWaypoint wp, int ee_id, int wp_id);
+
+    bool createWaypointMarkers(affordance_template_object::AffordanceTemplateStructure structure, int ee_id, int wp_id, int ee_pose, visualization_msgs::MarkerArray &markers);
     bool getWaypointFromStructure(affordance_template_object::AffordanceTemplateStructure structure, std::string trajectory, int ee_id, int wp_id, affordance_template_object::EndEffectorWaypoint &wp);
     bool insertWaypointInList(affordance_template_object::EndEffectorWaypoint wp, int id, affordance_template_object::EndEffectorWaypointList &wp_list);
     bool deleteWaypointFromList(int ee_id, int wp_id, affordance_template_object::EndEffectorWaypointList &wp_list);
-
 
     void addInteractiveMarker(visualization_msgs::InteractiveMarker m);
     void removeInteractiveMarker(std::string marker_name);
@@ -211,18 +223,30 @@ namespace affordance_template
     void setupMenuOptions();
     void setupObjectMenu(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::DisplayObject obj);
     void setupWaypointMenu(affordance_template_object::AffordanceTemplateStructure structure,  std::string name);
+    void setupToolpointMenu(affordance_template_object::AffordanceTemplateStructure structure,  std::string name);
+    
+    void setObjectMenuDefaults(std::string obj_name);
+    void setWaypointMenuDefaults(std::string wp_name);
+    void setToolpointMenuDefaults(std::string tp_name);
+    
     void setupSimpleMenuItem(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name, const std::string& menu_text, bool has_check_box);
     void setupTrajectoryMenu(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name);
     void setupEndEffectorPoseMenu(const std::string& name);
     void setupAddWaypointMenuItem(affordance_template_object::AffordanceTemplateStructure, std::string, std::string);
 
+
+    bool hasFrame(std::string frame_name);
     bool hasObjectFrame(std::string obj);
     bool hasWaypointFrame(std::string wp);
     bool hasToolPointFrame(std::string tp);
-
+    bool hasControlPointFrame(std::string wp);
+    bool hasEEFrame(std::string wp);
     bool isWaypoint(const std::string& wp);
     bool isObject(const std::string& obj);
-    bool isToolPoint(const std::string& tp);
+    bool isToolPointFrame(const std::string& tp);
+    bool isControlPointFrame(const std::string& cp);
+    bool isEEFrame(const std::string& ee);
+    void setFrame(std::string frame_name, geometry_msgs::PoseStamped ps);
 
     geometry_msgs::Pose originToPose(affordance_template_object::Origin origin);
 
@@ -235,6 +259,15 @@ namespace affordance_template
 
     bool getContinuousPlan(const std::string&, const int, const std::string&, const PlanningGroup, ContinuousPlan&);
     void setContinuousPlan(const std::string&, const ContinuousPlan&);
+
+    inline std_msgs::ColorRGBA getColorMsg(float r, float g, float b, float a=1.0) {
+      std_msgs::ColorRGBA color;
+      color.r = r;
+      color.g = g;
+      color.b = b;
+      color.a = a;
+      return color;
+    }
 
     bool autoplay_display_;
   };
