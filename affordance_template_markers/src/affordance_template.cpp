@@ -1002,11 +1002,6 @@ bool AffordanceTemplate::insertWaypointInList(affordance_template_object::EndEff
   // server_->setPose(wp_name_last,frame_store_[wp_name_last].second.pose);
 
   server_->applyChanges();
-  server_->applyChanges();
-  server_->applyChanges();
-  server_->applyChanges();
-  server_->applyChanges();
-  server_->applyChanges();
   
   return true;
 }
@@ -1368,47 +1363,28 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
-      //
-      // save the current pose of the ee waypoint back to the structure
-      bool found = false;
-      for (auto& traj : structure_.ee_trajectories)
-      {
-        if (traj.name == current_trajectory_)
-        {
+      // save the current poses of the ee waypoint  back to the structure
+      for (auto& traj : structure_.ee_trajectories) {
+        if (traj.name == current_trajectory_) {
           // look for the object the user selected in our waypoint list
-          for (auto& wp_list: traj.ee_waypoint_list) 
-          {
+          for (auto& wp_list: traj.ee_waypoint_list) {
             int wp_id = -1; // init to -1 because we pre-add
-            for (auto& wp: wp_list.waypoints) 
-            {
+            for (auto& wp: wp_list.waypoints) {
               std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
-              if (wp_name == feedback->marker_name)
-              {
+              if (wp_name == feedback->marker_name) {
                 ROS_DEBUG("[AffordanceTemplate::processFeedback] saving pose for EE waypoint %s", feedback->marker_name.c_str());
-
-                wp.origin.position[0] = feedback->pose.position.x;
-                wp.origin.position[1] = feedback->pose.position.y;
-                wp.origin.position[2] = feedback->pose.position.z;
-
-                tf::Quaternion q;
-                tf::quaternionMsgToTF(feedback->pose.orientation, q);
-                double roll, pitch, yaw;
-                tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
-
-                wp.origin.orientation[0] = roll;
-                wp.origin.orientation[1] = pitch;
-                wp.origin.orientation[2] = yaw;
-
-                found = true;
-                break;
+                wp.origin = poseMsgToOrigin(feedback->pose);
+              } else if(isToolPoint(feedback->marker_name)) {             
+                std::string wp_frame = feedback->marker_name;
+                std::size_t pos = wp_frame.find("/tp");
+                wp_frame = wp_frame.substr(0,pos);  
+                wp.tool_offset = poseMsgToOrigin(frame_store_[feedback->marker_name].second.pose);
+                wp.origin = poseMsgToOrigin(frame_store_[wp_name].second.pose);
+                ROS_DEBUG("[AffordanceTemplate::processFeedback] saving pose and tool offset for EE waypoint %s", wp_name.c_str());
               }
             }
-            if (found)
-              break;
           }
         }
-        if (found)
-          break;
       }
 
       break;

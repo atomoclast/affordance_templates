@@ -35,6 +35,25 @@ namespace affordance_template_object
       return p;
     }
 
+    inline Origin poseMsgToOrigin(geometry_msgs::Pose p) 
+    { 
+      Origin origin;
+      tf::Quaternion q;
+      double roll, pitch, yaw;
+
+      tf::quaternionMsgToTF(p.orientation, q);
+      tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+      origin.position[0] = p.position.x;
+      origin.position[1] = p.position.y;
+      origin.position[2] = p.position.z;
+      origin.orientation[0] = roll;
+      origin.orientation[1] = pitch;
+      origin.orientation[2] = yaw;
+
+      return origin;
+    }
+
     inline geometry_msgs::Pose taskCompatibilityToPoseMsg(TaskCompatibility tc) 
     { 
       geometry_msgs::Pose p;
