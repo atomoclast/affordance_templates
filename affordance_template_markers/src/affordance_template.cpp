@@ -156,7 +156,7 @@ void AffordanceTemplate::setWaypointMenuDefaults(std::string wp_name) {
   }
 }
 
-void AffordanceTemplate::setToolpointMenuDefaults(std::string tp_name) {
+void AffordanceTemplate::setToolPointMenuDefaults(std::string tp_name) {
   MenuHandleKey key;
   if(waypoint_flags_[current_trajectory_].adjust_offset[tp_name]) {
     key[tp_name] = {"Change Tool Offset"};
@@ -471,166 +471,183 @@ bool AffordanceTemplate::createFromStructure(AffordanceTemplateStructure structu
   return true;
 }
 
-
  
 bool AffordanceTemplate::createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure) {
 
-  int idx = 0;
+  // get AT name (<at_name>:<at_instance>)
   key_ = structure.name;
-
-  {
-    geometry_msgs::PoseStamped ps;
-    ps.pose = robot_interface_->getRobotConfig().root_offset;
-    ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
-
-    if(frame_store_.find(key_) == frame_store_.end()) {
-      frame_store_[key_] = FrameInfo(key_, ps);
-    }
-  }
-
-  for(auto &obj: structure.display_objects) {
-
-    ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() creating Display Object: %s", obj.name.c_str());
-    ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() key: %s", key_.c_str());
-    ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() obj.parent: %s", obj.parent.c_str());
-
-    
-    root_frame_ = template_type_;
-    if(obj.parent != "") {
-      root_frame_ = obj.parent;
-    } else {
-      root_frame_ = key_;
-    }
-    ROS_WARN("AffordanceTemplate::createDisplayObjectsFromStructure() root_frame: %s", root_frame_.c_str());
-    
-    // set scale factor if not already set
-    if(object_scale_factor_.find(obj.name) == std::end(object_scale_factor_)) {
-      object_scale_factor_[obj.name] = 1.0;
-      ee_scale_factor_[obj.name] = 1.0;
-      ROS_DEBUG("[AffordanceTemplate::createDisplayObjectsFromStructure] setting scale factor for %s to default 1.0", obj.name.c_str());
-    } 
-
-    visualization_msgs::InteractiveMarker int_marker;
-
-    if(server_->get(obj.name, int_marker)) {
-      ROS_INFO("updating old obj IM %s", obj.name.c_str());
-    } else {
-      setupObjectMenu(structure, obj);
-    }
-
-    int_marker.header.frame_id = root_frame_;
-    int_marker.header.stamp = ros::Time(0);
-    int_marker.name = obj.name;
-    int_marker.description = obj.name;
-    int_marker.scale = obj.controls.scale*object_scale_factor_[obj.name];
-
-    visualization_msgs::InteractiveMarkerControl control;
-    control.always_visible = true;
-    control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;    
-
-    // setup object menu defualts
-    setObjectMenuDefaults(obj.name);
-
-    visualization_msgs::Marker marker;
-    marker.ns = obj.name;
-    marker.id = idx++;
+  root_frame_ = key_;
+  ROS_INFO("AffordanceTemplate::createDisplayObjectsFromStructure() -- key: %s", key_.c_str());
   
-    if(!hasObjectFrame(obj.name) ) {
-      geometry_msgs::PoseStamped ps;
-      ps.header.frame_id = root_frame_;
-      ps.pose = originToPoseMsg(obj.origin);
-      frame_store_[obj.name] = FrameInfo(obj.name, ps);
-      int_marker.pose = ps.pose;
-    } else {
-      int_marker.pose = frame_store_[obj.name].second.pose;
-      if(obj.parent != "") {
-        // what is this? confused.... -SH
-        int_marker.pose.position.x /= object_scale_factor_[obj.name];
-        int_marker.pose.position.y /= object_scale_factor_[obj.name];
-        int_marker.pose.position.z /= object_scale_factor_[obj.name];
-      }
+  // set the root frame for the AT
+  geometry_msgs::PoseStamped ps;
+  ps.pose = robot_interface_->getRobotConfig().root_offset;
+  ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
+  setFrame(key_, ps);
+
+  // go through and draw each display object and corresponding marker
+  int idx=0;
+  for(auto &obj: structure.display_objects) {
+    if(!createDisplayObjectFromStructure(structure, obj, idx++)) {   
+      ROS_ERROR("AffordanceTemplate::createDisplayObjectsFromStructure() -- error creating obj: %s", obj.name.c_str());
+      return false;
     }
-
-    // adjust for scale factor of parent object
-    if(obj.parent != "") {
-      int_marker.pose.position.x *= object_scale_factor_[obj.name];
-      int_marker.pose.position.y *= object_scale_factor_[obj.name];
-      int_marker.pose.position.z *= object_scale_factor_[obj.name];
-    }
-    frame_store_[obj.name].second.pose = int_marker.pose;
-
-    if(obj.shape.type == "mesh") {
-      marker.type = visualization_msgs::Marker::MESH_RESOURCE;
-      marker.mesh_resource = obj.shape.mesh;
-      marker.scale.x = obj.shape.size[0]*object_scale_factor_[obj.name];
-      marker.scale.y = obj.shape.size[1]*object_scale_factor_[obj.name];
-      marker.scale.z = obj.shape.size[2]*object_scale_factor_[obj.name];
-      ROS_DEBUG("Drawing Mesh for object %s : %s (scale=%.3f)", obj.name.c_str(), marker.mesh_resource.c_str(), object_scale_factor_[obj.name]);
-    } else if(obj.shape.type == "box") {
-      marker.type = visualization_msgs::Marker::CUBE;
-      marker.scale.x = obj.shape.size[0]*object_scale_factor_[obj.name];
-      marker.scale.y = obj.shape.size[1]*object_scale_factor_[obj.name];
-      marker.scale.z = obj.shape.size[2]*object_scale_factor_[obj.name];
-    } else if(obj.shape.type == "sphere") {
-      marker.type = visualization_msgs::Marker::SPHERE;
-      marker.scale.x = obj.shape.size[0]*object_scale_factor_[obj.name];
-      marker.scale.y = obj.shape.size[1]*object_scale_factor_[obj.name];
-      marker.scale.z = obj.shape.size[2]*object_scale_factor_[obj.name];
-    } else if(obj.shape.type == "cylinder") {
-      marker.type = visualization_msgs::Marker::CYLINDER;
-      marker.scale.x = obj.shape.radius*object_scale_factor_[obj.name];
-      marker.scale.y = obj.shape.length*object_scale_factor_[obj.name];      
-    }
-
-    control.markers.push_back(marker);
-
-    if(obj.shape.type != "mesh") {
-      control.markers[0].color.r = obj.shape.rgba[0];
-      control.markers[0].color.g = obj.shape.rgba[1];
-      control.markers[0].color.b = obj.shape.rgba[2];
-      control.markers[0].color.a = obj.shape.rgba[3];
-    } else {
-      control.markers[0].mesh_use_embedded_materials = true;
-      control.markers[0].color.r = 1.0;
-      control.markers[0].color.g = 1.0;
-      control.markers[0].color.b = 1.0;
-      control.markers[0].color.a = 1.0;
-    }
-
-    // double scale = 1.0;
-    // if obj in self.object_controls :
-    //     scale = self.object_controls[obj]['scale']*self.object_scale_factor[obj]
-
-    //  # int_marker = CreateInteractiveMarker(self.frame_id, obj.name, scale)
-    int_marker.controls.clear();
-    int_marker.controls.push_back(control);
-    if(object_controls_display_on_) {
-      ROS_WARN("setting obj controls ON");
-      std::vector<visualization_msgs::InteractiveMarkerControl> dof_controls;
-      dof_controls = rit_utils::MarkerHelper::makeCustomDOFControls(obj.controls.translation[0], 
-                                                                obj.controls.translation[1], 
-                                                                obj.controls.translation[2],
-                                                                obj.controls.rotation[0],
-                                                                obj.controls.rotation[1],
-                                                                obj.controls.rotation[2]);
-
-      for (auto &c: dof_controls) {
-        int_marker.controls.push_back(c);
-      }
-    }  else {
-      ROS_WARN("setting obj controls OFF");
-      
-    }
-
-    //self.marker_pose_offset[obj] = self.pose_from_origin(self.object_origin[obj])
-    addInteractiveMarker(int_marker);
-
-    
   }
-
-  server_->applyChanges();
 
   return true;
+}
+
+
+bool AffordanceTemplate::createDisplayObjectFromStructure(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::DisplayObject obj, int idx)
+{
+
+  ROS_INFO("AffordanceTemplate::createDisplayObjectFromStructure() -- creating Display Object: %s", obj.name.c_str());
+  ROS_INFO("AffordanceTemplate::createDisplayObjectFromStructure() --  parent: %s", obj.parent.c_str());
+
+  // get the parent frame for the object.  If no parent in the structure, set it as AT root frame
+  std::string obj_frame;
+  if(obj.parent != "") {
+    obj_frame = obj.parent;
+  } else {
+    obj_frame = root_frame_;
+  }
+  ROS_INFO("AffordanceTemplate::createDisplayObjectFromStructure() -- root_frame: %s", obj_frame.c_str());
+  
+  // set scaling information (if not already set)
+  if(object_scale_factor_.find(obj.name) == std::end(object_scale_factor_)) {
+    object_scale_factor_[obj.name] = 1.0;
+    ee_scale_factor_[obj.name] = 1.0;
+    ROS_DEBUG("AffordanceTemplate::createDisplayObjectFromStructure() -- setting scale factor for %s to default 1.0", obj.name.c_str());
+  } 
+  if(object_scale_factor_.find(obj.parent) == std::end(object_scale_factor_)) {
+    object_scale_factor_[obj.parent] = 1.0;
+    ee_scale_factor_[obj.parent] = 1.0;
+    ROS_DEBUG("AffordanceTemplate::createDisplayObjectFromStructure() -- setting parent scale factor for %s to default 1.0", obj.parent.c_str());
+  }
+
+  // get the object origin pose 
+  geometry_msgs::PoseStamped display_pose;
+  display_pose.header.frame_id = obj_frame;
+  display_pose.pose = originToPoseMsg(obj.origin);
+
+  ROS_INFO("AffordanceTemplate::createDisplayObjectFromStructure() -- pose: (%.3f,%.3f,%.3f),(%.3f,%.3f,%.3f,%.3f)", 
+    display_pose.pose.position.x,display_pose.pose.position.y,display_pose.pose.position.z,
+    display_pose.pose.orientation.x,display_pose.pose.orientation.y,display_pose.pose.orientation.z,display_pose.pose.orientation.w);
+
+  // scale the object location according to parent object scale
+  if(object_scale_factor_[obj.parent] != 1.0) {
+    display_pose.pose.position.x *= object_scale_factor_[obj.parent];
+    display_pose.pose.position.y *= object_scale_factor_[obj.parent];
+    display_pose.pose.position.z *= object_scale_factor_[obj.parent];
+    ROS_INFO("AffordanceTemplate::createDisplayObjectFromStructure() -- scaled pose: (%.3f,%.3f,%.3f),(%.3f,%.3f,%.3f,%.3f)", 
+      display_pose.pose.position.x,display_pose.pose.position.y,display_pose.pose.position.z,
+      display_pose.pose.orientation.x,display_pose.pose.orientation.y,display_pose.pose.orientation.z,display_pose.pose.orientation.w);
+  }
+
+  // set up FrameStore frames 
+  setFrame(obj.name, display_pose);
+
+  // create Interactive Marker for the object
+  visualization_msgs::InteractiveMarker int_marker;
+
+  // check to see if the IM server already has a IM with this name and just update it if so 
+  if(server_->get(obj.name, int_marker)) {
+    ROS_INFO("AffordanceTemplate::createDisplayObjectFromStructure() -- updating old object IM %s", obj.name.c_str());
+  } else {
+    setupObjectMenu(structure, obj);
+  }
+
+  // set basic info for IM
+  int_marker.header.frame_id = obj_frame;
+  int_marker.header.stamp = ros::Time(0);
+  int_marker.name = obj.name;
+  int_marker.description = obj.name;
+  int_marker.scale = obj.controls.scale*object_scale_factor_[obj.name];
+  int_marker.pose = frame_store_[obj.name].second.pose;
+
+  // set up the object display and menus.  Will be a "clickable" hand in RViz.
+  visualization_msgs::InteractiveMarkerControl control;
+  control.always_visible = true;
+  control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;    
+  control.markers.clear();
+
+  // get the shape for the object  
+  visualization_msgs::Marker marker;
+  if(!createDisplayObjectMarker(structure, obj, marker)){
+    ROS_ERROR("AffordanceTemplate::createDisplayObjectFromStructure() -- error getting marker");
+    return false;
+  }
+  marker.id = idx;
+  control.markers.push_back(marker);
+
+  //  # int_marker = CreateInteractiveMarker(self.frame_id, obj.name, scale)
+  int_marker.controls.clear();
+  int_marker.controls.push_back(control);
+  if(object_controls_display_on_) {
+    std::vector<visualization_msgs::InteractiveMarkerControl> dof_controls;
+    dof_controls = rit_utils::MarkerHelper::makeCustomDOFControls(obj.controls.translation[0], obj.controls.translation[1], obj.controls.translation[2],
+                                                                  obj.controls.rotation[0], obj.controls.rotation[1], obj.controls.rotation[2]);
+    for (auto &c: dof_controls) {
+      int_marker.controls.push_back(c);
+    }
+  }
+
+  // setup object menu defualts
+  setObjectMenuDefaults(obj.name);
+
+  // add interative marker
+  addInteractiveMarker(int_marker);
+
+  return true;
+}
+
+bool AffordanceTemplate::createDisplayObjectMarker(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::DisplayObject obj, visualization_msgs::Marker &marker) 
+{
+
+  marker.header.frame_id = obj.name;
+  marker.header.stamp = ros::Time(0);
+  marker.text = obj.name;
+  marker.ns = obj.name;
+  ROS_WARN("AffordanceTemplate::createDisplayObjectMarker() -- obj=%s, scale=%.3f", obj.name.c_str(), object_scale_factor_[obj.name]);
+  
+  if(obj.shape.type == "mesh") {
+    marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+    marker.mesh_resource = obj.shape.mesh;
+    marker.scale.x = obj.shape.size[0]*object_scale_factor_[obj.name];
+    marker.scale.y = obj.shape.size[1]*object_scale_factor_[obj.name];
+    marker.scale.z = obj.shape.size[2]*object_scale_factor_[obj.name];
+    ROS_DEBUG("AffordanceTemplate::createDisplayObjectMarker() -- drawing Mesh for object %s : %s (scale=%.3f)", obj.name.c_str(), marker.mesh_resource.c_str(), object_scale_factor_[obj.name]);
+  } else if(obj.shape.type == "box") {
+    marker.type = visualization_msgs::Marker::CUBE;
+    marker.scale.x = obj.shape.size[0]*object_scale_factor_[obj.name];
+    marker.scale.y = obj.shape.size[1]*object_scale_factor_[obj.name];
+    marker.scale.z = obj.shape.size[2]*object_scale_factor_[obj.name];
+  } else if(obj.shape.type == "sphere") {
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.scale.x = obj.shape.size[0]*object_scale_factor_[obj.name];
+    marker.scale.y = obj.shape.size[1]*object_scale_factor_[obj.name];
+    marker.scale.z = obj.shape.size[2]*object_scale_factor_[obj.name];
+  } else if(obj.shape.type == "cylinder") {
+    marker.type = visualization_msgs::Marker::CYLINDER;
+    marker.scale.x = obj.shape.radius*object_scale_factor_[obj.name];
+    marker.scale.y = obj.shape.length*object_scale_factor_[obj.name];      
+  }
+
+  if(obj.shape.type != "mesh") {
+    marker.color.r = obj.shape.rgba[0];
+    marker.color.g = obj.shape.rgba[1];
+    marker.color.b = obj.shape.rgba[2];
+    marker.color.a = obj.shape.rgba[3];
+  } else {
+    marker.mesh_use_embedded_materials = true;
+    marker.color.r = 1.0;
+    marker.color.g = 1.0;
+    marker.color.b = 1.0;
+    marker.color.a = 1.0;
+  }
+
+  return true;
+
 }
 
 
@@ -847,7 +864,7 @@ bool AffordanceTemplate::createToolpointFromStructure(affordance_template_object
     }
 
     // set default menu state
-    setToolpointMenuDefaults(tp_frame_name);
+    setToolPointMenuDefaults(tp_frame_name);
 
     // finally add interactive marker
     addInteractiveMarker(tool_offset_marker);
@@ -992,7 +1009,6 @@ bool AffordanceTemplate::insertWaypointInList(affordance_template_object::EndEff
     removeInteractiveMarker(wp_name_1_tp);
     removeInteractiveMarker(wp_name_2_tp);
 
-    
   }
 
   wp_name = createWaypointID(wp_list.id, id);
@@ -2641,7 +2657,7 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   object_scale_factor_[key] = scale_factor;
   ee_scale_factor_[key] = ee_scale_factor;
 
-  // removeAllMarkers();
+  removeInteractiveMarker(key);
   return createFromStructure(structure_, current_trajectory_);
 }
 
