@@ -2503,32 +2503,30 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
 
 bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 {
-  bool found = false;
-  ROS_INFO("[AffordanceTemplate::setObjectPose] setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
+  ROS_INFO("AffordanceTemplate::setObjectPose() -- setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
+  
   for (auto& d : structure_.display_objects)
   {
     std::string obj_name = obj.name + ":" + std::to_string(obj.id);
     if (d.name == obj_name)
     {
-      ROS_INFO("[AffordanceTemplate::setObjectPose] matched object %s in frame: %s", obj_name.c_str(), obj.stamped_pose.header.frame_id.c_str());
+      ROS_INFO("AffordanceTemplate::setObjectPose() -- matched object %s in frame: %s", obj_name.c_str(), obj.stamped_pose.header.frame_id.c_str());
       geometry_msgs::PoseStamped ps;
       try {
-        ros::Time now = ros::Time(0);
-        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, ros::Time(0), ros::Duration(3.0));
+        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, obj.stamped_pose.header.stamp, ros::Duration(3.0));
         tf_listener_.transformPose(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
-      } catch(...) {
-        ROS_WARN("tf lookup error");  
+        frame_store_[obj_name].second = ps;
+        server_->setPose(obj_name, ps.pose);
+      } catch(tf::TransformException ex){
+        ROS_ERROR("AffordanceTemplate::setObjectPose() -- trouble transforming pose from %s to %s. TransformException: %s",frame_store_[obj_name].second.header.frame_id.c_str(), obj.stamped_pose.header.frame_id.c_str(), ex.what());
+        return false;
       }
-      frame_store_[obj_name].second = ps;
-      server_->setPose(obj_name, ps.pose);
-      found = true;
       break;
     }
   }
   server_->applyChanges();
-  return found;
+  return true;
 }
-
 
 bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const int step, const std::string& group, const PlanningGroup type, ContinuousPlan& plan)
 {
