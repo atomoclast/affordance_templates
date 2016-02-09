@@ -207,7 +207,7 @@ namespace affordance_template
     int getEEIDfromWaypointName(const std::string wp_name);
     int getWaypointIDFromName(std::string wp_name);
     int getEEIDFromName(std::string wp_name);
-    
+
     bool buildTemplate(std::string traj="");
     
     bool createDisplayObjects();
@@ -222,6 +222,11 @@ namespace affordance_template
 
     bool getWaypoint(std::string trajectory, int ee_id, int wp_id, affordance_template_object::EndEffectorWaypoint &wp);
 
+    bool addWaypointBeforeHandler(std::string wp_name);
+    bool addWaypointAfterHandler(std::string wp_name);
+    bool addWaypointBeforeTrajectoryHandler(std::string obj_name, int ee_id);
+    bool addWaypointAfterTrajectoryHandler(std::string obj_name, int ee_id);
+    
     bool insertWaypointInTrajectory(affordance_template_object::EndEffectorWaypoint wp, int wp_id, int ee_id, std::string traj_name="");
     bool insertWaypointInList(affordance_template_object::EndEffectorWaypoint wp, int id, affordance_template_object::EndEffectorWaypointList &wp_list);
     bool deleteWaypointFromList(int ee_id, int wp_id, affordance_template_object::EndEffectorWaypointList &wp_list);
