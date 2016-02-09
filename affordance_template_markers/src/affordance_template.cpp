@@ -2602,6 +2602,7 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
   bool found = false;
   
   ROS_INFO("[AffordanceTemplate::setObjectPose] setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
+  std::cout<<obj.stamped_pose<<std::endl;
   for (auto& d : structure_.display_objects)
   {
     std::string obj_name = obj.name + ":" + std::to_string(obj.id);
@@ -2611,13 +2612,13 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 
       geometry_msgs::PoseStamped ps;
       try {
-        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, ros::Time(0), ros::Duration(3.0));
+        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, obj.stamped_pose.header.stamp, ros::Duration(3.0));
         tf_listener_.transformPose(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
         frame_store_[obj_name].second = ps;
         server_->setPose(obj_name, ps.pose);
         found = true;
       } catch(tf::TransformException ex){
-        ROS_WARN("[AffordanceTemplate::setObjectPose] trouble transforming pose from %s to %s. TransformException: %s",frame_store_[obj_name].second.header.frame_id.c_str(), obj.stamped_pose.header.frame_id.c_str(), ex.what());
+        ROS_ERROR("[AffordanceTemplate::setObjectPose] trouble transforming pose from %s to %s. TransformException: %s",frame_store_[obj_name].second.header.frame_id.c_str(), obj.stamped_pose.header.frame_id.c_str(), ex.what());
       }
 
       break;
