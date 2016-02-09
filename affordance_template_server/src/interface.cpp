@@ -633,7 +633,7 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
 
         ROS_DEBUG("[AffordanceTemplateInterface::getTemplateStatus] parsing ee -- %s, id -- %d", ee.first.c_str(), wpi.id);
 
-        wpi.num_waypoints = at->getNumWaypoints(at_struct, at->getCurrentTrajectory(), wpi.id);
+        wpi.num_waypoints = at->getNumWaypoints(at->getCurrentTrajectory(), wpi.id);
                 
         affordance_template::PlanStatus ps;
         if (at->getTrajectoryPlan(ats.trajectory_name, ee.first, ps)) {

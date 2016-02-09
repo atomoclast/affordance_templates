@@ -108,7 +108,7 @@ namespace affordance_template
     inline affordance_template_object::AffordanceTemplateStructure getDefaultStructure() { return initial_structure_; }
     inline boost::shared_ptr<affordance_template_markers::RobotInterface> getRobotInterface() { return robot_interface_; }
 
-    int getNumWaypoints(const affordance_template_object::AffordanceTemplateStructure structure, const std::string traj_name, const int ee_id);
+    int getNumWaypoints(const std::string traj_name, const int ee_id);
     bool getTrajectoryPlan(const std::string&, const std::string&, PlanStatus&);
     bool getWaypointFlags(const std::string& traj, WaypointTrajectoryFlags& flags);
 
@@ -205,40 +205,42 @@ namespace affordance_template
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
     int getEEIDfromWaypointName(const std::string wp_name);
 
-    bool createFromStructure(affordance_template_object::AffordanceTemplateStructure structure, std::string traj="");
+    bool create(std::string traj="");
     
-    bool createDisplayObjectsFromStructure(affordance_template_object::AffordanceTemplateStructure structure);
-    bool createDisplayObjectFromStructure(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::DisplayObject obj, int idx);
+    bool createDisplayObjects();
+    bool createDisplayObject(affordance_template_object::DisplayObject obj, int idx);
 
-    bool createWaypointsFromStructure(affordance_template_object::AffordanceTemplateStructure structure);
-    bool createWaypointFromStructure(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::EndEffectorWaypoint wp, int ee_id, int wp_id); 
-    bool createToolpointFromStructure(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::EndEffectorWaypoint wp, int ee_id, int wp_id);
+    bool createWaypoints();
+    bool createWaypoint(affordance_template_object::EndEffectorWaypoint wp, int ee_id, int wp_id); 
+    bool createToolpoint(affordance_template_object::EndEffectorWaypoint wp, int ee_id, int wp_id);
 
-    bool createDisplayObjectMarker(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::DisplayObject obj, visualization_msgs::Marker &marker);
-    bool createWaypointMarkers(affordance_template_object::AffordanceTemplateStructure structure, int ee_id, int wp_id, int ee_pose, visualization_msgs::MarkerArray &markers);
+    bool createDisplayObjectMarker(affordance_template_object::DisplayObject obj, visualization_msgs::Marker &marker);
+    bool createWaypointMarkers(int ee_id, int wp_id, int ee_pose, visualization_msgs::MarkerArray &markers);
 
-    bool getWaypointFromStructure(affordance_template_object::AffordanceTemplateStructure structure, std::string trajectory, int ee_id, int wp_id, affordance_template_object::EndEffectorWaypoint &wp);
+    bool getWaypoint(std::string trajectory, int ee_id, int wp_id, affordance_template_object::EndEffectorWaypoint &wp);
 
     bool insertWaypointInList(affordance_template_object::EndEffectorWaypoint wp, int id, affordance_template_object::EndEffectorWaypointList &wp_list);
     bool deleteWaypointFromList(int ee_id, int wp_id, affordance_template_object::EndEffectorWaypointList &wp_list);
 
+    void removeWaypoint(std::string wp_name);
+    void removeAllWaypoints();
     void addInteractiveMarker(visualization_msgs::InteractiveMarker m);
     void removeInteractiveMarker(std::string marker_name);
     void removeAllMarkers();
 
     void setupMenuOptions();
-    void setupObjectMenu(affordance_template_object::AffordanceTemplateStructure structure, affordance_template_object::DisplayObject obj);
-    void setupWaypointMenu(affordance_template_object::AffordanceTemplateStructure structure,  std::string name);
-    void setupToolpointMenu(affordance_template_object::AffordanceTemplateStructure structure,  std::string name);
+    void setupObjectMenu(affordance_template_object::DisplayObject obj);
+    void setupWaypointMenu(std::string name);
+    void setupToolpointMenu(std::string name);
     
     void setObjectMenuDefaults(std::string obj_name);
     void setWaypointMenuDefaults(std::string wp_name);
     void setToolPointMenuDefaults(std::string tp_name);
     
-    void setupSimpleMenuItem(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name, const std::string& menu_text, bool has_check_box);
-    void setupTrajectoryMenu(affordance_template_object::AffordanceTemplateStructure structure, const std::string& name);
+    void setupSimpleMenuItem(const std::string& name, const std::string& menu_text, bool has_check_box);
+    void setupTrajectoryMenu(const std::string& name);
     void setupEndEffectorPoseMenu(const std::string& name);
-    void setupAddWaypointMenuItem(affordance_template_object::AffordanceTemplateStructure, std::string, std::string);
+    void setupAddWaypointMenuItem(std::string, std::string);
 
     bool hasFrame(std::string frame_name);
     bool hasObjectFrame(std::string obj);
@@ -255,7 +257,7 @@ namespace affordance_template
 
     geometry_msgs::Pose originToPose(affordance_template_object::Origin origin);
 
-    bool computePathSequence(const affordance_template_object::AffordanceTemplateStructure structure, std::string traj_name, int ee_id, int idx, int steps, bool direct, bool backwards, std::vector<int> &sequence_ids, int &next_path_idx);
+    bool computePathSequence(std::string traj_name, int ee_id, int idx, int steps, bool direct, bool backwards, std::vector<int> &sequence_ids, int &next_path_idx);
 
     void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
