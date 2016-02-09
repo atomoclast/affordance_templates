@@ -1437,13 +1437,10 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] -- display object: %s",  appendID(wp.display_object).c_str());
                     ROS_WARN("[AffordanceTemplate::processFeedback::Add Waypoint Before] -- ee_pose: %d", wp.ee_pose);
 
-
                     affordance_template_object::EndEffectorWaypoint eewp, wp_prev;
                     eewp.ee_pose = wp.ee_pose;
                     eewp.display_object = wp.display_object;//appendID(wp.display_object);
- 
                     eewp.origin = wp.origin;
- 
                     eewp.tool_offset.position[0] = 0; 
                     eewp.tool_offset.position[1] = 0; 
                     eewp.tool_offset.position[2] = 0; 
@@ -1472,19 +1469,10 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     
                     insertWaypointInList(eewp, wp_id, wp_list);
                     create();
-
-                    found = true;
-                    break;
                   }
                 }
-
-                if (found) // already found the object - no reason to continue the for loop
-                  break;
               }
             }
-
-            if (found) // already found the object - no reason to continue the for loop
-              break;
           }
         }
       }
@@ -1493,15 +1481,12 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       // check for 'Add Waypoint Before' for AT object (wheel, door, etc) 
       for (auto& ee: robot_interface_->getEENameMap()) 
       {
-        bool found = false;  
         MenuHandleKey key;
         key[feedback->marker_name] = {"Add Waypoint Before", ee.second};
         if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) 
         {
           if (group_menu_handles_[key] == feedback->menu_entry_id)
           {
-            // Trajectory traj; 
-            // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
             for (auto& traj : structure_.ee_trajectories)
             {
               if (traj.name == current_trajectory_)
@@ -1521,23 +1506,13 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     wp.controls.rotation[0] = wp.controls.rotation[1] = wp.controls.rotation[2] = true;
                     wp.controls.scale = 1.0;
                     wp_list.waypoints.insert(wp_list.waypoints.begin(), wp);
-
-                    found = true;
-                    // removeAllMarkers();
-                    create(current_trajectory_);
-                    break;
+                    create();
                   }
                 }
-
-                if (found) // already found the object - no reason to continue the for loop
-                  break;
               }
             }
           }
         }
-
-        if (found) // already found the object - no reason to continue the for loop
-          break;
       }
 
       // check for 'Add Waypoint After' for EE objects
@@ -1546,9 +1521,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         ROS_INFO("---------------------------");
         if (group_menu_handles_[wp_after_key] == feedback->menu_entry_id)
         {
-          // Trajectory traj;
-          // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
-          bool found = false;
           for (auto& traj : structure_.ee_trajectories)
           {
             if (traj.name == current_trajectory_)
@@ -1602,18 +1574,10 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     insertWaypointInList(eewp, wp_id+1, wp_list);
                     create();
 
-                    found = true;
-                    break;
                   }
                 }
-
-                if (found) // already found the object - no reason to continue the for loop
-                  break;
               }
             }
-
-            if (found) // already found the object - no reason to continue the for loop
-              break;
           }
         }
       }
@@ -1628,8 +1592,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         {
           if (group_menu_handles_[key] == feedback->menu_entry_id)
           {
-            // Trajectory traj; 
-            // if (getTrajectory(structure_.ee_trajectories, current_trajectory_, traj)) // FIXME - why wouldn't this give us the actual reference we want to alter data? everything is setup to use references but this seems to give us a copy instead
             for (auto& traj : structure_.ee_trajectories)
             {
               if (traj.name == current_trajectory_)
@@ -1756,7 +1718,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               }
             }
           }
-          // removeAllMarkers();
           removeInteractiveMarker(feedback->marker_name);
           create();
         }
@@ -1779,7 +1740,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               }
             }
           }
-          // removeAllMarkers();
           removeInteractiveMarker(feedback->marker_name);
           create();
         }
@@ -1806,7 +1766,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               }
             }
           }
-          // removeAllMarkers();
           removeInteractiveMarker(feedback->marker_name);
           create();
         }
@@ -1833,7 +1792,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               }
             }
           }
-          // removeAllMarkers();
           removeInteractiveMarker(feedback->marker_name);
           create();
         }
@@ -1868,7 +1826,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) {
             if (group_menu_handles_[key] == feedback->menu_entry_id) {
               ROS_INFO("AffordanceTemplate::processFeedback() -- changing EE[%s] pose to \'%s\'", ee_name.c_str(), pn.c_str());
-              bool found = false;
               for (auto& traj : structure_.ee_trajectories) {
                 if (traj.name == current_trajectory_) {
                   // look for the object the user selected in our waypoint list
@@ -1878,7 +1835,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                       std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
                       if (wp_name == feedback->marker_name) {
                         wp.ee_pose = robot_interface_->getEEPoseIDMap(ee_name)[pn];
-                        found = true;
                         removeInteractiveMarker(feedback->marker_name);
                         if(!create()){
                           ROS_ERROR("AffordanceTemplate::processFeedback() -- failed creating structure with new EE pose");
@@ -1886,10 +1842,8 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                         break;
                       }
                     }
-                    if(found) break;
                   }
                 }
-                if(found) break;
               }
             }
           }
@@ -2379,10 +2333,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         }
 
         plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
-
-        // removeAllMarkers();
         create(goal->trajectory);
-        server_->applyChanges();        
       }
     }
 
@@ -2470,7 +2421,6 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
 
   // removeAllMarkers();
   create(trajectory);
-  server_->applyChanges();        
   
   return true;
 }
