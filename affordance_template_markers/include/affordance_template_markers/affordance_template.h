@@ -201,6 +201,7 @@ namespace affordance_template
     void setTrajectoryFlags(affordance_template_object::Trajectory traj);
 
     std::string appendID(std::string s);
+    std::string removeID(std::string s);
     std::string createWaypointID(int ee_id, int wp_id);
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
     int getEEIDfromWaypointName(const std::string wp_name);
