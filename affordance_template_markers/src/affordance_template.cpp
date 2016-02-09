@@ -2599,10 +2599,9 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
 
 bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 {
-  bool found = false;
-  
   ROS_INFO("[AffordanceTemplate::setObjectPose] setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
-  std::cout<<obj.stamped_pose<<std::endl;
+  
+  bool found = false;
   for (auto& d : structure_.display_objects)
   {
     std::string obj_name = obj.name + ":" + std::to_string(obj.id);
