@@ -1222,6 +1222,116 @@ void AffordanceTemplate::removeAllMarkers()
   server_->applyChanges();
 }
 
+bool AffordanceTemplate::updatePoseFrames(std::string name, geometry_msgs::PoseStamped ps) 
+{
+
+  // sanity check that we are trying to adjust a frame that has IM controls
+  if(!hasControls(name)) {
+    return false;
+  }
+
+  // Most frames will just require updating the FrameStore with the given pose (in the right frame).
+  // If it is a toolPoint frame and we are moving it (not adjusting it), however, we need to update 
+  // the correspodning waypoint frame, and then reset the toolPoint frame back to 0
+
+  // get the cooresponding waypoint name if its a toolPoint frame
+  std::string wp_name;
+  if(isToolPointFrame(name)) {
+   wp_name = getWaypointFrame(name);
+  } 
+
+  if(isToolPointFrame(name) && waypoint_flags_[current_trajectory_].move_offset[wp_name]) {
+      
+    ROS_DEBUG("AffordanceTemplate::updatePoseFrames() -- moving tool frame: %s", name.c_str());
+    
+    std::string obj_frame = frame_store_[wp_name].second.header.frame_id;       
+    geometry_msgs::PoseStamped tool_pose = ps;
+    geometry_msgs::Pose wp_pose_new;
+    tf::Transform origTtp_new, origTwp_new, wpTtp;
+    geometry_msgs::PoseStamped wp_pose, tp_in_obj_frame;
+    
+    try {
+      
+      // get the toolpoint in the waypoint's base (object) frame
+      tf_listener_.transformPose (obj_frame, tool_pose, tp_in_obj_frame);
+      
+      // calculate new waypoint location, keeping the toolPoint (wpTtp) fixed
+      tf::poseMsgToTF(frame_store_[name].second.pose,wpTtp);
+      tf::poseMsgToTF(tp_in_obj_frame.pose,origTtp_new);
+      origTwp_new = origTtp_new*wpTtp.inverse();
+      tf::poseTFToMsg(origTwp_new, wp_pose_new);        
+      frame_store_[wp_name].second.pose = wp_pose_new;
+
+      // reset the toolPoint IM back to 0, now that the frames have been updated
+      geometry_msgs::PoseStamped fresh_pose;
+      fresh_pose.pose.orientation.w = 1.0;
+      server_->setPose(name, fresh_pose.pose);
+      server_->applyChanges();
+
+    } catch(...) {
+      ROS_WARN("AffordanceTemplate::updatePoseFrames(%s) -- %s transform error while moving tool frame", robot_name_.c_str(), name.c_str());
+    }
+
+  } else {
+
+    // this is most cases, just update the frame store with the input pose
+    if(ps.header.frame_id != frame_store_[name].second.header.frame_id) {
+      try {
+        tf_listener_.transformPose (frame_store_[name].second.header.frame_id, ps, ps);
+      } catch (...) {
+        ROS_WARN("AffordanceTemplate::updatePoseFrames() -- %s transform error while adjusting feedback frame", name.c_str());
+      }
+    }
+    ROS_DEBUG("AffordanceTemplate::updatePoseFrames() -- storing pose for %s", name.c_str());
+    frame_store_[name].second = ps;  
+
+  }
+
+  return true;
+}
+
+bool AffordanceTemplate::updatePoseInStructure(std::string name, geometry_msgs::Pose p) 
+{
+  // check the objects for the name
+  for (auto& d : structure_.display_objects) {
+    if (name == d.name) {
+      ROS_DEBUG("AffordanceTemplate::updatePoseInStructure() -- saving pose for object %s", name.c_str());
+      d.origin = poseMsgToOrigin(p);
+      return true;
+    }
+  }
+
+  // check the waypoints
+  for (auto& traj : structure_.ee_trajectories) {
+    if (traj.name == current_trajectory_) {
+      // look for the object the user selected in our waypoint list
+      for (auto& wp_list: traj.ee_waypoint_list) {
+        int wp_id = -1; // init to -1 because we pre-add
+        for (auto& wp: wp_list.waypoints) {
+          std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
+          if (wp_name == name) {
+            ROS_DEBUG("AffordanceTemplate::updatePoseInStructure() -- saving pose for EE waypoint %s", name.c_str());
+            wp.origin = poseMsgToOrigin(p);
+            return true;
+          } else if(isToolPointFrame(name)) {
+            if (wp_name == getWaypointFrame(name)) {
+              ROS_DEBUG("AffordanceTemplate::updatePoseInStructure() -- waypoint from for %s is %s", name.c_str(), wp_name.c_str());
+              wp.origin = poseMsgToOrigin(frame_store_[wp_name].second.pose);
+              wp.tool_offset = poseMsgToOrigin(frame_store_[name].second.pose);
+              ROS_DEBUG("AffordanceTemplate::updatePoseInStructure() -- saving toolPoint and pose for EE waypoint %s", wp_name.c_str());
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // didn't find anything that matches the input name
+  return false;
+
+}
+
 void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback ) 
 {
   ROS_DEBUG("AffordanceTemplate::processFeedback(%s) -- %s", robot_name_.c_str(), feedback->marker_name.c_str());
@@ -1263,138 +1373,23 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   adjust_offset_key[feedback->marker_name]         = {"Change Tool Offset"};
   move_offset_key[feedback->marker_name]           = {"Move Tool Point"};
 
-  if(hasObjectFrame(feedback->marker_name) || hasWaypointFrame(feedback->marker_name)) {
-    geometry_msgs::Pose p = feedback->pose;
-    if(feedback->header.frame_id != frame_store_[feedback->marker_name].second.header.frame_id) {
-      geometry_msgs::PoseStamped ps;
-      ps.pose = feedback->pose;
-      ps.header = feedback->header;
-      tf_listener_.transformPose(frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
-      p = ps.pose;
-    }
-    ROS_DEBUG("storing pose for %s", feedback->marker_name.c_str());
-    frame_store_[feedback->marker_name].second.pose = p;   
-  }
-
-  if(hasToolPointFrame(feedback->marker_name)) {
-
-    std::string wp_frame = feedback->marker_name;
-    std::size_t pos = wp_frame.find("/tp");
-    wp_frame = wp_frame.substr(0,pos);  
-
-    if(waypoint_flags_[current_trajectory_].adjust_offset[wp_frame]) {
-
-      ROS_DEBUG("adjusting tool frame: %s", feedback->marker_name.c_str());
-
-      geometry_msgs::Pose p = feedback->pose;
-      if(feedback->header.frame_id != frame_store_[feedback->marker_name].second.header.frame_id) {
-        geometry_msgs::PoseStamped ps;
-        ps.pose = feedback->pose;
-        ps.header = feedback->header;
-        try {
-          tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
-          p = ps.pose;
-        } catch (...) {
-          ROS_WARN("[AffordanceTemplate::processFeedback(%s)] %s transform error while adjusting tool frame", robot_name_.c_str(), feedback->marker_name.c_str());
-        }
-      }
-      frame_store_[feedback->marker_name].second.pose = p;
-
-    } else if (waypoint_flags_[current_trajectory_].move_offset[wp_frame]) {
-
-      if(hasToolPointFrame(feedback->marker_name)) {
-
-        ROS_DEBUG("moving tool frame: %s", feedback->marker_name.c_str());
-
-        std::string obj_frame = frame_store_[wp_frame].second.header.frame_id;
-
-        geometry_msgs::Pose p = feedback->pose;
-        geometry_msgs::PoseStamped tool_pose, wp_pose, fresh_pose, tool_delta_in_origin_frame, tp_in_obj_frame;
-        fresh_pose.pose.orientation.w = 1.0;
-        tool_pose.pose = feedback->pose;
-        tool_pose.header = feedback->header;
-        // tf_listener_.transformPose (frame_store_[feedback->marker_name].second.header.frame_id, tool_pose, tool_pose);
-        try {
-          tf_listener_.transformPose (obj_frame, tool_pose, tp_in_obj_frame);
-
-          // std::cout << "tool_pose[" << obj_frame << "]:" << std::endl;
-          // std::cout << tp_in_obj_frame << std::endl;
-
-          geometry_msgs::Pose wp_pose_new;
-          tf::Transform origTtp_new, origTwp_new, wpTtp;
-          
-          tf::poseMsgToTF(frame_store_[feedback->marker_name].second.pose,wpTtp);
-          tf::poseMsgToTF(tp_in_obj_frame.pose,origTtp_new);
-          origTwp_new = origTtp_new*wpTtp.inverse();
-          tf::poseTFToMsg(origTwp_new, wp_pose_new);
-
-          // std::cout << "updated wp pose:" << std::endl;
-          // std::cout << wp_pose_new << std::endl;
-        
-          frame_store_[wp_frame].second.pose = wp_pose_new;
-          
-          server_->setPose(feedback->marker_name, fresh_pose.pose);
-          server_->applyChanges();
-        } catch(...) {
-          ROS_WARN("[AffordanceTemplate::processFeedback(%s)] %s transform error while moving tool frame", robot_name_.c_str(), feedback->marker_name.c_str());
-        }
-      }
-    }
+  // update the fames everytime this is called
+  geometry_msgs::PoseStamped ps;
+  ps.pose = feedback->pose;
+  ps.header = feedback->header;
+  if(!updatePoseFrames(feedback->marker_name, ps)) {
+    ROS_ERROR("AffordanceTemplate::processFeedback() -- error updating pose frames for %s", feedback->marker_name.c_str());
+    return;
   }
 
   switch ( feedback->event_type ) {
 
     case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP :
     {
-      //
-      // save the current pose of the display objects if they were selected
-      for (auto& d : structure_.display_objects)
-      {
-        if (feedback->marker_name == d.name)
-        {
-          ROS_DEBUG("[AffordanceTemplate::processFeedback] saving pose for object %s", feedback->marker_name.c_str());
-        
-          d.origin.position[0] = feedback->pose.position.x;
-          d.origin.position[1] = feedback->pose.position.y;
-          d.origin.position[2] = feedback->pose.position.z;
-
-          tf::Quaternion q;
-          tf::quaternionMsgToTF(feedback->pose.orientation, q);
-          double roll, pitch, yaw;
-          tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
-
-          d.origin.orientation[0] = roll;
-          d.origin.orientation[1] = pitch;
-          d.origin.orientation[2] = yaw;
-
-          break;
-        }
+      if(!updatePoseInStructure(feedback->marker_name, feedback->pose)) {
+        ROS_ERROR("AffordanceTemplate::processFeedback() -- problem updating pose in structure for %s", feedback->marker_name.c_str());
+        return;
       }
-
-      // save the current poses of the ee waypoint  back to the structure
-      for (auto& traj : structure_.ee_trajectories) {
-        if (traj.name == current_trajectory_) {
-          // look for the object the user selected in our waypoint list
-          for (auto& wp_list: traj.ee_waypoint_list) {
-            int wp_id = -1; // init to -1 because we pre-add
-            for (auto& wp: wp_list.waypoints) {
-              std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
-              if (wp_name == feedback->marker_name) {
-                ROS_DEBUG("[AffordanceTemplate::processFeedback] saving pose for EE waypoint %s", feedback->marker_name.c_str());
-                wp.origin = poseMsgToOrigin(feedback->pose);
-              } else if(isToolPointFrame(feedback->marker_name)) {             
-                std::string wp_frame = feedback->marker_name;
-                std::size_t pos = wp_frame.find("/tp");
-                wp_frame = wp_frame.substr(0,pos);  
-                wp.tool_offset = poseMsgToOrigin(frame_store_[feedback->marker_name].second.pose);
-                wp.origin = poseMsgToOrigin(frame_store_[wp_name].second.pose);
-                ROS_DEBUG("[AffordanceTemplate::processFeedback] saving pose and tool offset for EE waypoint %s", wp_name.c_str());
-              }
-            }
-          }
-        }
-      }
-
       break;
     }
     case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT : {
@@ -1984,6 +1979,15 @@ void AffordanceTemplate::setFrame(std::string frame_name, geometry_msgs::PoseSta
     frame_store_[frame_name].second = ps;
   }
 }
+
+bool AffordanceTemplate::hasControls(std::string name) {
+  return hasObjectFrame(name) || hasWaypointFrame(name) || hasToolPointFrame(name);
+}
+
+std::string AffordanceTemplate::getWaypointFrame(std::string frame) {
+  std::size_t pos = frame.find("/");
+  return frame.substr(0,pos);  
+} 
 
 int AffordanceTemplate::getNumWaypoints(const std::string traj_name, const int ee_id) {
   for(auto &traj : structure_.ee_trajectories) {

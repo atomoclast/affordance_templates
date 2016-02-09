@@ -248,6 +248,9 @@ namespace affordance_template
     bool hasToolPointFrame(std::string tp);
     bool hasControlPointFrame(std::string wp);
     bool hasEEFrame(std::string wp);
+    bool hasControls(std::string name);
+    std::string getWaypointFrame(std::string frame);
+
     bool isWaypoint(const std::string& wp);
     bool isObject(const std::string& obj);
     bool isToolPointFrame(const std::string& tp);
@@ -255,6 +258,9 @@ namespace affordance_template
     bool isEEFrame(const std::string& ee);
     void setFrame(std::string frame_name, geometry_msgs::PoseStamped ps);
 
+    bool updatePoseFrames(std::string name, geometry_msgs::PoseStamped ps);
+    bool updatePoseInStructure(std::string name, geometry_msgs::Pose p);
+    
     geometry_msgs::Pose originToPose(affordance_template_object::Origin origin);
 
     bool computePathSequence(std::string traj_name, int ee_id, int idx, int steps, bool direct, bool backwards, std::vector<int> &sequence_ids, int &next_path_idx);
