@@ -226,9 +226,12 @@ namespace affordance_template
     bool addWaypointAfterHandler(std::string wp_name);
     bool addWaypointBeforeTrajectoryHandler(std::string obj_name, int ee_id);
     bool addWaypointAfterTrajectoryHandler(std::string obj_name, int ee_id);
-    
-    bool insertWaypointInTrajectory(affordance_template_object::EndEffectorWaypoint wp, int wp_id, int ee_id, std::string traj_name="");
+    bool deleteWaypointHandler(std::string wp_name);
+
+    bool insertWaypointInTrajectory(affordance_template_object::EndEffectorWaypoint wp, int ee_id, int wp_id, std::string traj_name="");
     bool insertWaypointInList(affordance_template_object::EndEffectorWaypoint wp, int id, affordance_template_object::EndEffectorWaypointList &wp_list);
+
+    bool deleteWaypointFromTrajectory(int ee_id, int wp_id, std::string traj_name="");
     bool deleteWaypointFromList(int ee_id, int wp_id, affordance_template_object::EndEffectorWaypointList &wp_list);
 
     void removeWaypoint(std::string wp_name);
