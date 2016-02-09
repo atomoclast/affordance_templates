@@ -205,7 +205,7 @@ namespace affordance_template
     bool appendIDToStructure(affordance_template_object::AffordanceTemplateStructure &structure);
     int getEEIDfromWaypointName(const std::string wp_name);
 
-    bool create(std::string traj="");
+    bool buildTemplate(std::string traj="");
     
     bool createDisplayObjects();
     bool createDisplayObject(affordance_template_object::DisplayObject obj, int idx);

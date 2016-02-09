@@ -183,7 +183,7 @@ bool AffordanceTemplate::loadFromFile(std::string filename, geometry_msgs::Pose 
   structure_ = structure;
 
   bool append = appendIDToStructure(structure_);
-  bool created = create();
+  bool created = buildTemplate();
 
   return (append && created);
 }
@@ -286,7 +286,7 @@ bool AffordanceTemplate::addTrajectory(const std::string& trajectory_name)
   structure_.ee_trajectories.push_back(traj);
   setTrajectory(trajectory_name);
   setupTrajectoryMenu(trajectory_name);
-  return create(trajectory_name);
+  return buildTemplate(trajectory_name);
 }
 
 bool AffordanceTemplate::getTrajectory(TrajectoryList& traj_list, std::string traj_name, Trajectory& traj) 
@@ -325,7 +325,7 @@ bool AffordanceTemplate::switchTrajectory(const std::string& trajectory_name)
   removeAllMarkers();
   if(setTrajectory(trajectory_name)) {
     setupTrajectoryMenu(trajectory_name);
-    if(create(trajectory_name)) {
+    if(buildTemplate(trajectory_name)) {
       ROS_DEBUG("AffordanceTemplate::switchTrajectory() -- %s succeeded", trajectory_name.c_str());
     } else {
       ROS_ERROR("AffordanceTemplate::switchTrajectory() -- %s failed", trajectory_name.c_str());
@@ -445,14 +445,14 @@ bool AffordanceTemplate::setWaypointViewMode(int ee, int wp, bool m)
   std::string wp_name = createWaypointID(ee, wp);
   waypoint_flags_[current_trajectory_].compact_view[wp_name] = m;
   ROS_DEBUG("AffordanceTemplate::setWaypointViewMode() -- setting compact_view for [%s] to %d", wp_name.c_str(), (int)m);
-  create(current_trajectory_);
+  buildTemplate(current_trajectory_);
   return true;
 }
 
 
-bool AffordanceTemplate::create(std::string traj) 
+bool AffordanceTemplate::buildTemplate(std::string traj) 
 {
-  ROS_INFO("AffordanceTemplate::create() -- %s", template_type_.c_str());
+  ROS_INFO("AffordanceTemplate::buildTemplate() -- %s", template_type_.c_str());
  
   // set trajectoy to current if empty
   if(traj.empty()) {
@@ -462,18 +462,18 @@ bool AffordanceTemplate::create(std::string traj)
   // set the trajectory, and build the AT interactive markers and data structures
   if(setCurrentTrajectory(structure_.ee_trajectories, traj)) {
     if(!createDisplayObjects()) {
-      ROS_ERROR("AffordanceTemplate::create() -- couldn't createDisplayObjects()");
+      ROS_ERROR("AffordanceTemplate::buildTemplate() -- couldn't createDisplayObjects()");
       return false;
     }
     if(!createWaypoints()) {
-      ROS_ERROR("AffordanceTemplate::create() -- couldn't createWaypoints()"); 
+      ROS_ERROR("AffordanceTemplate::buildTemplate() -- couldn't createWaypoints()"); 
       return false;
     }
   } else {
-    ROS_ERROR("AffordanceTemplate::create() -- couldn't set the current trajectory");
+    ROS_ERROR("AffordanceTemplate::buildTemplate() -- couldn't set the current trajectory");
     return false;
   }
-  ROS_INFO("AffordanceTemplate::create() -- done creating %s", template_type_.c_str());  
+  ROS_INFO("AffordanceTemplate::buildTemplate() -- done creating %s", template_type_.c_str());  
   return true;
 }
 
@@ -1468,7 +1468,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     eewp.controls = wp.controls;
                     
                     insertWaypointInList(eewp, wp_id, wp_list);
-                    create();
+                    buildTemplate();
                   }
                 }
               }
@@ -1506,7 +1506,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     wp.controls.rotation[0] = wp.controls.rotation[1] = wp.controls.rotation[2] = true;
                     wp.controls.scale = 1.0;
                     wp_list.waypoints.insert(wp_list.waypoints.begin(), wp);
-                    create();
+                    buildTemplate();
                   }
                 }
               }
@@ -1572,7 +1572,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
 
                     eewp.controls = wp.controls;
                     insertWaypointInList(eewp, wp_id+1, wp_list);
-                    create();
+                    buildTemplate();
 
                   }
                 }
@@ -1627,7 +1627,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                     eewp.controls = wp.controls;
                     
                     insertWaypointInList(eewp, wp_list.waypoints.size(), wp_list);
-                    create(); 
+                    buildTemplate(); 
 
                   }
                 }
@@ -1657,7 +1657,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                   if (wp_name == feedback->marker_name)
                   {
                     deleteWaypointFromList(wp_list.id, wp_id, wp_list);
-                    create(); 
+                    buildTemplate(); 
                   }
                 }
               }
@@ -1674,7 +1674,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
           appendIDToStructure(structure_);
           removeAllMarkers();
           clearTrajectoryFlags();
-          create(); 
+          buildTemplate(); 
         }
       }
 
@@ -1719,7 +1719,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             }
           }
           removeInteractiveMarker(feedback->marker_name);
-          create();
+          buildTemplate();
         }
       }
 
@@ -1741,7 +1741,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             }
           }
           removeInteractiveMarker(feedback->marker_name);
-          create();
+          buildTemplate();
         }
       }
 
@@ -1767,7 +1767,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             }
           }
           removeInteractiveMarker(feedback->marker_name);
-          create();
+          buildTemplate();
         }
       }
 
@@ -1793,7 +1793,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             }
           }
           removeInteractiveMarker(feedback->marker_name);
-          create();
+          buildTemplate();
         }
       }
 
@@ -1836,7 +1836,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                       if (wp_name == feedback->marker_name) {
                         wp.ee_pose = robot_interface_->getEEPoseIDMap(ee_name)[pn];
                         removeInteractiveMarker(feedback->marker_name);
-                        if(!create()){
+                        if(!buildTemplate()){
                           ROS_ERROR("AffordanceTemplate::processFeedback() -- failed creating structure with new EE pose");
                         }
                         break;
@@ -2333,7 +2333,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
         }
 
         plan_status_[goal->trajectory][ee].current_idx = plan_status_[goal->trajectory][ee].goal_idx;
-        create(goal->trajectory);
+        buildTemplate(goal->trajectory);
       }
     }
 
@@ -2420,7 +2420,7 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
   ROS_INFO("AffordanceTemplate::moveToWaypoints() execution of %s to %d succeeded, traj=%s!!", ee.c_str(), plan_status_[trajectory][ee].current_idx, trajectory.c_str());
 
   // removeAllMarkers();
-  create(trajectory);
+  buildTemplate(trajectory);
   
   return true;
 }
@@ -2512,7 +2512,7 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   ee_scale_factor_[key] = ee_scale_factor;
 
   removeInteractiveMarker(key);
-  return create();
+  return buildTemplate();
 }
 
 
