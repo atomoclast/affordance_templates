@@ -302,8 +302,6 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
 
 bool AffordanceTemplateServer::updateTemplate(const std::string& type, const uint8_t id, const geometry_msgs::PoseStamped& pose)
 {
-    //boost::mutex::scoped_lock l(mutex_);
-
     std::string key = type + ":" + std::to_string(id);
     if (at_map_.find(key) == at_map_.end())
         return false;
@@ -325,8 +323,6 @@ bool AffordanceTemplateServer::getTemplateInstance(const std::string &type, cons
 
 bool AffordanceTemplateServer::getTemplateInstance(const std::string &key, boost::shared_ptr<affordance_template::AffordanceTemplate> &ati)
 {
-    //boost::mutex::scoped_lock l(mutex_);
-    
     if (at_map_.find(key) == at_map_.end())
         return false;
     ati = at_map_[key];

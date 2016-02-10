@@ -25,7 +25,6 @@ namespace affordance_template_markers
 {
   class RobotInterface
   {
-
     ros::NodeHandle nh_;
     
     void jointStateCallback(const sensor_msgs::JointState&);

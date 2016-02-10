@@ -29,7 +29,6 @@ namespace affordance_template_server
 {
   class AffordanceTemplateServer
   {
-    // void run();
     void configureServer();
     bool loadRobot();
     bool loadTemplates();
