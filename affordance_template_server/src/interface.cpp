@@ -130,7 +130,7 @@ bool AffordanceTemplateInterface::handleDeleteTemplate(DeleteAffordanceTemplate:
     res.status = at_server_->removeTemplate(req.class_type, req.id);
 
     if (!res.status)
-        ROS_ERROR("[AffordanceTemplateInterface::handleDeleteTemplate] error removing template!!");
+      ROS_ERROR("[AffordanceTemplateInterface::handleDeleteTemplate] error removing template!!");
 
     at_server_->setStatus(true);
     return true;

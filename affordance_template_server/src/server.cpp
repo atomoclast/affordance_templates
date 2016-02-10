@@ -238,8 +238,6 @@ std::vector<affordance_template_msgs::AffordanceTemplateConfig> AffordanceTempla
 
 std::vector<std::string> AffordanceTemplateServer::getRunningTemplates(const std::string &name)
 {
-    //boost::mutex::scoped_lock l(mutex_);
-
     std::vector<std::string> templates;
 
     for (auto a : at_map_)
@@ -274,8 +272,6 @@ bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id,
 {
     if (type.empty())
       return false;
-
-    //boost::mutex::scoped_lock l(mutex_);
 
     id = getNextID(type);
     std::string key = type + ":" + std::to_string(id);

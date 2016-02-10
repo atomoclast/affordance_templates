@@ -64,6 +64,7 @@ AffordanceTemplateRVizClient::AffordanceTemplateRVizClient(ros::NodeHandle &nh, 
     // start up server monitor thread
     server_monitor_ = new AffordanceTemplateServerStatusMonitor(nh_, std::string("/affordance_template_server/get_status"), 1);
 
+    busy_flag_ = false;
 }
 
 
@@ -602,7 +603,11 @@ int AffordanceTemplateRVizClient::sendAffordanceTemplateAdd(const string& class_
 }
 
 void AffordanceTemplateRVizClient::sendAffordanceTemplateKill(const string& class_name, int id) {
+
     ROS_INFO("Sending kill to %s:%d", class_name.c_str(), id);      
+    
+    busy_flag_ = true;
+    
     affordance_template_msgs::DeleteAffordanceTemplate srv;
     srv.request.class_type = class_name;
     srv.request.id = id;
@@ -621,6 +626,7 @@ void AffordanceTemplateRVizClient::sendAffordanceTemplateKill(const string& clas
                 ui_->new_image->clear();
             }
         }
+
 
         TemplateInstanceID template_instance = make_pair(class_name, id);
         
@@ -642,6 +648,8 @@ void AffordanceTemplateRVizClient::sendAffordanceTemplateKill(const string& clas
     {
         ROS_ERROR("Failed to call service delete_template");
     }
+
+    busy_flag_ = false;
 }
 
 void AffordanceTemplateRVizClient::killAffordanceTemplate(QListWidgetItem* item) {
@@ -1178,10 +1186,10 @@ void AffordanceTemplateRVizClient::executePlan() {
 }
  
 void AffordanceTemplateRVizClient::controlStatusUpdate() 
-{    
-    if (ui_->control_template_box->currentText().toStdString().empty())
+{
+    if (ui_->control_template_box->currentText().toStdString().empty() || busy_flag_)
         return;
-  
+
     affordance_template_msgs::GetAffordanceTemplateStatus srv;
     srv.request.name = ui_->control_template_box->currentText().toStdString();  
     srv.request.trajectory_name = "";
