@@ -2269,7 +2269,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       goals_full[manipulator_name] = pg;
       group_seed_states[ee] = gripper_state;
       group_seed_states[manipulator_name] = manipulator_state;
-      if (robot_interface_->getPlanner()->plan(goals_full, false, false, group_seed_states)) {
+      if (robot_interface_->getPlanner()->plan(goals_full, group_seed_states, false, false)) {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         
         ++planning.progress;
@@ -2330,7 +2330,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
               std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
               ee_goals[ee].push_back(ee_js);
-              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false, group_seed_states)) {
+              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, group_seed_states, false, false)) {
                 ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
                 planning.progress = -1;
                 planning_server_.publishFeedback(planning);
