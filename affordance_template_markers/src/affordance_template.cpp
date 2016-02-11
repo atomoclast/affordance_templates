@@ -52,6 +52,7 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
 AffordanceTemplate::~AffordanceTemplate() 
 {
   updateThread_->join();
+  robot_interface_->getPlanner()->resetAnimation(true);
 }
 
 void AffordanceTemplate::setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface)
