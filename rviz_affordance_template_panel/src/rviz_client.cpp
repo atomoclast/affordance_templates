@@ -605,9 +605,9 @@ int AffordanceTemplateRVizClient::sendAffordanceTemplateAdd(const string& class_
 void AffordanceTemplateRVizClient::sendAffordanceTemplateKill(const string& class_name, int id) {
 
     ROS_INFO("Sending kill to %s:%d", class_name.c_str(), id);      
-    
+
     busy_flag_ = true;
-    
+
     affordance_template_msgs::DeleteAffordanceTemplate srv;
     srv.request.class_type = class_name;
     srv.request.id = id;
@@ -1185,8 +1185,8 @@ void AffordanceTemplateRVizClient::executePlan() {
     updateStatusFromControls();
 }
  
-void AffordanceTemplateRVizClient::controlStatusUpdate() 
-{
+void AffordanceTemplateRVizClient::controlStatusUpdate()  {    
+
     if (ui_->control_template_box->currentText().toStdString().empty() || busy_flag_)
         return;
 
