@@ -463,7 +463,9 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
 bool AffordanceTemplate::setTemplatePose(geometry_msgs::PoseStamped ps)
 {
   key_ = structure_.name;
-  frame_store_[key_] = FrameInfo(key_, ps);
+  ROS_WARN("******in set template pose setting frame store");
+  if (key_=="knob:0")
+    frame_store_[key_] = FrameInfo(key_, ps);
   return true;
 }
     
@@ -511,7 +513,17 @@ bool AffordanceTemplate::createDisplayObjects() {
   geometry_msgs::PoseStamped ps;
   ps.pose = robot_interface_->getRobotConfig().root_offset;
   ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
-  setFrame(key_, ps);
+  ROS_WARN_STREAM("*******creating display object and setting frame with pose "<<ps.pose);
+  if (key_=="knob:0")
+  {
+    ROS_WARN_STREAM("****** want to setFrame with "<<ps.pose);
+    setFrame(key_, frame_store_["knob:0"].second);
+  }
+  else
+  {
+    ROS_WARN_STREAM("******* key to be set is "<<key_);
+    setFrame(key_, ps);
+  }
   // go through and draw each display object and corresponding marker
   int idx=0;
   for(auto &obj: structure_.display_objects) {
@@ -571,7 +583,15 @@ bool AffordanceTemplate::createDisplayObject(affordance_template_object::Display
   }
 
   // set up FrameStore frames 
+  if (obj.name == "knob:0" && frame_store_.find("knob:0") != frame_store_.end()) {
+    if (frame_store_[obj.name].second.pose.orientation.w != 0.0 ) {
+      ROS_WARN_STREAM("****** setting display pose for obj "<<obj.name<<" with FRAME STORE pose "<<frame_store_[obj.name].second.pose);
+      setFrame(obj.name, frame_store_[obj.name].second);
+    }
+  } else {
+  ROS_WARN_STREAM("****** setting display pose for obj "<<obj.name<<" with pose "<<display_pose.pose);
   setFrame(obj.name, display_pose);
+  }
 
   // create Interactive Marker for the object
   visualization_msgs::InteractiveMarker int_marker;
@@ -589,6 +609,7 @@ bool AffordanceTemplate::createDisplayObject(affordance_template_object::Display
   int_marker.name = obj.name;
   int_marker.description = obj.name;
   int_marker.scale = obj.controls.scale*object_scale_factor_[obj.name];
+  ROS_WARN_STREAM("************IM "<<obj.name<<" getting set by frame store to\n"<< frame_store_[obj.name].second.pose);
   int_marker.pose = frame_store_[obj.name].second.pose;
 
   // set up the object display and menus.  Will be a "clickable" hand in RViz.
@@ -777,6 +798,7 @@ bool AffordanceTemplate::createWaypoint(affordance_template_object::EndEffectorW
   int_marker.name = wp_name;
   int_marker.description = wp_name;
   int_marker.scale = wp.controls.scale;
+  // ROS_WARN_STREAM("********setting IM "<<<<" pose to "<<frame_store_[wp_name].second.pose);
   int_marker.pose = frame_store_[wp_name].second.pose;
 
   // set up the EE display and menus.  Will be a "clickable" hand in RViz.
@@ -1307,7 +1329,7 @@ bool AffordanceTemplate::updatePoseFrames(std::string name, geometry_msgs::PoseS
   if(isToolPointFrame(name) && waypoint_flags_[current_trajectory_].move_offset[wp_name]) {
       
     ROS_DEBUG("AffordanceTemplate::updatePoseFrames() -- moving tool frame: %s", name.c_str());
-    
+    ROS_WARN_STREAM("*******updating pose frames ");
     std::string obj_frame = frame_store_[wp_name].second.header.frame_id;       
     geometry_msgs::PoseStamped tool_pose = ps;
     geometry_msgs::Pose wp_pose_new;
@@ -1346,7 +1368,7 @@ bool AffordanceTemplate::updatePoseFrames(std::string name, geometry_msgs::PoseS
         ROS_WARN("AffordanceTemplate::updatePoseFrames() -- %s transform error while adjusting feedback frame", name.c_str());
       }
     }
-    ROS_DEBUG("AffordanceTemplate::updatePoseFrames() -- storing pose for %s", name.c_str());
+    ROS_WARN("AffordanceTemplate::updatePoseFrames() -- storing pose for %s", name.c_str());
     frame_store_[name].second = ps;  
 
   }
@@ -1381,7 +1403,7 @@ bool AffordanceTemplate::updatePoseInStructure(std::string name, geometry_msgs::
             if (wp_name == getWaypointFrame(name)) {
               wp.origin = poseMsgToOrigin(frame_store_[wp_name].second.pose);
               wp.tool_offset = poseMsgToOrigin(frame_store_[name].second.pose);
-              ROS_DEBUG("AffordanceTemplate::updatePoseInStructure() -- saving toolPoint and pose for EE waypoint %s", wp_name.c_str());
+              ROS_WARN("AffordanceTemplate::updatePoseInStructure() -- saving toolPoint and pose for EE waypoint %s", wp_name.c_str());
               return true;
             }
           }
@@ -2100,10 +2122,15 @@ bool AffordanceTemplate::hasFrame(std::string frame_name) {
 }
 
 void AffordanceTemplate::setFrame(std::string frame_name, geometry_msgs::PoseStamped ps) {
+
  if(!hasFrame(frame_name)) {
     frame_store_[frame_name] = FrameInfo(frame_name, ps);
+    if (frame_name=="knob:0")
+      ROS_WARN_STREAM("*****SET FRAME frame store for "<<frame_name<<" to "<<frame_store_[frame_name].second.pose);
   } else {
     frame_store_[frame_name].second = ps;
+    if (frame_name=="knob:0")
+      ROS_WARN_STREAM("*****SET FRAME frame store updating to "<<frame_name<<" to "<<frame_store_[frame_name].second.pose);
   }
 }
 
@@ -2321,9 +2348,11 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
       // do plan
       goals_full[manipulator_name] = pg;
-      group_seed_states[ee] = gripper_state;
-      group_seed_states[manipulator_name] = manipulator_state;
-      if (robot_interface_->getPlanner()->plan(goals_full, group_seed_states, false, false)) {
+      if (gripper_state.position.size())
+        group_seed_states[ee] = gripper_state;
+      if (manipulator_state.position.size())
+        group_seed_states[manipulator_name] = manipulator_state;
+      if (robot_interface_->getPlanner()->plan(goals_full, false, false, group_seed_states)) {
         ROS_INFO("[AffordanceTemplate::planRequest] planning for %s succeeded", next_path_str.c_str());
         
         ++planning.progress;
@@ -2384,7 +2413,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
               std::map<std::string, std::vector<sensor_msgs::JointState> > ee_goals;
               ee_goals[ee].push_back(ee_js);
-              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, group_seed_states, false, false)) {
+              if (!robot_interface_->getPlanner()->planJointPath( ee_goals, false, false, group_seed_states)) {
                 ROS_ERROR("[AffordanceTemplate::planRequest] couldn't plan for gripper joint states!!");
                 planning.progress = -1;
                 planning_server_.publishFeedback(planning);
@@ -2606,7 +2635,7 @@ void AffordanceTemplate::run()
   {
     mutex_.lock();
     t = ros::Time::now();
-    for(auto &f: frame_store_) 
+    for(auto f: frame_store_) 
     {
       fi = f.second;
       fi.second.header.stamp = t;
@@ -2646,22 +2675,24 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
 
 bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 {
-  ROS_INFO("AffordanceTemplate::setObjectPose() -- setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
+  ROS_INFO("[AffordanceTemplate::setObjectPose] setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
   
-  for (auto& d : structure_.display_objects)
-  {
+  for (auto& d : structure_.display_objects) {
+    
     std::string obj_name = obj.name + ":" + std::to_string(obj.id);
-    if (d.name == obj_name)
-    {
-      ROS_INFO("AffordanceTemplate::setObjectPose() -- matched object %s in frame: %s", obj_name.c_str(), obj.stamped_pose.header.frame_id.c_str());
+    if (d.name == obj_name) {
+    
+      ROS_DEBUG("[AffordanceTemplate::setObjectPose] matched object %s in frame: %s", obj_name.c_str(), obj.stamped_pose.header.frame_id.c_str());
       geometry_msgs::PoseStamped ps;
       try {
         tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, obj.stamped_pose.header.stamp, ros::Duration(3.0));
         tf_listener_.transformPose(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
         frame_store_[obj_name].second = ps;
+        if (obj_name=="knob:0")
+          ROS_WARN_STREAM("***********setting "<<obj_name<<"'s frame store to "<<frame_store_[obj_name].second.pose);
         server_->setPose(obj_name, ps.pose);
       } catch(tf::TransformException ex){
-        ROS_ERROR("AffordanceTemplate::setObjectPose() -- trouble transforming pose from %s to %s. TransformException: %s",frame_store_[obj_name].second.header.frame_id.c_str(), obj.stamped_pose.header.frame_id.c_str(), ex.what());
+        ROS_ERROR("[AffordanceTemplate::setObjectPose] trouble transforming pose from %s to %s. TransformException: %s",frame_store_[obj_name].second.header.frame_id.c_str(), obj.stamped_pose.header.frame_id.c_str(), ex.what());
         return false;
       }
       break;
