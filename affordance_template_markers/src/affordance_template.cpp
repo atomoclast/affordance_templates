@@ -511,21 +511,9 @@ bool AffordanceTemplate::createDisplayObjects() {
   geometry_msgs::PoseStamped ps;
   ps.pose = robot_interface_->getRobotConfig().root_offset;
   ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
-  //*********************************************
-  //*********************************************
-  // THIS IS THE BUG
-  //*********************************************
-  //*********************************************
-  if (key_=="knob:0")
-  {
-    ROS_WARN_STREAM("****** want to setFrame with "<<ps.pose);
-    setFrame(key_, frame_store_["knob:0"].second);
-  }
-  else
-  {
-    ROS_WARN_STREAM("******* key to be set is "<<key_);
-    setFrame(key_, ps);
-  }
+  
+  setFrame(key_, ps);
+
   // go through and draw each display object and corresponding marker
   int idx=0;
   for(auto &obj: structure_.display_objects) {
@@ -584,17 +572,7 @@ bool AffordanceTemplate::createDisplayObject(affordance_template_object::Display
       display_pose.pose.orientation.x,display_pose.pose.orientation.y,display_pose.pose.orientation.z,display_pose.pose.orientation.w);
   }
 
-  // set up FrameStore frames 
-  // BUG HERE??
-  if (obj.name == "knob:0" && frame_store_.find("knob:0") != frame_store_.end()) {
-    if (frame_store_[obj.name].second.pose.orientation.w != 0.0 ) {
-      ROS_WARN_STREAM("****** setting display pose for obj "<<obj.name<<" with FRAME STORE pose "<<frame_store_[obj.name].second.pose);
-      setFrame(obj.name, frame_store_[obj.name].second);
-    }
-  } else {
-  ROS_WARN_STREAM("****** setting display pose for obj "<<obj.name<<" with pose "<<display_pose.pose);
   setFrame(obj.name, display_pose);
-  }
 
   // create Interactive Marker for the object
   visualization_msgs::InteractiveMarker int_marker;
@@ -2684,6 +2662,7 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
         tf_listener_.transformPose(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
         frame_store_[obj_name].second = ps;
         server_->setPose(obj_name, ps.pose);
+        updatePoseInStructure(obj_name, ps.pose);
       } catch(tf::TransformException ex){
         ROS_ERROR("[AffordanceTemplate::setObjectPose] trouble transforming pose from %s to %s. TransformException: %s",frame_store_[obj_name].second.header.frame_id.c_str(), obj.stamped_pose.header.frame_id.c_str(), ex.what());
         return false;
