@@ -82,10 +82,6 @@ void AffordanceTemplate::setupMenuOptions()
   object_menu_options_.push_back(MenuConfig("Save", false));
   object_menu_options_.push_back(MenuConfig("Hide Controls", true));
   object_menu_options_.push_back(MenuConfig("Choose Trajectory", false));
-  object_menu_options_.push_back(MenuConfig("Plan Test", false));
-  object_menu_options_.push_back(MenuConfig("Execute Test", false));
-  object_menu_options_.push_back(MenuConfig("Plan and Execute Test", false));
-  object_menu_options_.push_back(MenuConfig("Knob Test", false));
   object_menu_options_.push_back(MenuConfig("(Re)Play Plan", false));
   object_menu_options_.push_back(MenuConfig("Loop Animation", true));
   object_menu_options_.push_back(MenuConfig("Autoplay", true));
@@ -1675,10 +1671,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   MenuHandleKey save_key;
   MenuHandleKey delete_key;
   MenuHandleKey hide_controls_key;
-  MenuHandleKey plan_test_key;
-  MenuHandleKey execute_test_key;
-  MenuHandleKey plan_and_execute_test_key;
-  MenuHandleKey knob_test_key;
   MenuHandleKey view_mode_key;
   MenuHandleKey play_plan_key;
   MenuHandleKey loop_key;
@@ -1693,10 +1685,6 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   delete_key[feedback->marker_name]                = {"Delete Waypoint"};
   hide_controls_key[feedback->marker_name]         = {"Hide Controls"};
   view_mode_key[feedback->marker_name]             = {"Compact View"};
-  plan_test_key[feedback->marker_name]             = {"Plan Test"};
-  execute_test_key[feedback->marker_name]          = {"Execute Test"};
-  plan_and_execute_test_key[feedback->marker_name] = {"Plan and Execute Test"};
-  knob_test_key[feedback->marker_name]             = {"Knob Test"};
   play_plan_key[feedback->marker_name]             = {"(Re)Play Plan"};
   loop_key[feedback->marker_name]                  = {"Loop Animation"};
   autoplay_key[feedback->marker_name]              = {"Autoplay"};
