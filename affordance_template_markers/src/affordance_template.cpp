@@ -1360,7 +1360,7 @@ bool AffordanceTemplate::updatePoseFrames(std::string name, geometry_msgs::PoseS
         ROS_WARN("AffordanceTemplate::updatePoseFrames() -- %s transform error while adjusting feedback frame", name.c_str());
       }
     }
-    ROS_WARN("AffordanceTemplate::updatePoseFrames() -- storing pose for %s", name.c_str());
+    ROS_DEBUG("AffordanceTemplate::updatePoseFrames() -- storing pose for %s", name.c_str());
     frame_store_[name].second = ps;  
 
   }
@@ -1966,6 +1966,10 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             ROS_DEBUG("[AffordanceTemplate::processFeedback::Choose Trajectory] found matching trajectory name %s", traj.name.c_str());
             setTrajectory(traj.name);
             marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED);
+            removeAllMarkers();
+            if(!buildTemplate()) {
+              ROS_ERROR("AffordanceTemplate::processFeedback() -- failed switching trajectory");
+            }
           }
         }
       }
