@@ -523,16 +523,19 @@ bool AffordanceTemplateInterface::handleSetWaypointViews(SetWaypointViewModes::R
           if (wp_keys.size() == 2) {
             ee_id = std::stoi(wp_keys[0]);
             wp_id = std::stoi(wp_keys[1]);
-            //std::cout << "waypoint[" << idx << "]: " << wp << std::endl; 
+            // std::cout << "waypoint[" << idx << "]: " << wp << std::endl; 
             // std::cout << "  AT Type: " << at_class << std::endl; 
             // std::cout << "  AT ID:   " << at_id << std::endl; 
             // std::cout << "  EE ID:   " << ee_id << std::endl; 
             // std::cout << "  WP ID:   " << wp_id << std::endl; 
-            //std::cout << "  mode:   " << (int)req.compact_view[idx] << std::endl; 
+            // std::cout << "  mode:   " << (int)req.compact_view[idx] << std::endl; 
 
             ATPointer at;
             if (at_server_->getTemplateInstance(at_class, at_id, at)) {
               at->setWaypointViewMode(ee_id, wp_id, req.compact_view[idx]);
+            } else {
+              ROS_ERROR("[AffordanceTemplateInterface::handleSetWaypointViews] error getting template instance");
+              return false;
             }
 
           } else {

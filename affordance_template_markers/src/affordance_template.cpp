@@ -474,7 +474,10 @@ bool AffordanceTemplate::setWaypointViewMode(int ee, int wp, bool m)
   std::string wp_name = createWaypointID(ee, wp);
   waypoint_flags_[current_trajectory_].compact_view[wp_name] = m;
   ROS_DEBUG("AffordanceTemplate::setWaypointViewMode() -- setting compact_view for [%s] to %d", wp_name.c_str(), (int)m);
-  buildTemplate(current_trajectory_);
+  if(!removeMarkerAndRebuild(wp_name)) {
+    ROS_ERROR("AffordanceTemplate::setWaypointViewMode() -- error building template with wp [%s] view mode %d", wp_name.c_str(), (int)m);
+    return false;
+  }
   return true;
 }
 
