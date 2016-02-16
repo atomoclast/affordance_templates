@@ -239,6 +239,7 @@ namespace affordance_template
     void addInteractiveMarker(visualization_msgs::InteractiveMarker m);
     void removeInteractiveMarker(std::string marker_name);
     void removeAllMarkers();
+    bool removeMarkerAndRebuild(std::string marker_name);
 
     void setupMenuOptions();
     void setupObjectMenu(affordance_template_object::DisplayObject obj);

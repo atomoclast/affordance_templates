@@ -130,28 +130,28 @@ void AffordanceTemplate::setWaypointMenuDefaults(std::string wp_name) {
   if(waypoint_flags_[current_trajectory_].controls_on[wp_name]) {
     key[wp_name] = {"Hide Controls"};
     marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
-  }  else {
+  } else {
     key[wp_name] = {"Hide Controls"};
     marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
   }
   if(waypoint_flags_[current_trajectory_].compact_view[wp_name]) {
     key[wp_name] = {"Compact View"};
     marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
-  }  else {
+  } else {
     key[wp_name] = {"Compact View"};
     marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
   }
   if(waypoint_flags_[current_trajectory_].adjust_offset[wp_name]) {
     key[wp_name] = {"Change Tool Offset"};
     marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
-  }  else {
+  } else {
     key[wp_name] = {"Change Tool Offset"};
     marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
   }
   if(waypoint_flags_[current_trajectory_].move_offset[wp_name]) {
     key[wp_name] = {"Move Tool Point"};
     marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
-  }  else {
+  } else {
     key[wp_name] = {"Move Tool Point"};
     marker_menus_[wp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
   }
@@ -159,17 +159,18 @@ void AffordanceTemplate::setWaypointMenuDefaults(std::string wp_name) {
 
 void AffordanceTemplate::setToolPointMenuDefaults(std::string tp_name) {
   MenuHandleKey key;
-  if(waypoint_flags_[current_trajectory_].adjust_offset[tp_name]) {
+  std::string wp_name = getWaypointFrame(tp_name);
+  if(waypoint_flags_[current_trajectory_].adjust_offset[wp_name]) {
     key[tp_name] = {"Change Tool Offset"};
     marker_menus_[tp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
-  }  else {
+  } else {
     key[tp_name] = {"Change Tool Offset"};
     marker_menus_[tp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
   }
-  if(waypoint_flags_[current_trajectory_].move_offset[tp_name]) {
+  if(waypoint_flags_[current_trajectory_].move_offset[wp_name]) {
     key[tp_name] = {"Move Tool Point"};
     marker_menus_[tp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
-  }  else {
+  } else {
     key[tp_name] = {"Move Tool Point"};
     marker_menus_[tp_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
   }
@@ -396,6 +397,7 @@ void AffordanceTemplate::setTrajectoryFlags(Trajectory traj)
         wp_flags.controls_on[wp_name] = false;
         wp_flags.compact_view[wp_name] = false;
         wp_flags.adjust_offset[wp_name] = false;
+        wp_flags.move_offset[wp_name] = false;
       }
     }
     waypoint_flags_[traj.name] = wp_flags;
@@ -1286,6 +1288,15 @@ void AffordanceTemplate::removeAllMarkers()
   server_->applyChanges();
 }
 
+bool AffordanceTemplate::removeMarkerAndRebuild(std::string marker_name) {
+  removeInteractiveMarker(marker_name);
+  if(!buildTemplate()) {
+    ROS_ERROR("AffordanceTemplate::removeMarkerAndRebuild() -- error rebuilding template after removing marker %s", marker_name.c_str());
+    return false;
+  }
+  return true;  
+}
+
 bool AffordanceTemplate::updatePoseFrames(std::string name, geometry_msgs::PoseStamped ps) 
 {
 
@@ -1743,10 +1754,8 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       {
         MenuHandleKey key;
         key[feedback->marker_name] = {"Add Waypoint Before", ee.second};
-        if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) 
-        {
-          if (group_menu_handles_[key] == feedback->menu_entry_id)
-          {
+        if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) {
+          if (group_menu_handles_[key] == feedback->menu_entry_id) {
             int ee_id = robot_interface_->getEEID(ee.second);
             if(!addWaypointBeforeTrajectoryHandler(feedback->marker_name, ee_id)) {
               ROS_ERROR("AffordanceTemplate::processFeedback() -- error adding new waypoint before object %s", feedback->marker_name.c_str());
@@ -1762,10 +1771,8 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
       {
         MenuHandleKey key;
         key[feedback->marker_name] = {"Add Waypoint After", ee.second};
-        if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) 
-        {
-          if (group_menu_handles_[key] == feedback->menu_entry_id)
-          {
+        if (group_menu_handles_.find(key) != std::end(group_menu_handles_)) {
+          if (group_menu_handles_[key] == feedback->menu_entry_id) {
             int ee_id = robot_interface_->getEEID(ee.second);
             if(!addWaypointAfterTrajectoryHandler(feedback->marker_name, ee_id)) {
               ROS_ERROR("AffordanceTemplate::processFeedback() -- error adding new waypoint after object %s", feedback->marker_name.c_str());
@@ -1815,6 +1822,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }
 
+      //
       // toggle controls
       if(group_menu_handles_.find(hide_controls_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[hide_controls_key] == feedback->menu_entry_id) {
@@ -1824,27 +1832,25 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );
               if(isObject(feedback->marker_name)) {
                 object_controls_display_on_ = true;
-                ROS_DEBUG("AffordanceTemplate::processFeedback() --   TURNING OBJECT CONTROLS ON");
               } else {
                 waypoint_flags_[current_trajectory_].controls_on[feedback->marker_name] = true;
-                ROS_DEBUG("AffordanceTemplate::processFeedback() --   TURNING WAYPOINT CONTROLS ON (%s)", feedback->marker_name.c_str());
               }
             } else {
               marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
               if(isObject(feedback->marker_name)) {
                 object_controls_display_on_ = false;
-                ROS_DEBUG("AffordanceTemplate::processFeedback() --   TURNING OBJECT CONTROLS OFF");
               } else {
                 waypoint_flags_[current_trajectory_].controls_on[feedback->marker_name] = false;
-                ROS_DEBUG("AffordanceTemplate::processFeedback() --   TURNING WAYPOINT CONTROLS OFF (%s)", feedback->marker_name.c_str());
               }
             }
           }
-          removeInteractiveMarker(feedback->marker_name);
-          buildTemplate();
+          if(!removeMarkerAndRebuild(feedback->marker_name)) {
+            ROS_ERROR("AffordanceTemplate::processFeedback() -- failed toggling controls");
+          }
         }
       }
 
+      //
       // toggle EE compact view 
       if(group_menu_handles_.find(view_mode_key) != std::end(group_menu_handles_)) {
         if(group_menu_handles_[view_mode_key] == feedback->menu_entry_id) {
@@ -1862,74 +1868,98 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
               }
             }
           }
-          removeInteractiveMarker(feedback->marker_name);
-          buildTemplate();
+          if(!removeMarkerAndRebuild(feedback->marker_name)) {
+            ROS_ERROR("AffordanceTemplate::processFeedback() -- failed toggling view mode");
+          }
         }
       }
 
+      //
+      // toggle adjust tool 6dof markers  
       if(group_menu_handles_.find(adjust_offset_key) != std::end(group_menu_handles_)) {
+        // figure out if the menu was selected from the wp or the tp 
+        std::string wp_name, tp_name;
+        if(isWaypoint(feedback->marker_name)) {
+          wp_name = feedback->marker_name;
+          tp_name = getToolPointFrameName(wp_name);
+        } else if(isToolPointFrame(feedback->marker_name)) {
+          tp_name = feedback->marker_name;
+          wp_name = getWaypointFrame(tp_name);
+        }
         if(group_menu_handles_[adjust_offset_key] == feedback->menu_entry_id) {
           ROS_DEBUG("AffordanceTemplate::processFeedback() --   ADJUST TOOL TOGGLE");
           if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) {
             if(state == interactive_markers::MenuHandler::UNCHECKED) {
-              marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );
-              if(!isObject(feedback->marker_name)) {
-                waypoint_flags_[current_trajectory_].adjust_offset[feedback->marker_name] = true;
-                waypoint_flags_[current_trajectory_].move_offset[feedback->marker_name] = false;
-                marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::UNCHECKED );
-                // marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::UNCHECKED );
-              }
-            } else {
-              marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
-              //marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
-              if(isWaypoint(feedback->marker_name)) {
-                waypoint_flags_[current_trajectory_].adjust_offset[feedback->marker_name] = false;
-                removeInteractiveMarker(getToolPointFrameName(feedback->marker_name));
-              }
+              waypoint_flags_[current_trajectory_].adjust_offset[wp_name] = true;
+              waypoint_flags_[current_trajectory_].move_offset[wp_name] = false;
+              marker_menus_[wp_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::CHECKED );
+              marker_menus_[tp_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::CHECKED );
+              marker_menus_[wp_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+              marker_menus_[tp_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::UNCHECKED );                          
+            } else {           
+              waypoint_flags_[current_trajectory_].adjust_offset[wp_name] = false;
+              waypoint_flags_[current_trajectory_].move_offset[wp_name] = false;
+              marker_menus_[wp_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+              marker_menus_[tp_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+              marker_menus_[wp_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+              marker_menus_[tp_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+            }
+            removeInteractiveMarker(wp_name);
+            removeInteractiveMarker(tp_name);                   
+            if(!buildTemplate()) {
+              ROS_ERROR("AffordanceTemplate::processFeedback() -- failed toggling adust tool controls");
             }
           }
-          removeInteractiveMarker(feedback->marker_name);
-          buildTemplate();
         }
       }
 
+      //
+      // toggle move tool 6dof markers  
       if(group_menu_handles_.find(move_offset_key) != std::end(group_menu_handles_)) {
-        if(group_menu_handles_[move_offset_key] == feedback->menu_entry_id) {
+        // figure out if the menu was selected from the wp or the tp 
+        std::string wp_name, tp_name;
+        if(isWaypoint(feedback->marker_name)) {
+          wp_name = feedback->marker_name;
+          tp_name = getToolPointFrameName(wp_name);
+        } else if(isToolPointFrame(feedback->marker_name)) {
+          tp_name = feedback->marker_name;
+          wp_name = getWaypointFrame(tp_name);
+        }  
+        if( group_menu_handles_[move_offset_key] == feedback->menu_entry_id ) {
           ROS_DEBUG("AffordanceTemplate::processFeedback() --   MOVE TOOL TOGGLE");
           if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) {
             if(state == interactive_markers::MenuHandler::UNCHECKED) {
-              marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::CHECKED );
-              if(!isObject(feedback->marker_name)) {
-                waypoint_flags_[current_trajectory_].move_offset[feedback->marker_name] = true;
-                waypoint_flags_[current_trajectory_].adjust_offset[feedback->marker_name] = false;
-                marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::UNCHECKED );
-                //marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::UNCHECKED );
-              }
+              waypoint_flags_[current_trajectory_].adjust_offset[wp_name] = false;
+              waypoint_flags_[current_trajectory_].move_offset[wp_name] = true;
+              marker_menus_[wp_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::CHECKED );
+              marker_menus_[tp_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::CHECKED );
+              marker_menus_[wp_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+              marker_menus_[tp_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::UNCHECKED );          
             } else {
-              marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
-              //marker_menus_[feedback->marker_name].setCheckState( feedback->menu_entry_id, interactive_markers::MenuHandler::UNCHECKED );
-              if(isWaypoint(feedback->marker_name)) {
-                waypoint_flags_[current_trajectory_].move_offset[feedback->marker_name] = false;
-                removeInteractiveMarker(getToolPointFrameName(feedback->marker_name));
-              }
+              waypoint_flags_[current_trajectory_].move_offset[wp_name] = false;
+              waypoint_flags_[current_trajectory_].adjust_offset[wp_name] = false;
+              marker_menus_[wp_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+              marker_menus_[tp_name].setCheckState( group_menu_handles_[move_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+              marker_menus_[wp_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+              marker_menus_[tp_name].setCheckState( group_menu_handles_[adjust_offset_key], interactive_markers::MenuHandler::UNCHECKED );
+            }
+            removeInteractiveMarker(wp_name);
+            removeInteractiveMarker(tp_name);
+            if(!buildTemplate()) {
+              ROS_ERROR("AffordanceTemplate::processFeedback() -- failed toggling adust tool controls");
             }
           }
-          removeInteractiveMarker(feedback->marker_name);
-          buildTemplate();
         }
       }
 
       //
       // switch trajectories using the context menu
-      for (auto &traj: structure_.ee_trajectories) 
-      {
+      for (auto &traj: structure_.ee_trajectories) {
         MenuHandleKey key;
         key[feedback->marker_name] = {"Choose Trajectory", traj.name}; // FIXME -- can this be static like this??
-        if (group_menu_handles_.find(key) != group_menu_handles_.end())
-        {
+        if (group_menu_handles_.find(key) != group_menu_handles_.end()) {
           marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED);
-          if (group_menu_handles_[key] == feedback->menu_entry_id) 
-          {
+          if (group_menu_handles_[key] == feedback->menu_entry_id)  {
             ROS_DEBUG("[AffordanceTemplate::processFeedback::Choose Trajectory] found matching trajectory name %s", traj.name.c_str());
             setTrajectory(traj.name);
             marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED);
@@ -1957,8 +1987,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
                       std::string wp_name = createWaypointID(wp_list.id, ++wp_id);
                       if (wp_name == feedback->marker_name) {
                         wp.ee_pose = robot_interface_->getEEPoseIDMap(ee_name)[pn];
-                        removeInteractiveMarker(feedback->marker_name);
-                        if(!buildTemplate()){
+                        if(!removeMarkerAndRebuild(feedback->marker_name)) {
                           ROS_ERROR("AffordanceTemplate::processFeedback() -- failed creating structure with new EE pose");
                         }
                         break;
@@ -1972,80 +2001,56 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
         }
       }     
 
-      if (group_menu_handles_.find(play_plan_key) != std::end(group_menu_handles_))
-      {
-        if (group_menu_handles_[play_plan_key] == feedback->menu_entry_id)
-        {
+      if (group_menu_handles_.find(play_plan_key) != std::end(group_menu_handles_)) {
+        if (group_menu_handles_[play_plan_key] == feedback->menu_entry_id) {
           ROS_DEBUG("[AffordanceTemplate::processFeedback] playing available plan");
           robot_interface_->getPlanner()->playAnimation();
         }
       }
 
-      if (group_menu_handles_.find(loop_key) != std::end(group_menu_handles_))
-      {
-        if (group_menu_handles_[loop_key] == feedback->menu_entry_id)
-        {
+      if (group_menu_handles_.find(loop_key) != std::end(group_menu_handles_)) {
+        if (group_menu_handles_[loop_key] == feedback->menu_entry_id) {
           ROS_DEBUG("[AffordanceTemplate::processFeedback] changing looping functionality");
-
           MenuHandleKey key;
           key[feedback->marker_name] = {"Loop Animation"};
-
           bool loop = false;
-          if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) 
-          {
-            if(state == interactive_markers::MenuHandler::CHECKED) 
-            {
+          if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) {
+            if(state == interactive_markers::MenuHandler::CHECKED) {
               marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
-            }
-            else
-            {
+            } else {
               marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
               loop = true; // transitioning from not looping to looping
             }
-              
             marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
             robot_interface_->getPlanner()->loopAnimation(feedback->marker_name, loop);
-          }
-          else
-          {
-            ROS_ERROR("can't get the loop state!!");
+          } else {
+            ROS_ERROR("[AffordanceTemplate::processFeedback] can't get the loop state!!");
           }
         }
       }
 
-      if (group_menu_handles_.find(autoplay_key) != std::end(group_menu_handles_))
-      {
-        if (group_menu_handles_[autoplay_key] == feedback->menu_entry_id)
-        {
+      if (group_menu_handles_.find(autoplay_key) != std::end(group_menu_handles_)) {
+        if (group_menu_handles_[autoplay_key] == feedback->menu_entry_id) {
           ROS_WARN("[AffordanceTemplate::processFeedback] flipping autoplay functionality");
-
           MenuHandleKey key;
           key[feedback->marker_name] = {"Autoplay"};
-
-          if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) ) 
-          {
-            if(state == interactive_markers::MenuHandler::CHECKED) 
-            {
+          if(marker_menus_[feedback->marker_name].getCheckState( feedback->menu_entry_id, state ) )  {
+            if(state == interactive_markers::MenuHandler::CHECKED)  {
               marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::UNCHECKED );
               autoplay_display_ = false;
-            }
-            else
-            {
+            } else {
               marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED );
               autoplay_display_ = true;
             }
-              
             marker_menus_[feedback->marker_name].apply( *server_, feedback->marker_name );
-          }
-          else
-          {
-            ROS_ERROR("can't get the autoplay state!!");
+          } else {
+            ROS_ERROR("[AffordanceTemplate::processFeedback] can't get the autoplay state!!");
           }
         }
       }
-
       break;
     }
+
     default : 
       ROS_DEBUG("[AffordanceTemplate::processFeedback] got unrecognized or unmatched menu event: %d", feedback->event_type);
       break;
@@ -2274,9 +2279,9 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
       std::string next_path_str = createWaypointID(ee_id, plan_seq);
       
       std::string wp_frame_name = next_path_str;
-      std::string ee_frame_name = wp_frame_name + "/ee";       
-      std::string cp_frame_name = wp_frame_name + "/cp";
-      std::string tp_frame_name = wp_frame_name + "/tp";
+      std::string tp_frame_name = getToolPointFrameName(wp_frame_name);       
+      std::string cp_frame_name = getControlPointFrameName(wp_frame_name);
+      std::string ee_frame_name = getEEFrameName(wp_frame_name);
       
       // get helper transforms
       tf::Transform wpTee, eeTcp, wpTtp, cpTtp,wpTcp;
