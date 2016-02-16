@@ -463,9 +463,7 @@ bool AffordanceTemplate::setCurrentTrajectory(TrajectoryList traj_list, std::str
 bool AffordanceTemplate::setTemplatePose(geometry_msgs::PoseStamped ps)
 {
   key_ = structure_.name;
-  ROS_WARN("******in set template pose setting frame store");
-  if (key_=="knob:0")
-    frame_store_[key_] = FrameInfo(key_, ps);
+  frame_store_[key_] = FrameInfo(key_, ps);
   return true;
 }
     
@@ -513,7 +511,11 @@ bool AffordanceTemplate::createDisplayObjects() {
   geometry_msgs::PoseStamped ps;
   ps.pose = robot_interface_->getRobotConfig().root_offset;
   ps.header.frame_id = robot_interface_->getRobotConfig().frame_id;
-  ROS_WARN_STREAM("*******creating display object and setting frame with pose "<<ps.pose);
+  //*********************************************
+  //*********************************************
+  // THIS IS THE BUG
+  //*********************************************
+  //*********************************************
   if (key_=="knob:0")
   {
     ROS_WARN_STREAM("****** want to setFrame with "<<ps.pose);
@@ -544,11 +546,10 @@ bool AffordanceTemplate::createDisplayObject(affordance_template_object::Display
 
   // get the parent frame for the object.  If no parent in the structure, set it as AT root frame
   std::string obj_frame;
-  if(obj.parent != "") {
+  if(obj.parent != "")
     obj_frame = obj.parent;
-  } else {
+  else
     obj_frame = root_frame_;
-  }
   ROS_DEBUG("AffordanceTemplate::createDisplayObject() -- root_frame: %s", obj_frame.c_str());
   
   // set scaling information (if not already set)
@@ -557,6 +558,7 @@ bool AffordanceTemplate::createDisplayObject(affordance_template_object::Display
     ee_scale_factor_[obj.name] = 1.0;
     ROS_DEBUG("AffordanceTemplate::createDisplayObject() -- setting scale factor for %s to default 1.0", obj.name.c_str());
   } 
+
   if(object_scale_factor_.find(obj.parent) == std::end(object_scale_factor_)) {
     object_scale_factor_[obj.parent] = 1.0;
     ee_scale_factor_[obj.parent] = 1.0;
@@ -583,6 +585,7 @@ bool AffordanceTemplate::createDisplayObject(affordance_template_object::Display
   }
 
   // set up FrameStore frames 
+  // BUG HERE??
   if (obj.name == "knob:0" && frame_store_.find("knob:0") != frame_store_.end()) {
     if (frame_store_[obj.name].second.pose.orientation.w != 0.0 ) {
       ROS_WARN_STREAM("****** setting display pose for obj "<<obj.name<<" with FRAME STORE pose "<<frame_store_[obj.name].second.pose);
@@ -609,7 +612,6 @@ bool AffordanceTemplate::createDisplayObject(affordance_template_object::Display
   int_marker.name = obj.name;
   int_marker.description = obj.name;
   int_marker.scale = obj.controls.scale*object_scale_factor_[obj.name];
-  ROS_WARN_STREAM("************IM "<<obj.name<<" getting set by frame store to\n"<< frame_store_[obj.name].second.pose);
   int_marker.pose = frame_store_[obj.name].second.pose;
 
   // set up the object display and menus.  Will be a "clickable" hand in RViz.
@@ -798,7 +800,6 @@ bool AffordanceTemplate::createWaypoint(affordance_template_object::EndEffectorW
   int_marker.name = wp_name;
   int_marker.description = wp_name;
   int_marker.scale = wp.controls.scale;
-  // ROS_WARN_STREAM("********setting IM "<<<<" pose to "<<frame_store_[wp_name].second.pose);
   int_marker.pose = frame_store_[wp_name].second.pose;
 
   // set up the EE display and menus.  Will be a "clickable" hand in RViz.
@@ -1329,7 +1330,6 @@ bool AffordanceTemplate::updatePoseFrames(std::string name, geometry_msgs::PoseS
   if(isToolPointFrame(name) && waypoint_flags_[current_trajectory_].move_offset[wp_name]) {
       
     ROS_DEBUG("AffordanceTemplate::updatePoseFrames() -- moving tool frame: %s", name.c_str());
-    ROS_WARN_STREAM("*******updating pose frames ");
     std::string obj_frame = frame_store_[wp_name].second.header.frame_id;       
     geometry_msgs::PoseStamped tool_pose = ps;
     geometry_msgs::Pose wp_pose_new;
@@ -2123,15 +2123,10 @@ bool AffordanceTemplate::hasFrame(std::string frame_name) {
 
 void AffordanceTemplate::setFrame(std::string frame_name, geometry_msgs::PoseStamped ps) {
 
- if(!hasFrame(frame_name)) {
+  if(!hasFrame(frame_name))
     frame_store_[frame_name] = FrameInfo(frame_name, ps);
-    if (frame_name=="knob:0")
-      ROS_WARN_STREAM("*****SET FRAME frame store for "<<frame_name<<" to "<<frame_store_[frame_name].second.pose);
-  } else {
+  else
     frame_store_[frame_name].second = ps;
-    if (frame_name=="knob:0")
-      ROS_WARN_STREAM("*****SET FRAME frame store updating to "<<frame_name<<" to "<<frame_store_[frame_name].second.pose);
-  }
 }
 
 bool AffordanceTemplate::hasControls(std::string name) {
@@ -2688,8 +2683,6 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
         tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, obj.stamped_pose.header.stamp, ros::Duration(3.0));
         tf_listener_.transformPose(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
         frame_store_[obj_name].second = ps;
-        if (obj_name=="knob:0")
-          ROS_WARN_STREAM("***********setting "<<obj_name<<"'s frame store to "<<frame_store_[obj_name].second.pose);
         server_->setPose(obj_name, ps.pose);
       } catch(tf::TransformException ex){
         ROS_ERROR("[AffordanceTemplate::setObjectPose] trouble transforming pose from %s to %s. TransformException: %s",frame_store_[obj_name].second.header.frame_id.c_str(), obj.stamped_pose.header.frame_id.c_str(), ex.what());
