@@ -94,6 +94,9 @@ void AffordanceTemplateRVizClient::start() {
     init();
     thread_ = new boost::thread(boost::bind(&AffordanceTemplateRVizClient::run_function, this));
     server_monitor_->start();
+
+    if (server_monitor_->isReady())
+        controlStatusUpdate();
 }
 
 void AffordanceTemplateRVizClient::stop() {
@@ -106,13 +109,13 @@ void AffordanceTemplateRVizClient::stop() {
 void AffordanceTemplateRVizClient::run_function() {
     running_ = true;
     while(running_) {
-        ros::Duration(0.015).sleep(); //0.1
+        ros::Duration(0.5).sleep();
         updateServerStatus();
-        if(server_monitor_->isReady()) {
-            //ROS_INFO("AffordanceTemplateRVizClient::run_function() ");           
-            controlStatusUpdate();
-            //printTemplateStatus();
-        }
+        // if(server_monitor_->isReady()) {
+        //     //ROS_INFO("AffordanceTemplateRVizClient::run_function() ");           
+        //     controlStatusUpdate();
+        //     //printTemplateStatus();
+        // }
     }
 }    
 
@@ -137,6 +140,7 @@ void AffordanceTemplateRVizClient::updateServerStatus() {
     }
 
     if((server_status_ != old_status) && (server_status_ == 1)) {
+        ROS_WARN("server status changed from %d", old_status);
         getRunningItems();
     }
 }
@@ -300,6 +304,7 @@ void AffordanceTemplateRVizClient::refreshCallback() {
 void AffordanceTemplateRVizClient::getAvailableInfo() {
     getAvailableTemplates();
     getAvailableRobots();
+    controlStatusUpdate();
 }
 
 void AffordanceTemplateRVizClient::getAvailableTemplates() {
@@ -925,6 +930,8 @@ void AffordanceTemplateRVizClient::getRunningItems() {
       ROS_ERROR("Failed to call service get_running");
     }
     ui_->server_output_status->sortItems();
+
+    controlStatusUpdate();
 }
 
 void AffordanceTemplateRVizClient::safeLoadConfig() {
@@ -1193,7 +1200,7 @@ void AffordanceTemplateRVizClient::executePlan() {
 void AffordanceTemplateRVizClient::controlStatusUpdate()  {    
 
     if (ui_->control_template_box->currentText().toStdString().empty() || busy_flag_)
-        return;
+      return;
 
     affordance_template_msgs::GetAffordanceTemplateStatus srv;
     srv.request.name = ui_->control_template_box->currentText().toStdString();  
