@@ -21,7 +21,6 @@ AffordanceTemplateServer::AffordanceTemplateServer(const ros::NodeHandle &nh, co
         ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot JSONs!!");
 
     ROS_INFO("[AffordanceTemplateServer] server configured. spinning...");
-
 }
 
 /**
@@ -290,9 +289,14 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
 
     std::string key = type + ":" + std::to_string(id);
     if (at_map_.find(key) == at_map_.end())
-        return false;
+      return false;
     at_map_[key]->stop();
     at_map_.erase(key);
+
+    for (auto at : at_map_)
+      if (!at.second->buildTemplate())
+        ROS_ERROR_STREAM("[AffordanceTemplateServer::removeTemplate] couldn't redraw "<< at.first.c_str() <<" template");
+
     return true;
 }
 

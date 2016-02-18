@@ -479,7 +479,7 @@ bool AffordanceTemplate::setWaypointViewMode(int ee, int wp, bool m)
 
 bool AffordanceTemplate::buildTemplate(std::string traj) 
 {
-  ROS_DEBUG("AffordanceTemplate::buildTemplate() -- %s", template_type_.c_str());
+  ROS_WARN("AffordanceTemplate::buildTemplate() -- %s", template_type_.c_str());
   // set trajectoy to current if empty
   if(traj.empty()) {
     traj = current_trajectory_;
@@ -530,7 +530,7 @@ bool AffordanceTemplate::createDisplayObjects() {
 bool AffordanceTemplate::createDisplayObject(affordance_template_object::DisplayObject obj, int idx)
 {
 
-  ROS_DEBUG("AffordanceTemplate::createDisplayObject() -- creating Display Object: %s", obj.name.c_str());
+  ROS_WARN("AffordanceTemplate::createDisplayObject() -- creating Display Object: %s", obj.name.c_str());
   ROS_DEBUG("AffordanceTemplate::createDisplayObject() --  parent: %s", obj.parent.c_str());
 
   // get the parent frame for the object.  If no parent in the structure, set it as AT root frame
