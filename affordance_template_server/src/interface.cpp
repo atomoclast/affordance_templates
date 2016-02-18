@@ -63,7 +63,7 @@ bool AffordanceTemplateInterface::handleRobotRequest(GetRobotConfigInfo::Request
 bool AffordanceTemplateInterface::handleTemplateRequest(GetAffordanceTemplateConfigInfo::Request &req, GetAffordanceTemplateConfigInfo::Response &res)
 {
     at_server_->setStatus(false);
-    
+    ROS_WARN("ATI -- handleTemplateRequest blip");
     std::vector<AffordanceTemplateConfig> templates;
     if (!req.name.empty() && at_server_->findTemplate(req.name))
     {
@@ -139,7 +139,7 @@ bool AffordanceTemplateInterface::handleDeleteTemplate(DeleteAffordanceTemplate:
 bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::Request &req, GetRunningAffordanceTemplates::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_DEBUG("[AffordanceTemplateInterface::handleRunning] getting names of running templates");
+    ROS_WARN("[AffordanceTemplateInterface::handleRunning] getting names of running templates");
 
     std::vector<std::string> templates = at_server_->getRunningTemplates();
     for (auto t : templates)
@@ -357,7 +357,7 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
 bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStatus::Request &req, GetAffordanceTemplateStatus::Response &res)
 {
     at_server_->setStatus(false);
-    ROS_DEBUG("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
+    ROS_WARN("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
 
     if (!req.name.empty())
     {
@@ -392,7 +392,7 @@ bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServer
 {
     res.ready = at_server_->getStatus();
 
-    ROS_DEBUG_STREAM("[AffordanceTemplateInterface::handleServerStatus] getting server status..."<<boolToString(res.ready));
+    ROS_WARN_STREAM("[AffordanceTemplateInterface::handleServerStatus] getting server status..."<<boolToString(res.ready));
 
     return true;
 }
@@ -438,6 +438,8 @@ bool AffordanceTemplateInterface::handleSetObject(SetObjectPose::Request& req, S
 {
     res.status = true;
 
+    ROS_WARN("ATI -- handleSetObject blip");
+
     for (auto& o : req.objects)
     {
         ATPointer at;
@@ -463,6 +465,7 @@ bool AffordanceTemplateInterface::handleSetObject(SetObjectPose::Request& req, S
 
 bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, GetObjectPose::Response& res)
 {
+    ROS_WARN("ATI -- handleGetObject blip");
     ATPointer at;
     std::string at_key = req.type + ":" + std::to_string(req.id);
     std::string obj_key = "";
@@ -502,7 +505,7 @@ bool AffordanceTemplateInterface::handleGetObject(GetObjectPose::Request& req, G
 bool AffordanceTemplateInterface::handleSetWaypointViews(SetWaypointViewModes::Request& req, SetWaypointViewModes::Response& res)
 {
 
-    ROS_DEBUG("[AffordanceTemplateInterface::handleSetWaypointViews] setting waypoint view modes...");
+    ROS_WARN("[AffordanceTemplateInterface::handleSetWaypointViews] setting waypoint view modes...");
 
     std::vector<std::string> at_keys, wp_keys;
     int at_id, wp_id, ee_id, idx;
@@ -556,7 +559,7 @@ bool AffordanceTemplateInterface::handleSetWaypointViews(SetWaypointViewModes::R
 
 void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayObjectInfo &data)
 {
-    ROS_DEBUG("[AffordanceTemplateInterface::handleObjectScaleCallback] scale %s:%d->object[%s] by: %g, %g", data.class_type.c_str(), data.id, data.object_name.c_str(), data.scale_factor, data.end_effector_scale_factor);
+    ROS_WARN("[AffordanceTemplateInterface::handleObjectScaleCallback] scale %s:%d->object[%s] by: %g, %g", data.class_type.c_str(), data.id, data.object_name.c_str(), data.scale_factor, data.end_effector_scale_factor);
 
     std::string key = data.object_name + ":" + std::to_string(data.id);
 
@@ -565,8 +568,6 @@ void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayOb
         if (!at->setObjectScaling(key, data.scale_factor, data.end_effector_scale_factor))
             ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
-
-
 
 
 // @seth 10/28/2015 -- may not be complete??

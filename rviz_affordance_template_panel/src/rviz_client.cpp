@@ -106,7 +106,7 @@ void AffordanceTemplateRVizClient::stop() {
 void AffordanceTemplateRVizClient::run_function() {
     running_ = true;
     while(running_) {
-        ros::Duration(0.1).sleep();
+        ros::Duration(0.015).sleep(); //0.1
         updateServerStatus();
         if(server_monitor_->isReady()) {
             //ROS_INFO("AffordanceTemplateRVizClient::run_function() ");           
@@ -119,6 +119,11 @@ void AffordanceTemplateRVizClient::run_function() {
 void AffordanceTemplateRVizClient::updateServerStatus() {
     int old_status = server_status_;
     if(server_monitor_->isAvailable()) {
+        //#####################################################
+        //#####################################################
+        // DEBUG THIS
+        //#####################################################
+        //#####################################################
         if(server_monitor_->isReady()) {
             setLabelText(Qt::green, std::string("READY"));
             server_status_ = 1;
