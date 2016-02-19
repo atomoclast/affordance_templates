@@ -95,6 +95,11 @@ void AffordanceTemplateRVizClient::start() {
   init();
   thread_ = new boost::thread(boost::bind(&AffordanceTemplateRVizClient::run_function, this));
   server_monitor_->start();
+
+  if (server_monitor_->isReady()) {
+      getAvailableInfo();
+      getRunningItems();
+  }
 }
 
 void AffordanceTemplateRVizClient::stop() {
@@ -110,7 +115,8 @@ void AffordanceTemplateRVizClient::run_function() {
   while(running_) {
 
   updateServerStatus();
-  // if(server_monitor_->isReady()) // @seth 2/19/2016: don't think this needs to happen so often but should only happen if something is getting updated
+  // @seth 2/19/2016: don't think this needs to happen so often and should only happen if something is getting updated
+  // if(server_monitor_->isReady()) 
   //   controlStatusUpdate();
   ros::Duration(0.5).sleep();
   }
@@ -119,6 +125,7 @@ void AffordanceTemplateRVizClient::run_function() {
 void AffordanceTemplateRVizClient::updateServerStatus() {
   int old_status = server_status_;
   if(server_monitor_->isAvailable()) {
+    
     if(server_monitor_->isReady()) {
       setLabelText(Qt::green, std::string("READY"));
       server_status_ = 1;
@@ -131,10 +138,9 @@ void AffordanceTemplateRVizClient::updateServerStatus() {
     server_status_ = -1;
   }
 
-  if((server_status_ != old_status) && (server_status_ == 1)) {
-    ROS_WARN("server status changed from %d", old_status);
-    getRunningItems();
+  if (server_status_ != old_status && server_status_ == 1) {
     controlStatusUpdate();
+    getRunningItems();
   }
 }
 
@@ -143,7 +149,6 @@ void AffordanceTemplateRVizClient::setLabelText(QColor color, std::string text) 
   ui_->server_status_label->setPalette(*label_palette_);
   ui_->server_status_label->setText(QString(text.c_str()));     
 }
-
 
 bool AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() {
 

@@ -39,6 +39,8 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const ros::NodeHandle &
     exe_thread_.reset(new boost::thread(boost::bind(&AffordanceTemplateInterface::runExecuteAction, this)));
 
     ROS_INFO("[AffordanceTemplateInterface] services set up...robot ready!");
+
+    at_server_->setStatus(true);
 }
 
 AffordanceTemplateInterface::~AffordanceTemplateInterface()
@@ -369,7 +371,7 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
             res.affordance_template_status.push_back(getTemplateStatus(keys[0], id, req.trajectory_name, req.frame_id));
             ATPointer at;
             if (at_server_->getTemplateInstance(req.name, at)) {
-                
+
                 res.current_trajectory = at->getCurrentTrajectory();
                 AffordanceTemplateStructure ats = at->getCurrentStructure();
                 for (auto t : ats.ee_trajectories)
