@@ -29,9 +29,7 @@ void AffordanceTemplateServerStatusMonitor::stop() {
 }
 
 void AffordanceTemplateServerStatusMonitor::wait(int seconds) { 
-	ROS_INFO("waiting");
-	ros::Duration(seconds).sleep();
-  // boost::this_thread::sleep(boost::posix_time::seconds(seconds)); 
+  boost::this_thread::sleep(boost::posix_time::seconds(seconds)); 
 } 
 
 void AffordanceTemplateServerStatusMonitor::run_function() {

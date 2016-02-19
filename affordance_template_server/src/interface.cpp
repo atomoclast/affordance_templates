@@ -354,46 +354,43 @@ bool AffordanceTemplateInterface::handleObjectScale(ScaleDisplayObject::Request 
     return true;
 }
 
-bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStatus::Request &req, GetAffordanceTemplateStatus::Response &res)
-{
+bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStatus::Request &req, GetAffordanceTemplateStatus::Response &res) {
+
     at_server_->setStatus(false);
     ROS_WARN("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
 
-    if (!req.name.empty())
-    {
+    if (!req.name.empty()) {
+
         std::vector<std::string> keys;
         boost::split(keys, req.name, boost::is_any_of(":"));
-        if (keys.size() >= 2)
-        {
+        if (keys.size() >= 2) {
+
             int id = std::stoi(keys[1]);
             res.affordance_template_status.push_back(getTemplateStatus(keys[0], id, req.trajectory_name, req.frame_id));
             ATPointer at;
-            if (at_server_->getTemplateInstance(req.name, at))
-            {
+            if (at_server_->getTemplateInstance(req.name, at)) {
+                
                 res.current_trajectory = at->getCurrentTrajectory();
                 AffordanceTemplateStructure ats = at->getCurrentStructure();
                 for (auto t : ats.ee_trajectories)
                     res.trajectory_names.push_back(t.name);
-            }
-            else
+            } else {
                 ROS_ERROR("[AffordanceTemplateInterface::handleTemplateStatus] %s not current running on server!!", req.name.c_str());
-        }
-        else
+            }
+        } else {
             ROS_ERROR("[AffordanceTemplateInterface::handleTemplateStatus] %s is an invalid template name!", req.name.c_str());
-    }
-    else
+        }
+    } else {
         ROS_ERROR("[AffordanceTemplateInterface::handleTemplateStatus] no template name provided!!");
+    }
 
     at_server_->setStatus(true);
     return true;
 }
 
-bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServerStatus::Request &req, GetAffordanceTemplateServerStatus::Response &res)
-{
+bool AffordanceTemplateInterface::handleServerStatus(GetAffordanceTemplateServerStatus::Request &req, GetAffordanceTemplateServerStatus::Response &res) {
+    
     res.ready = at_server_->getStatus();
-
-    ROS_WARN_STREAM("[AffordanceTemplateInterface::handleServerStatus] getting server status..."<<boolToString(res.ready));
-
     return true;
 }
 
@@ -624,8 +621,6 @@ AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const st
             oi.size.z = obj.shape.size[2];
         }
         ats.object_info.push_back(oi);
-
-
     }
 
     std::map<std::string, int> ee_names = at->getRobotInterface()->getEEIDMap();
