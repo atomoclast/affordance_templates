@@ -479,7 +479,8 @@ bool AffordanceTemplate::setWaypointViewMode(int ee, int wp, bool m)
 
 bool AffordanceTemplate::buildTemplate(std::string traj) 
 {
-  ROS_WARN("AffordanceTemplate::buildTemplate() -- %s", template_type_.c_str());
+  ROS_DEBUG("AffordanceTemplate::buildTemplate() -- %s", template_type_.c_str());
+
   // set trajectoy to current if empty
   if(traj.empty()) {
     traj = current_trajectory_;
@@ -529,16 +530,16 @@ bool AffordanceTemplate::createDisplayObjects() {
 
 bool AffordanceTemplate::createDisplayObject(affordance_template_object::DisplayObject obj, int idx)
 {
-
-  ROS_WARN("AffordanceTemplate::createDisplayObject() -- creating Display Object: %s", obj.name.c_str());
+  ROS_DEBUG("AffordanceTemplate::createDisplayObject() -- creating Display Object: %s", obj.name.c_str());
   ROS_DEBUG("AffordanceTemplate::createDisplayObject() --  parent: %s", obj.parent.c_str());
 
   // get the parent frame for the object.  If no parent in the structure, set it as AT root frame
   std::string obj_frame;
-  if(obj.parent != "")
+  if(obj.parent != "") {
     obj_frame = obj.parent;
-  else
+  } else {
     obj_frame = root_frame_;
+  }
   ROS_DEBUG("AffordanceTemplate::createDisplayObject() -- root_frame: %s", obj_frame.c_str());
   
   // set scaling information (if not already set)
@@ -615,9 +616,8 @@ bool AffordanceTemplate::createDisplayObject(affordance_template_object::Display
     std::vector<visualization_msgs::InteractiveMarkerControl> dof_controls;
     dof_controls = rit_utils::MarkerHelper::makeCustomDOFControls(obj.controls.translation[0], obj.controls.translation[1], obj.controls.translation[2],
                                                                   obj.controls.rotation[0], obj.controls.rotation[1], obj.controls.rotation[2]);
-    for (auto &c: dof_controls) {
+    for (auto &c: dof_controls)
       int_marker.controls.push_back(c);
-    }
   }
 
   // setup object menu defualts
@@ -710,7 +710,6 @@ bool AffordanceTemplate::createWaypoints()
 
 bool AffordanceTemplate::createWaypoint(affordance_template_object::EndEffectorWaypoint wp, int ee_id, int wp_id) 
 {
-
   // create wp_name of form <ee_id>.<wp_id>:<at_name>:<at_id>
   std::string wp_name = createWaypointID(ee_id, wp_id);
   ROS_DEBUG("AffordanceTemplate::createWaypoint() creating Waypoint: %s", wp_name.c_str());
@@ -1402,7 +1401,6 @@ bool AffordanceTemplate::updatePoseInStructure(std::string name, geometry_msgs::
 
   // didn't find anything that matches the input name
   return false;
-
 }
 
 bool AffordanceTemplate::addWaypointBeforeHandler(std::string wp_name) {
@@ -2556,7 +2554,6 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
 
   ROS_INFO("AffordanceTemplate::moveToWaypoints() execution of %s to %d succeeded, traj=%s!!", ee.c_str(), plan_status_[trajectory][ee].current_idx, trajectory.c_str());
 
-  // removeAllMarkers();
   buildTemplate(trajectory);
   
   return true;
@@ -2590,7 +2587,8 @@ bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_name
   return false;
 }
 
-bool AffordanceTemplate::getPoseFromFrameStore(const std::string &frame, geometry_msgs::PoseStamped &ps) {
+bool AffordanceTemplate::getPoseFromFrameStore(const std::string &frame, geometry_msgs::PoseStamped &ps) 
+{
   auto search = frame_store_.find(frame);
   if(search != frame_store_.end()) {
     ps = frame_store_[frame].second;
@@ -2598,7 +2596,6 @@ bool AffordanceTemplate::getPoseFromFrameStore(const std::string &frame, geometr
   }
   return false;
 }
-
 
 void AffordanceTemplate::run()
 {
@@ -2608,29 +2605,25 @@ void AffordanceTemplate::run()
   ros::Time t;
   
   ROS_DEBUG("AffordanceTemplate::run() -- spinning...");
-  while(running_ && ros::ok())
-  {
+  while(running_ && ros::ok()) {
+    
     mutex_.lock();
     t = ros::Time::now();
-    for(auto f: frame_store_) 
-    {
+    for(auto f: frame_store_)  {
       fi = f.second;
       fi.second.header.stamp = t;
       tf::poseMsgToTF(fi.second.pose, transform);
       tf_broadcaster_.sendTransform(tf::StampedTransform(transform, t, fi.second.header.frame_id, fi.first));
     
-      if(isObject(f.first) || isWaypoint(f.first) ) {
+      if(isObject(f.first) || isWaypoint(f.first) )
         server_->setPose(f.first, fi.second.pose);
-      }
     }
-    server_->applyChanges();
+    
     mutex_.unlock();
     loop_rate.sleep();
   }
   ROS_DEBUG("AffordanceTemplate::run() -- leaving spin thread. template must be shutting down...");
-
 }
-
 
 void AffordanceTemplate::stop()
 {
@@ -2638,7 +2631,6 @@ void AffordanceTemplate::stop()
   running_ = false;
   removeAllMarkers();
 }
-
 
 bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_factor, double ee_scale_factor)
 { 
@@ -2649,16 +2641,13 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
   return buildTemplate();
 }
 
-
 bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 {
   ROS_INFO("[AffordanceTemplate::setObjectPose] setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
   
   for (auto& d : structure_.display_objects) {
-    
     std::string obj_name = obj.name + ":" + std::to_string(obj.id);
     if (d.name == obj_name) {
-    
       ROS_DEBUG("[AffordanceTemplate::setObjectPose] matched object %s in frame: %s", obj_name.c_str(), obj.stamped_pose.header.frame_id.c_str());
       geometry_msgs::PoseStamped ps;
       try {
@@ -2667,7 +2656,7 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
         frame_store_[obj_name].second = ps;
         server_->setPose(obj_name, ps.pose);
         updatePoseInStructure(obj_name, ps.pose);
-      } catch(tf::TransformException ex){
+      } catch(tf::TransformException ex) {
         ROS_ERROR("[AffordanceTemplate::setObjectPose] trouble transforming pose from %s to %s. TransformException: %s",frame_store_[obj_name].second.header.frame_id.c_str(), obj.stamped_pose.header.frame_id.c_str(), ex.what());
         return false;
       }
@@ -2680,21 +2669,21 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 
 bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const int step, const std::string& group, const PlanningGroup type, ContinuousPlan& plan)
 {
-  if (continuous_plans_.find(trajectory) == continuous_plans_.end())
-  {
+  if (continuous_plans_.find(trajectory) == continuous_plans_.end()) {
     ROS_WARN("[AffordanceTemplate::getContinuousPlan] no plan found for trajectory %s", trajectory.c_str());
     return false;
   }
+  
   if (step < 0)
     return false;
-  for ( auto& p : continuous_plans_[trajectory])
-  {
-    if (p.step == step && p.group == group && p.type == type)
-    {
+  
+  for ( auto& p : continuous_plans_[trajectory]) {
+    if (p.step == step && p.group == group && p.type == type) {
       plan = p;
       return true;
     }
   }
+
   return false;
 }
 
@@ -2704,8 +2693,7 @@ void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const 
   // ROS_WARN("trajectory %s plan step is %d for group %s", trajectory.c_str(), plan.step, plan.group.c_str());
   if (continuous_plans_.find(trajectory) == continuous_plans_.end()) {
     continuous_plans_[trajectory].push_back(plan);
-  }
-  else {
+  } else {
     for (auto& cp : continuous_plans_[trajectory]) {
       if (cp.step == plan.step && cp.group == plan.group && cp.type == plan.type) {
         cp.start_state = plan.start_state;
