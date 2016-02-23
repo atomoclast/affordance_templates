@@ -1242,8 +1242,8 @@ void AffordanceTemplate::addInteractiveMarker(visualization_msgs::InteractiveMar
   server_->applyChanges();
 }
 
-void AffordanceTemplate::removeWaypoint(std::string wp_name)  {
-
+void AffordanceTemplate::removeWaypoint(std::string wp_name)
+{
   if(!isWaypoint(wp_name)) {
     ROS_WARN("AffordanceTemplate::removeWaypoint() -- %s is not a waypoint name", wp_name.c_str());
     return;
@@ -1259,10 +1259,10 @@ void AffordanceTemplate::removeWaypoint(std::string wp_name)  {
   frame_store_.erase(getControlPointFrameName(wp_name));
   frame_store_.erase(getEEFrameName(wp_name));
   frame_store_.erase(getToolPointFrameName(wp_name));
-
 }
 
-void AffordanceTemplate::removeAllWaypoints()  {
+void AffordanceTemplate::removeAllWaypoints()
+{
   for(auto &m: int_markers_)
     if(isWaypoint(m.first)) 
       removeWaypoint(m.first);
@@ -1283,11 +1283,10 @@ void AffordanceTemplate::removeAllMarkers()
   group_menu_handles_.clear();
   int_markers_.clear();
   marker_menus_.clear();
-  server_->clear();
-  server_->applyChanges();
 }
 
-bool AffordanceTemplate::removeMarkerAndRebuild(std::string marker_name) {
+bool AffordanceTemplate::removeMarkerAndRebuild(std::string marker_name)
+{
   removeInteractiveMarker(marker_name);
   if(!buildTemplate()) {
     ROS_ERROR("AffordanceTemplate::removeMarkerAndRebuild() -- error rebuilding template after removing marker %s", marker_name.c_str());
@@ -1298,15 +1297,13 @@ bool AffordanceTemplate::removeMarkerAndRebuild(std::string marker_name) {
 
 bool AffordanceTemplate::updatePoseFrames(std::string name, geometry_msgs::PoseStamped ps) 
 {
-
   // Most frames will just require updating the FrameStore with the given pose (in the right frame).
   // If it is a toolPoint frame and we are moving it (not adjusting it), however, we need to update 
   // the correspodning waypoint frame, and then reset the toolPoint frame back to 0
 
   // sanity check that we are trying to adjust a frame that has IM controls
-  if(!hasControls(name)) {
+  if(!hasControls(name))
     return false;
-  }
 
   // get the cooresponding waypoint name if its a toolPoint frame
   std::string wp_name;
@@ -1952,7 +1949,7 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
             ROS_DEBUG("[AffordanceTemplate::processFeedback::Choose Trajectory] found matching trajectory name %s", traj.name.c_str());
             setTrajectory(traj.name);
             marker_menus_[feedback->marker_name].setCheckState( group_menu_handles_[key], interactive_markers::MenuHandler::CHECKED);
-            removeAllMarkers();
+            removeAllMarkers();//FIXME here
             if(!buildTemplate()) {
               ROS_ERROR("AffordanceTemplate::processFeedback() -- failed switching trajectory");
             }
@@ -2603,12 +2600,14 @@ void AffordanceTemplate::run()
   tf::Transform transform;
   FrameInfo fi;
   ros::Time t;
+  ros::Time start_t = ros::Time::now();
+  bool applied = false;
   
   ROS_DEBUG("AffordanceTemplate::run() -- spinning...");
   while(running_ && ros::ok()) {
     
-    mutex_.lock();
     t = ros::Time::now();
+    mutex_.lock();
     for(auto f: frame_store_)  {
       fi = f.second;
       fi.second.header.stamp = t;
@@ -2618,8 +2617,17 @@ void AffordanceTemplate::run()
       if(isObject(f.first) || isWaypoint(f.first) )
         server_->setPose(f.first, fi.second.pose);
     }
-    
     mutex_.unlock();
+
+    // apply changes every ~10 seconds so we don't overload the IM server
+    if ((int)(ros::Time::now()-start_t).toSec() % 10 == 0 && !applied) {
+      // buildTemplate();
+      server_->applyChanges();
+      applied = true;
+    } else if (applied && (int)(ros::Time::now()-start_t).toSec()%10 != 0) {
+      applied = false;
+    }
+    
     loop_rate.sleep();
   }
   ROS_DEBUG("AffordanceTemplate::run() -- leaving spin thread. template must be shutting down...");
@@ -2686,7 +2694,6 @@ bool AffordanceTemplate::getContinuousPlan(const std::string& trajectory, const 
 
   return false;
 }
-
 
 void AffordanceTemplate::setContinuousPlan(const std::string& trajectory, const ContinuousPlan& plan)
 {
