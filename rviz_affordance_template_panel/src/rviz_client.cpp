@@ -109,16 +109,14 @@ void AffordanceTemplateRVizClient::stop() {
   server_monitor_->stop();
 }
 
-void AffordanceTemplateRVizClient::run_function() {
-
+void AffordanceTemplateRVizClient::run_function() 
+{
   running_ = true;
   while(running_) {
-
-  updateServerStatus();
-  // @seth 2/19/2016: don't think this needs to happen so often and should only happen if something is getting updated
-  // if(server_monitor_->isReady()) 
-  //   controlStatusUpdate();
-  ros::Duration(0.5).sleep();
+    updateServerStatus();
+    if(server_monitor_->isReady()) 
+        controlStatusUpdate();
+    ros::Duration(0.5).sleep();
   }
 }  
 
@@ -138,10 +136,8 @@ void AffordanceTemplateRVizClient::updateServerStatus() {
     server_status_ = -1;
   }
 
-  if (server_status_ != old_status && server_status_ == 1) {
-    controlStatusUpdate();
-    getRunningItems();
-  }
+  // if (server_status_ != old_status && server_status_ == 1)
+  //   getRunningItems();
 }
 
 void AffordanceTemplateRVizClient::setLabelText(QColor color, std::string text) {
@@ -150,8 +146,8 @@ void AffordanceTemplateRVizClient::setLabelText(QColor color, std::string text) 
   ui_->server_status_label->setText(QString(text.c_str()));     
 }
 
-bool AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() {
-
+bool AffordanceTemplateRVizClient::tryToLoadRobotFromYAML()
+{
   std::string yamlRobotCandidate = "";
   bool foundRobotYaml = false;
 
@@ -172,31 +168,24 @@ bool AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() {
     }
   }
 
-  if(yamlRobotCandidate!="") 
-  {
+  if(yamlRobotCandidate!="") {
     ROS_INFO("AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() -- searching for Robot: %s", yamlRobotCandidate.c_str());
     map<string,RobotConfigSharedPtr>::const_iterator it = robotMap_.find(yamlRobotCandidate);
-    if (it != robotMap_.end() ) 
-    {
+    if (it != robotMap_.end() ) {
       int idx = ui_->robot_select->findText(QString(robot_name_map_[yamlRobotCandidate].c_str()), Qt::MatchEndsWith);
       ui_->robot_select->setCurrentIndex(idx);
       setupRobotPanel(yamlRobotCandidate);
       loadConfig();
-    } 
-    else 
-    {
+    } else {
       ROS_WARN("AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() -- no robot yaml found in database of name: %s", yamlRobotCandidate.c_str());
       return false;
     }
-  } 
-  else 
-  {
+  } else {
     ROS_WARN("AffordanceTemplateRVizClient::tryToLoadRobotFromYAML() -- not able to construct a candidate robot yaml");
     return false;
   }
 
   return true;
-
 }
 
 void AffordanceTemplateRVizClient::updateRobotConfig(const QString& text) {
@@ -889,17 +878,15 @@ void AffordanceTemplateRVizClient::sendAddTrajectory() {
     ROS_ERROR("Failed to add trajectory");
 }
 
-void AffordanceTemplateRVizClient::getRunningItems() {
-
+void AffordanceTemplateRVizClient::getRunningItems() 
+{
   affordance_template_msgs::GetRunningAffordanceTemplates srv;
   if (get_running_client_.call(srv)) {
-
     ui_->server_output_status->clear();
     ui_->control_template_box->clear();
     ui_->control_trajectory_box->clear();
     
     for (int i=0; i < srv.response.templates.size(); i++) {
-
       string t = srv.response.templates[i];
       ROS_DEBUG("Found running template: %s", t.c_str());
       ui_->server_output_status->addItem(QString::fromStdString(t.c_str()));
@@ -913,11 +900,10 @@ void AffordanceTemplateRVizClient::getRunningItems() {
     ROS_ERROR("Failed to call service get_running");
   }
   ui_->server_output_status->sortItems();
-
-  controlStatusUpdate();
 }
 
-void AffordanceTemplateRVizClient::safeLoadConfig() {
+void AffordanceTemplateRVizClient::safeLoadConfig() 
+{
   if(ui_->robot_lock->isChecked()) {
     ROS_WARN("Can't load while RobotConfig is locked");
     return;
@@ -925,8 +911,8 @@ void AffordanceTemplateRVizClient::safeLoadConfig() {
   loadConfig();
 }
 
-void AffordanceTemplateRVizClient::loadConfig() {
-
+void AffordanceTemplateRVizClient::loadConfig() 
+{
   ROS_WARN("AffordanceTemplateRVizClient::loadConfig() -- WARNING::taking parameters loaded from original config, not the GUI yet!!! ");
 
   affordance_template_msgs::LoadRobotConfig srv;
@@ -1179,8 +1165,8 @@ void AffordanceTemplateRVizClient::executePlan() {
   updateStatusFromControls();
 }
  
-void AffordanceTemplateRVizClient::controlStatusUpdate()  {  
-
+void AffordanceTemplateRVizClient::controlStatusUpdate()
+{
   if (ui_->control_template_box->currentText().toStdString().empty() || busy_flag_)
     return;
 
@@ -1188,8 +1174,7 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()  {
   srv.request.name = ui_->control_template_box->currentText().toStdString();  
   srv.request.trajectory_name = "";
   
-  if (get_template_status_client_.call(srv))
-  {
+  if (get_template_status_client_.call(srv)) {
     ROS_DEBUG("[AffordanceTemplateRVizClient::controlStatusUpdate] Got info for template %s", srv.request.name.c_str());//(int)(srv.response.affordance_template_status.size()));
      
     if (srv.response.affordance_template_status.size() == 0) {
@@ -1198,16 +1183,15 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()  {
     }
 
     for (int i = 0; i < srv.response.affordance_template_status.size(); ++i) {
-    
       string full_name = srv.response.affordance_template_status[i].type + ":" + to_string(srv.response.affordance_template_status[i].id);
       if(srv.request.name != full_name) {
         ROS_ERROR("AffordanceTemplateRVizClient::control_status_update() -- wait, something's wrong. requested %s, got %s", srv.request.name.c_str(), full_name.c_str());
         return;
       }
 
-      if(template_status_info.find(full_name)==template_status_info.end()) {       
+      if(template_status_info.find(full_name)==template_status_info.end())     
         template_status_info[full_name] = new AffordanceTemplateStatusInfo(srv.response.affordance_template_status[i].type, srv.response.affordance_template_status[i].id);
-      }
+
       affordance_template_msgs::AffordanceTemplateStatusConstPtr ptr(new affordance_template_msgs::AffordanceTemplateStatus(srv.response.affordance_template_status[i]));
       template_status_info[full_name]->updateTrajectoryStatus(ptr);
     }
@@ -1230,25 +1214,22 @@ void AffordanceTemplateRVizClient::controlStatusUpdate()  {
     updateTables(srv.request.name, srv.response.current_trajectory);
 
     ui_->control_trajectory_box->blockSignals(false);
-  }
-  else
-  {
+  } else {
     ROS_ERROR("AffordanceTemplateRVizClient::control_status_update() -- Failed");
   }
 }
 
-void AffordanceTemplateRVizClient::updateTables(std::string name, std::string trajectory) {
-
+void AffordanceTemplateRVizClient::updateTables(std::string name, std::string trajectory) 
+{
   updateControlsTable(name, trajectory);
   updateWaypointDisplayTable(name, trajectory);   
 
   controls_->setTemplateStatusInfo(template_status_info[name]);
   waypointDisplay_->setTemplateStatusInfo(template_status_info[name]);
-
 }
 
-void AffordanceTemplateRVizClient::updateControlsTable(std::string name, std::string trajectory) {
-
+void AffordanceTemplateRVizClient::updateControlsTable(std::string name, std::string trajectory)
+{
   // set the control GUI with the current trajectories information
   AffordanceTemplateStatusInfo::EndEffectorInfo wp_info = template_status_info[name]->getTrajectoryStatus(trajectory);
 
