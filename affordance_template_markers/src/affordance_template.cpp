@@ -48,7 +48,6 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
   setRobotInterface(robot_interface);
 }
 
-
 AffordanceTemplate::~AffordanceTemplate() 
 {
   updateThread_->join();
@@ -62,7 +61,6 @@ void AffordanceTemplate::setRobotInterface(boost::shared_ptr<affordance_template
 
 void AffordanceTemplate::setupMenuOptions() 
 {
-
   waypoint_menu_options_.clear();
   waypoint_menu_options_.push_back(MenuConfig("Change End-Effector Pose", false));
   waypoint_menu_options_.push_back(MenuConfig("Hide Controls", true));
@@ -89,7 +87,6 @@ void AffordanceTemplate::setupMenuOptions()
   toolpoint_menu_options_.clear();
   toolpoint_menu_options_.push_back(MenuConfig("Change Tool Offset", true));
   toolpoint_menu_options_.push_back(MenuConfig("Move Tool Point", true));
-  
 }
 
 void AffordanceTemplate::setObjectMenuDefaults(std::string obj_name) {
@@ -201,7 +198,7 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
 
   std::string root = ros::package::getPath("affordance_template_library");
   if (root.empty())
-      return false;
+    return false;
   root += "/templates";
   std::string output_path = root + "/" + filename;
 
@@ -214,17 +211,14 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
 
   ROS_INFO("[AffordanceTemplate::saveToDisk] writing template to file: %s", output_path.c_str());
 
-  if (!boost::filesystem::exists(output_path))
+  if (!boost::filesystem::exists(output_path)) {
     ROS_WARN("[AffordanceTemplate::saveToDisk] no file found with name: %s. cannot create backup.", filename.c_str());
-  else
-  {
+  } else {
     // count how many bak files we have for this particular template type
     boost::filesystem::recursive_directory_iterator dir_it(root);
     boost::filesystem::recursive_directory_iterator end_it;
     int bak_counter = 0;
-    while (dir_it != end_it)
-    {
-
+    while (dir_it != end_it) {
       if (std::string(dir_it->path().string()).find(".bak") != std::string::npos
           && std::string(dir_it->path().string()).find(class_type) != std::string::npos)
         ++bak_counter;
@@ -233,13 +227,10 @@ bool AffordanceTemplate::saveToDisk(std::string& filename, const std::string& im
 
     // copy current class_type.json into .bak
     std::string bak_path = "";
-    if (bak_counter > 0)
-    {
+    if (bak_counter > 0) {
       ROS_INFO("[AffordanceTemplate::saveToDisk] creating backup file: %s.bak%d", filename.c_str(), bak_counter);
       bak_path = output_path + ".bak" + std::to_string(bak_counter);
-    }
-    else
-    {
+    } else {
       ROS_INFO("[AffordanceTemplate::saveToDisk] creating backup file: %s.bak", filename.c_str());
       bak_path = output_path + ".bak";
     }
@@ -2520,14 +2511,12 @@ void AffordanceTemplate::executeRequest(const ExecuteGoalConstPtr& goal)
 
 bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory, const std::string& ee)
 {
-  if (continuous_plans_.find(trajectory) == continuous_plans_.end())
-  {
+  if (continuous_plans_.find(trajectory) == continuous_plans_.end()) {
     ROS_ERROR("[AffordanceTemplate::continuousMoveToWaypoints] no plan found for trajectory %s!!", trajectory.c_str());
     return false;
   }
 
-  if (!plan_status_[trajectory][ee].plan_valid) 
-  {
+  if (!plan_status_[trajectory][ee].plan_valid) {
     plan_status_[trajectory][ee].exec_valid = false;
     ROS_ERROR("[AffordanceTemplate::continuousMoveToWaypoints] EE %s in trajectory %s doesn't have a valid plan!!", ee.c_str(), trajectory.c_str());
     return false;
@@ -2539,8 +2528,7 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
     if (p.group == ee || p.group == manipulator_name)
       plans_to_exe.push_back(std::make_pair(p.group, p.plan));
 
-  if (!robot_interface_->getPlanner()->executeContinuousPlans(plans_to_exe))
-  {
+  if (!robot_interface_->getPlanner()->executeContinuousPlans(plans_to_exe)) {
     ROS_ERROR("[AffordanceTemplate::continuousMoveToWaypoints] execution failed");
     return false;
   }
@@ -2555,7 +2543,6 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
   
   return true;
 }
-
 
 // list of ee waypoints to move to, return true if all waypoints were valid
 bool AffordanceTemplate::moveToWaypoints(const std::vector<std::string>& ee_names) 
@@ -2621,7 +2608,6 @@ void AffordanceTemplate::run()
 
     // apply changes every ~10 seconds so we don't overload the IM server
     if ((int)(ros::Time::now()-start_t).toSec() % 10 == 0 && !applied) {
-      // buildTemplate();
       server_->applyChanges();
       applied = true;
     } else if (applied && (int)(ros::Time::now()-start_t).toSec()%10 != 0) {
@@ -2635,8 +2621,11 @@ void AffordanceTemplate::run()
 
 void AffordanceTemplate::stop()
 {
-  ROS_WARN("[AffordanceTemplate::stop] %s being asked to stop..", name_.c_str());
+  ROS_INFO("[AffordanceTemplate::stop] %s being asked to stop..", name_.c_str());
   running_ = false;
+  mutex_.lock();
+  frame_store_.clear();
+  mutex_.unlock();
   removeAllMarkers();
 }
 

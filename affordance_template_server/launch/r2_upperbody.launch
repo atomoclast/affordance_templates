@@ -1,17 +1,20 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="robot_description" default="robot_description"/>
+
+  <!-- The semantic description that corresponds to the URDF -->
+  <param name="$(arg robot_description)_semantic" textfile="$(find r2_moveit_config)/config/r2.srdf" />
+
   <include file="$(find rit_utils)/launch/robot_display.launch">
     <arg name="prefix" value="ats"/>
   </include>
 
   <node name="affordance_template_server" pkg="affordance_template_server" type="affordance_template_server_node" respawn="false" output="screen">
     <param name="robot_config" value="r2_roscontrol.yaml"/>
-    <param name="param/trajectory_scaler" value="0.0001"/>
-    <param name="param/trajectory_density" value="0.001"/>
+    <param name="param/trajectory_scaler" value="0.05"/>
+    <param name="param/trajectory_density" value="0.05"/>
+    <param name="execution_plugin" value="basic_executors::BasicRosControlExecutor"/>
   </node>
 
 </launch>
-
-
-

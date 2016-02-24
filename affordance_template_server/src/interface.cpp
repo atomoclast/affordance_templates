@@ -14,24 +14,24 @@ AffordanceTemplateInterface::AffordanceTemplateInterface(const ros::NodeHandle &
   at_server_.reset(new AffordanceTemplateServer(nh_, _robot_yaml));
 
   const std::string base_srv = "/affordance_template_server/";
-  at_srv_map_["get_robots"]        = nh_.advertiseService(base_srv + "get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
-  at_srv_map_["get_templates"]       = nh_.advertiseService(base_srv + "get_templates", &AffordanceTemplateInterface::handleTemplateRequest, this);
-  at_srv_map_["load_robot"]        = nh_.advertiseService(base_srv + "load_robot", &AffordanceTemplateInterface::handleLoadRobot, this);
-  at_srv_map_["add_template"]      = nh_.advertiseService(base_srv + "add_template", &AffordanceTemplateInterface::handleAddTemplate, this);
-  at_srv_map_["delete_template"]     = nh_.advertiseService(base_srv + "delete_template", &AffordanceTemplateInterface::handleDeleteTemplate, this);
-  at_srv_map_["get_running"]       = nh_.advertiseService(base_srv + "get_running", &AffordanceTemplateInterface::handleRunning, this);
-  at_srv_map_["plan_command"]      = nh_.advertiseService(base_srv + "plan_command", &AffordanceTemplateInterface::handlePlanCommand, this);
-  at_srv_map_["execute_command"]     = nh_.advertiseService(base_srv + "execute_command", &AffordanceTemplateInterface::handleExecuteCommand, this);
-  at_srv_map_["save_template"]       = nh_.advertiseService(base_srv + "save_template", &AffordanceTemplateInterface::handleSaveTemplate, this);
-  at_srv_map_["add_trajectory"]      = nh_.advertiseService(base_srv + "add_trajectory", &AffordanceTemplateInterface::handleAddTrajectory, this);
-  at_srv_map_["scale_object"]      = nh_.advertiseService(base_srv + "scale_object", &AffordanceTemplateInterface::handleObjectScale, this);
-  at_srv_map_["get_status"]        = nh_.advertiseService(base_srv + "get_status", &AffordanceTemplateInterface::handleServerStatus, this);
-  at_srv_map_["get_template_status"]   = nh_.advertiseService(base_srv + "get_template_status", &AffordanceTemplateInterface::handleTemplateStatus, this);
+  at_srv_map_["get_robots"]              = nh_.advertiseService(base_srv + "get_robots", &AffordanceTemplateInterface::handleRobotRequest, this);
+  at_srv_map_["get_templates"]           = nh_.advertiseService(base_srv + "get_templates", &AffordanceTemplateInterface::handleTemplateRequest, this);
+  at_srv_map_["load_robot"]              = nh_.advertiseService(base_srv + "load_robot", &AffordanceTemplateInterface::handleLoadRobot, this);
+  at_srv_map_["add_template"]            = nh_.advertiseService(base_srv + "add_template", &AffordanceTemplateInterface::handleAddTemplate, this);
+  at_srv_map_["delete_template"]         = nh_.advertiseService(base_srv + "delete_template", &AffordanceTemplateInterface::handleDeleteTemplate, this);
+  at_srv_map_["get_running"]             = nh_.advertiseService(base_srv + "get_running", &AffordanceTemplateInterface::handleRunning, this);
+  at_srv_map_["plan_command"]            = nh_.advertiseService(base_srv + "plan_command", &AffordanceTemplateInterface::handlePlanCommand, this);
+  at_srv_map_["execute_command"]         = nh_.advertiseService(base_srv + "execute_command", &AffordanceTemplateInterface::handleExecuteCommand, this);
+  at_srv_map_["save_template"]           = nh_.advertiseService(base_srv + "save_template", &AffordanceTemplateInterface::handleSaveTemplate, this);
+  at_srv_map_["add_trajectory"]          = nh_.advertiseService(base_srv + "add_trajectory", &AffordanceTemplateInterface::handleAddTrajectory, this);
+  at_srv_map_["scale_object"]            = nh_.advertiseService(base_srv + "scale_object", &AffordanceTemplateInterface::handleObjectScale, this);
+  at_srv_map_["get_status"]              = nh_.advertiseService(base_srv + "get_status", &AffordanceTemplateInterface::handleServerStatus, this);
+  at_srv_map_["get_template_status"]     = nh_.advertiseService(base_srv + "get_template_status", &AffordanceTemplateInterface::handleTemplateStatus, this);
   at_srv_map_["set_template_trajectory"] = nh_.advertiseService(base_srv + "set_template_trajectory", &AffordanceTemplateInterface::handleSetTrajectory, this);
-  at_srv_map_["set_template_pose"]     = nh_.advertiseService(base_srv + "set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
-  at_srv_map_["set_object_pose"]     = nh_.advertiseService(base_srv + "set_object_pose", &AffordanceTemplateInterface::handleSetObject, this);
-  at_srv_map_["get_object_pose"]     = nh_.advertiseService(base_srv + "get_object_pose", &AffordanceTemplateInterface::handleGetObject, this);
-  at_srv_map_["set_waypoint_view"]     = nh_.advertiseService(base_srv + "set_waypoint_view", &AffordanceTemplateInterface::handleSetWaypointViews, this);
+  at_srv_map_["set_template_pose"]       = nh_.advertiseService(base_srv + "set_template_pose", &AffordanceTemplateInterface::handleSetPose, this);
+  at_srv_map_["set_object_pose"]         = nh_.advertiseService(base_srv + "set_object_pose", &AffordanceTemplateInterface::handleSetObject, this);
+  at_srv_map_["get_object_pose"]         = nh_.advertiseService(base_srv + "get_object_pose", &AffordanceTemplateInterface::handleGetObject, this);
+  at_srv_map_["set_waypoint_view"]       = nh_.advertiseService(base_srv + "set_waypoint_view", &AffordanceTemplateInterface::handleSetWaypointViews, this);
 
   scale_stream_sub_ = nh_.subscribe(base_srv + "scale_object_streamer", 1000, &AffordanceTemplateInterface::handleObjectScaleCallback, this);
 
@@ -53,7 +53,7 @@ bool AffordanceTemplateInterface::handleRobotRequest(GetRobotConfigInfo::Request
 {
   at_server_->setStatus(false);
   
-  ROS_INFO("[AffordanceTemplateInterface::handleRobotRequest] requesting robot configuration from server");
+  ROS_DEBUG("[AffordanceTemplateInterface::handleRobotRequest] requesting robot configuration from server");
   res.robots.push_back(at_server_->getRobotConfig());
   if (res.robots.size() == 0)
     ROS_WARN("[AffordanceTemplateInterface::handleRobotRequest] couldn't find any robot configurations on server!!");
@@ -122,7 +122,7 @@ bool AffordanceTemplateInterface::handleAddTemplate(AddAffordanceTemplate::Reque
 bool AffordanceTemplateInterface::handleDeleteTemplate(DeleteAffordanceTemplate::Request &req, DeleteAffordanceTemplate::Response &res)
 {
   at_server_->setStatus(false);
-  ROS_INFO("[AffordanceTemplateInterface::handleDeleteTemplate] removing template: %s", req.class_type.c_str());
+  ROS_DEBUG("[AffordanceTemplateInterface::handleDeleteTemplate] removing template: %s", req.class_type.c_str());
 
   res.status = at_server_->removeTemplate(req.class_type, req.id);
 
@@ -154,7 +154,7 @@ bool AffordanceTemplateInterface::handleRunning(GetRunningAffordanceTemplates::R
 bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanCommand::Request &req, AffordanceTemplatePlanCommand::Response &res)
 {
   at_server_->setStatus(false);
-  ROS_INFO("[AffordanceTemplateInterface::handlePlanCommand] new plan request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
+  ROS_DEBUG("[AffordanceTemplateInterface::handlePlanCommand] new plan request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
 
   plan_mutex_.lock();
   plan_stack_.push_back(req);
@@ -170,7 +170,7 @@ bool AffordanceTemplateInterface::handlePlanCommand(AffordanceTemplatePlanComman
 bool AffordanceTemplateInterface::handleExecuteCommand(AffordanceTemplateExecuteCommand::Request &req, AffordanceTemplateExecuteCommand::Response &res)
 {
   at_server_->setStatus(false);
-  ROS_INFO("[AffordanceTemplateInterface::handleExecuteCommand] new execution request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
+  ROS_DEBUG("[AffordanceTemplateInterface::handleExecuteCommand] new execution request for %s:%d, trajectory %s", req.type.c_str(), req.id, req.trajectory_name.c_str());
 
   exe_mutex_.lock();
   exe_stack_.push_back(req);
@@ -187,18 +187,15 @@ void AffordanceTemplateInterface::runPlanAction()
 {
   ROS_INFO("[AffordanceTemplateInterface::runPlanAction] spinning up planning thread...");
   ros::Rate loop_rate(10);
-  while(ros::ok())
-  {
-    if (plan_stack_.size())
-    {
+  while(ros::ok()) {
+    if (plan_stack_.size()) {
       affordance_template_msgs::AffordanceTemplatePlanCommand::Request req = plan_stack_.front();
       plan_mutex_.lock();
       plan_stack_.pop_front();
       plan_mutex_.unlock();
 
       ATPointer at;
-      if (!at_server_->getTemplateInstance(req.type, req.id, at))
-      {
+      if (!at_server_->getTemplateInstance(req.type, req.id, at)) {
         ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
         continue;
       }
@@ -225,35 +222,30 @@ void AffordanceTemplateInterface::runPlanAction()
 
       //wait for the action to return
       bool finished_before_timeout = plan_client.waitForResult(ros::Duration(60.0));
-      if (finished_before_timeout)
-      {
+      if (finished_before_timeout) {
         actionlib::SimpleClientGoalState state = plan_client.getState();
         ROS_INFO("[AffordanceTemplateInterface::runPlanAction] Action finished: %s",state.toString().c_str());
-      }
-      else
+      } else {
         ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] Action did not finish before the time out.");
+      }
     }   
     loop_rate.sleep();
   }
 }
 
-
 void AffordanceTemplateInterface::runExecuteAction()
 {
   ROS_INFO("[AffordanceTemplateInterface::runExecuteAction] spinning up thread for executing plans...");
   ros::Rate loop_rate(10);
-  while(ros::ok())
-  {
-    if (exe_stack_.size())
-    {
+  while(ros::ok()) {
+    if (exe_stack_.size()) {
       affordance_template_msgs::AffordanceTemplateExecuteCommand::Request req = exe_stack_.front();
       exe_mutex_.lock();
       exe_stack_.pop_front();
       exe_mutex_.unlock();
 
       ATPointer at;
-      if (!at_server_->getTemplateInstance(req.type, req.id, at))
-      {
+      if (!at_server_->getTemplateInstance(req.type, req.id, at)) {
         ROS_ERROR("[AffordanceTemplateInterface::runExecuteAction] error getting instance of affordance template %s:%d", req.type.c_str(), req.id);
         continue;
       }
@@ -276,36 +268,37 @@ void AffordanceTemplateInterface::runExecuteAction()
 
       //wait for the action to return
       bool finished_before_timeout = exe_client.waitForResult(ros::Duration(60.0));
-      if (finished_before_timeout)
-      {
+      if (finished_before_timeout) {
         actionlib::SimpleClientGoalState state = exe_client.getState();
         ROS_INFO("[AffordanceTemplateInterface::runPlanAction] Action finished: %s",state.toString().c_str());
-      }
-      else
+      } else {
         ROS_ERROR("[AffordanceTemplateInterface::runPlanAction] Action did not finish before the time out.");      
+      }
     }
     loop_rate.sleep();
   }
 }
-
 
 bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Request &req, SaveAffordanceTemplate::Response &res)
 {
   at_server_->setStatus(false);
   ROS_INFO("[AffordanceTemplateInterface::handleSaveTemplate] saving %s:%d as %s:%d to %s with image: %s", req.original_class_type.c_str(), req.id, req.new_class_type.c_str(), req.id, req.filename.c_str(), req.image.c_str());
 
-  res.status = false;
+  bool save_status = res.status = false;
   std::string old_key = req.original_class_type + ":" + std::to_string(req.id);
   std::string new_key = req.new_class_type + ":" + std::to_string(req.id);
-  bool save_status = false;
+
   ATPointer at;
   if (at_server_->getTemplateInstance(req.original_class_type, req.id, at))
     save_status = at->saveToDisk(req.filename, req.image, new_key, req.save_scale_updates);
+
   if (!at_server_->refreshTemplates())
     ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] failed to refresh templates. unexpected behavior possible!!");
+
   bool remove_status = at_server_->removeTemplate(req.original_class_type, req.id);
   bool add_status = at_server_->addTemplate(req.new_class_type, req.id);
   res.status = save_status && remove_status && add_status;
+
   if (!res.status)
     ROS_ERROR("[AffordanceTemplateInterface::handleSaveTemplate] error saving template. save to file: %s, remove: %s, adding: %s", successToString(save_status).c_str(), successToString(remove_status).c_str(), successToString(add_status).c_str());
 
@@ -316,15 +309,16 @@ bool AffordanceTemplateInterface::handleSaveTemplate(SaveAffordanceTemplate::Req
 bool AffordanceTemplateInterface::handleAddTrajectory(AddAffordanceTemplateTrajectory::Request &req, AddAffordanceTemplateTrajectory::Response &res)
 {
   at_server_->setStatus(false);
-  ROS_INFO("[AffordanceTemplateInterface::handleAddTrajectory] adding new trajectory \'%s\' to template %s:%d", req.trajectory_name.c_str(), req.class_type.c_str(), req.id);
+  ROS_DEBUG("[AffordanceTemplateInterface::handleAddTrajectory] adding new trajectory \'%s\' to template %s:%d", req.trajectory_name.c_str(), req.class_type.c_str(), req.id);
 
   res.status = false;
 
   ATPointer at;
-  if (at_server_->getTemplateInstance(req.class_type, req.id, at))
+  if (at_server_->getTemplateInstance(req.class_type, req.id, at)) {
     res.status = at->addTrajectory(req.trajectory_name);
-  else 
+  } else {
     ROS_WARN("[AffordanceTemplateInterface::handleAddTrajectory] error getting instance of AT");
+  }
 
   if (!res.status)
     ROS_ERROR("[AffordanceTemplateInterface::handleAddTrajectory] error adding trajectory to template!!");
@@ -357,16 +351,14 @@ bool AffordanceTemplateInterface::handleTemplateStatus(GetAffordanceTemplateStat
   ROS_DEBUG("[AffordanceTemplateInterface::handleTemplateStatus] getting status of templates...");
 
   if (!req.name.empty()) {
-
     std::vector<std::string> keys;
     boost::split(keys, req.name, boost::is_any_of(":"));
     if (keys.size() >= 2) {
-
       int id = std::stoi(keys[1]);
       res.affordance_template_status.push_back(getTemplateStatus(keys[0], id, req.trajectory_name, req.frame_id));
+      
       ATPointer at;
       if (at_server_->getTemplateInstance(req.name, at)) {
-
         res.current_trajectory = at->getCurrentTrajectory();
         AffordanceTemplateStructure ats = at->getCurrentStructure();
         for (auto t : ats.ee_trajectories)
@@ -399,17 +391,19 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
     return true;
   }
 
-  if (req.trajectory.empty())
-    ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to current trajectory", req.name.c_str());
-  else
-    ROS_INFO("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to %s", req.name.c_str(), req.trajectory.c_str());
+  if (req.trajectory.empty()) {
+    ROS_DEBUG("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to current trajectory", req.name.c_str());
+  } else {
+    ROS_DEBUG("[AffordanceTemplateInterface::handleSetTrajectory] setting trajectory %s to %s", req.name.c_str(), req.trajectory.c_str());
+  }
 
   ATPointer at;
   if (at_server_->getTemplateInstance(req.name, at)) {
-    if (at->switchTrajectory(req.trajectory))
+    if (at->switchTrajectory(req.trajectory)) {
       res.success = true;
-    else
+    } else {
       ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] error setting trajectory %s", req.trajectory.c_str());
+    }
   } else {
     ROS_ERROR("[AffordanceTemplateInterface::handleSetTrajectory] %s template is not currently running on server!!", req.name.c_str());    
   }
@@ -419,7 +413,7 @@ bool AffordanceTemplateInterface::handleSetTrajectory(SetAffordanceTemplateTraje
 
 bool AffordanceTemplateInterface::handleSetPose(SetAffordanceTemplatePose::Request &req, SetAffordanceTemplatePose::Response &res)
 {
-  ROS_INFO("[AffordanceTemplateInterface::handleSetPose] setting pose for %s:%d", req.class_type.c_str(), req.id);
+  ROS_DEBUG("[AffordanceTemplateInterface::handleSetPose] setting pose for %s:%d", req.class_type.c_str(), req.id);
   res.success = at_server_->updateTemplate(req.class_type, req.id, req.pose);
   return true;
 }
@@ -431,7 +425,7 @@ bool AffordanceTemplateInterface::handleSetObject(SetObjectPose::Request& req, S
   for (auto& o : req.objects) {
     ATPointer at;
     if (at_server_->getTemplateInstance(o.type, o.id, at)) {
-      ROS_INFO("[AffordanceTemplateInterface::handleSetObject] will call AT %s:%d method to set pose for object %s", o.type.c_str(), o.id, o.name.c_str());
+      ROS_DEBUG("[AffordanceTemplateInterface::handleSetObject] will call AT %s:%d method to set pose for object %s", o.type.c_str(), o.id, o.name.c_str());
       if (!at->setObjectPose(o)) {
         ROS_ERROR("[AffordanceTemplateInterface::handleSetObject] failed to set pose for object %s most likely couldn't find object in structure", o.name.c_str());
         res.status = false;
@@ -533,7 +527,7 @@ bool AffordanceTemplateInterface::handleSetWaypointViews(SetWaypointViewModes::R
     idx++;
     }
   } else {
-    ROS_INFO("[AffordanceTemplateInterface::handleSetWaypointViews] setting mode for all waypoints");
+    ROS_DEBUG("[AffordanceTemplateInterface::handleSetWaypointViews] setting mode for all waypoints");
   }
   return true;
 }
@@ -550,8 +544,6 @@ void AffordanceTemplateInterface::handleObjectScaleCallback(const ScaleDisplayOb
       ROS_ERROR("[AffordanceTemplateInterface::handleObjectScaleCallback] error trying to scale object!!");
 }
 
-// @seth 10/28/2015 -- may not be complete??
-// should be double checked by @swhart
 AffordanceTemplateStatus AffordanceTemplateInterface::getTemplateStatus(const std::string& type, const int id, std::string& trajectory, const std::string& frame_id)
 {
   AffordanceTemplateStatus ats; 
