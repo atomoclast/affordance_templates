@@ -1,7 +1,7 @@
 robot_name: r2
 planner_type: tracik_planner::TracIKPlanner
-config_package: r2_moveit_config
-config_file: config/r2.srdf
+config_package: r2_fullbody_moveit_config
+config_file: config/r2_fullbody.srdf
 frame_id: r2/robot_base
 root_offset: [0.4,0,-0.2,3.14,0,0]
 end_effector_group_map:
