@@ -19,93 +19,88 @@ namespace rviz_affordance_template_panel
     {
         Q_OBJECT
     public:
-
-        // Constructors
         RVizAffordanceTemplatePanel(QWidget* parent = 0);
         ~RVizAffordanceTemplatePanel();
 
     public Q_SLOTS:
-
         // widget callback functions, wrapping client functions
-        void addAffordanceDisplayItem() {
+        inline void addAffordanceDisplayItem() {
             client_->addAffordanceDisplayItem();
         }
-        void selectAffordanceTemplate(QListWidgetItem* it) {
+        inline void selectAffordanceTemplate(QListWidgetItem* it) {
             client_->selectAffordanceTemplate(it);
         }
-        void deleteAffordanceTemplate() {
+        inline void deleteAffordanceTemplate() {
             client_->deleteAffordanceTemplate();
         }
-        void saveAffordanceTemplate() {
+        inline void saveAffordanceTemplate() {
             client_->saveAffordanceTemplate();
         }
-        void addTrajectory() {
+        inline void addTrajectory() {
             client_->addTrajectory();
         }
-        void safeLoadConfig() {
+        inline void safeLoadConfig() {
             client_->safeLoadConfig();
         }
-        void changeRobot(int d) {
+        inline void changeRobot(int d) {
             client_->changeRobot(d);
         }
-        void changeSaveInfo(int d) {
+        inline void changeSaveInfo(int d) {
             client_->changeSaveInfo(d);
         }
-        void goToStart() {
+        inline void goToStart() {
             client_->goToStart();
         }
-        void goToEnd() {
+        inline void goToEnd() {
             client_->goToEnd();
         }
-        void stepBackward() {
+        inline void stepBackward() {
             client_->stepBackward();
         }
-        void stepForward() {
+        inline void stepForward() {
             client_->stepForward();
         }
-        void executePlan() {
+        inline void executePlan() {
             client_->executePlan();
         }
-        void controlStatusUpdate() {
+        inline void controlStatusUpdate() {
             client_->controlStatusUpdate();
         }
-        void goToCurrentWaypoint() {
+        inline void goToCurrentWaypoint() {
             client_->goToCurrentWaypoint();
         }
-        void refreshCallback() {
+        inline void refreshCallback() {
             client_->refreshCallback();
         }
-        void enableConfigPanel(int d) {
+        inline void enableConfigPanel(int d) {
             client_->enableConfigPanel(d);
         }
-        void updateRobotConfig(const QString& s) {
+        inline void updateRobotConfig(const QString& s) {
             client_->updateRobotConfig(s);
         }
-        void updateEndEffectorGroupMap(const QString& s) {
+        inline void updateEndEffectorGroupMap(const QString& s) {
             client_->updateEndEffectorGroupMap(s);
         }
-        void updateObjectScale(int d) {
+        inline void updateObjectScale(int d) {
             client_->updateObjectScale(d);
         }
-        void scaleSliderReleased() {
+        inline void scaleSliderReleased() {
             client_->scaleSliderReleased();
         }
-        void updateEndEffectorScaleAdjustment(int d) {
+        inline void updateEndEffectorScaleAdjustment(int d) {
             client_->updateEndEffectorScaleAdjustment(d);
         }
-        void resetScale() {
+        inline void resetScale() {
             client_->resetScale();
         }
-        void selectScaleObject(const QString& s) {
+        inline void selectScaleObject(const QString& s) {
             client_->selectScaleObject(s);
         }
-        void selectTemplateTrajectory(const QString& s) {
+        inline void selectTemplateTrajectory(const QString& s) {
             client_->selectTemplateTrajectory(s);
-        }
-             
+        }             
 
     private:
-
         // UI pointer
         Ui::RVizAffordanceTemplatePanel* ui_;
 
@@ -118,13 +113,8 @@ namespace rviz_affordance_template_panel
         // ros node handle
         ros::NodeHandle nh_;
 
-
     protected:
-        
-        // main client class
-
-        AffordanceTemplateRVizClient *client_;
-
+        AffordanceTemplateRVizClient *client_; // main client class
     };
 }
 

@@ -21,7 +21,6 @@ AffordanceTemplateServer::AffordanceTemplateServer(const ros::NodeHandle &nh, co
         ROS_ERROR("[AffordanceTemplateServer] couldn't parse robot JSONs!!");
 
     ROS_INFO("[AffordanceTemplateServer] server configured. spinning...");
-
 }
 
 /**
@@ -238,8 +237,6 @@ std::vector<affordance_template_msgs::AffordanceTemplateConfig> AffordanceTempla
 
 std::vector<std::string> AffordanceTemplateServer::getRunningTemplates(const std::string &name)
 {
-    //boost::mutex::scoped_lock l(mutex_);
-
     std::vector<std::string> templates;
 
     for (auto a : at_map_)
@@ -275,8 +272,6 @@ bool AffordanceTemplateServer::addTemplate(const std::string &type, uint8_t& id,
     if (type.empty())
       return false;
 
-    //boost::mutex::scoped_lock l(mutex_);
-
     id = getNextID(type);
     std::string key = type + ":" + std::to_string(id);
     ROS_INFO("[AffordanceTemplateServer::addTemplate] creating new affordance template with ID: %d and key: %s", id, key.c_str());
@@ -294,16 +289,19 @@ bool AffordanceTemplateServer::removeTemplate(const std::string &type, const uin
 
     std::string key = type + ":" + std::to_string(id);
     if (at_map_.find(key) == at_map_.end())
-        return false;
+      return false;
     at_map_[key]->stop();
     at_map_.erase(key);
+
+    for (auto at : at_map_)
+      if (!at.second->buildTemplate())
+        ROS_ERROR_STREAM("[AffordanceTemplateServer::removeTemplate] couldn't redraw "<< at.first.c_str() <<" template");
+
     return true;
 }
 
 bool AffordanceTemplateServer::updateTemplate(const std::string& type, const uint8_t id, const geometry_msgs::PoseStamped& pose)
 {
-    //boost::mutex::scoped_lock l(mutex_);
-
     std::string key = type + ":" + std::to_string(id);
     if (at_map_.find(key) == at_map_.end())
         return false;
@@ -325,8 +323,6 @@ bool AffordanceTemplateServer::getTemplateInstance(const std::string &type, cons
 
 bool AffordanceTemplateServer::getTemplateInstance(const std::string &key, boost::shared_ptr<affordance_template::AffordanceTemplate> &ati)
 {
-    //boost::mutex::scoped_lock l(mutex_);
-    
     if (at_map_.find(key) == at_map_.end())
         return false;
     ati = at_map_[key];

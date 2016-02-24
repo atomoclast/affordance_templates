@@ -21,5 +21,7 @@ int main(int argc, char **argv)
   spinner.start();
   ros::waitForShutdown();
   
+  ROS_INFO("Success!!");
+  
   return 0;
 }
