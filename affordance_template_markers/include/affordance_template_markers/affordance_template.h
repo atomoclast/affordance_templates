@@ -87,7 +87,6 @@ namespace affordance_template
                        std::string robot_name, 
                        std::string template_type,
                        int id);
-    // AffordanceTemplate(){} // default constructor
     ~AffordanceTemplate();
 
     // public methods used by server node
@@ -98,7 +97,7 @@ namespace affordance_template
     bool moveToWaypoints(const std::vector<std::string>&);
     bool saveToDisk(std::string&, const std::string&, const std::string&, bool);
     bool loadFromFile(std::string filename, geometry_msgs::Pose pose, affordance_template_object::AffordanceTemplateStructure &structure);
-    // std::map<std::string, bool> planPathToWaypoints(const std::vector<std::string>&, int, bool, bool, bool use_current=true);
+    bool buildTemplate(std::string traj="");
 
     // public getters
     inline int getID() { return id_; }
@@ -207,8 +206,6 @@ namespace affordance_template
     int getEEIDfromWaypointName(const std::string wp_name);
     int getWaypointIDFromName(std::string wp_name);
     int getEEIDFromName(std::string wp_name);
-
-    bool buildTemplate(std::string traj="");
     
     bool createDisplayObjects();
     bool createDisplayObject(affordance_template_object::DisplayObject obj, int idx);

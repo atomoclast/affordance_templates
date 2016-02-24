@@ -12,45 +12,43 @@ namespace Ui {
 class RVizAffordanceTemplatePanel;
 }
 
-namespace rviz_affordance_template_panel
-{
-    class AffordanceTemplateServerStatusMonitor
-    {
+namespace rviz_affordance_template_panel {
 
-	public:
+  class AffordanceTemplateServerStatusMonitor  {
 
-		AffordanceTemplateServerStatusMonitor(ros::NodeHandle &nh, std::string srv_name, int update_rate=1);
-		~AffordanceTemplateServerStatusMonitor();
+    public:
 
-		void start();
-		void stop();
+      AffordanceTemplateServerStatusMonitor(ros::NodeHandle &nh, std::string srv_name, int update_rate=1);
+      ~AffordanceTemplateServerStatusMonitor();
 
-		bool isReady() { return ready_; }
-		bool isAvailable() { return available_; }
+      void start();
+      void stop();
+
+      inline bool isReady() { return ready_; }
+      inline bool isAvailable() { return available_; }
 
     protected:
 
-		void run_function();
-    	void wait(int seconds);
+      void run_function();
+      void wait(int seconds);
 
-		// boost thread
-		boost::thread *monitor_thread_;
-    	boost::mutex mutex;
+      // boost thread
+      boost::scoped_ptr<boost::thread> monitor_thread_;
+      boost::mutex mutex;
 
-    	// ros stuff
-		ros::ServiceClient srv_;
-    	std::string srv_name_;
-    	ros::NodeHandle nh_;
+      // ros stuff
+      ros::ServiceClient srv_;
+      std::string srv_name_;
+      ros::NodeHandle nh_;
 
-    	// member functions
-		int update_rate_;
+      // member functions
+      int update_rate_;
 
-		// status vars
-		bool available_;
-		bool ready_;
-		bool running_;
-
-    };
+      // status vars
+      bool available_;
+      bool ready_;
+      bool running_;
+  };
 }
 
 #endif // AFFORDANCE_TEMPLATE_SERVER_STATUS_MONITOR_HPP
