@@ -622,9 +622,6 @@ bool AffordanceTemplate::createDisplayObject(affordance_template_object::Display
 
 bool AffordanceTemplate::createDisplayObjectMarker(affordance_template_object::DisplayObject obj, visualization_msgs::Marker &marker) 
 {
-
-  marker.header.frame_id = obj.name;
-  marker.header.stamp = ros::Time(0);
   marker.text = obj.name;
   marker.ns = obj.name;
   ROS_DEBUG("AffordanceTemplate::createDisplayObjectMarker() -- obj=%s, scale=%.3f", obj.name.c_str(), object_scale_factor_[obj.name]);
