@@ -52,6 +52,7 @@ AffordanceTemplate::AffordanceTemplate(const ros::NodeHandle nh,
 AffordanceTemplate::~AffordanceTemplate() 
 {
   updateThread_->join();
+  robot_interface_->getPlanner()->resetAnimation(true);
 }
 
 void AffordanceTemplate::setRobotInterface(boost::shared_ptr<affordance_template_markers::RobotInterface> robot_interface)
@@ -1273,11 +1274,15 @@ void AffordanceTemplate::processFeedback(const visualization_msgs::InteractiveMa
   if(hasObjectFrame(feedback->marker_name) || hasWaypointFrame(feedback->marker_name)) {
     geometry_msgs::Pose p = feedback->pose;
     if(feedback->header.frame_id != frame_store_[feedback->marker_name].second.header.frame_id) {
-      geometry_msgs::PoseStamped ps;
-      ps.pose = feedback->pose;
-      ps.header = feedback->header;
-      tf_listener_.transformPose(frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
-      p = ps.pose;
+      try {
+        geometry_msgs::PoseStamped ps;
+        ps.pose = feedback->pose;
+        ps.header = feedback->header;
+        tf_listener_.transformPose(frame_store_[feedback->marker_name].second.header.frame_id, ps, ps);
+        p = ps.pose;
+      } catch(...) {
+        ROS_ERROR("error looking up TF pose from frame store");
+      }
     }
     ROS_DEBUG("storing pose for %s", feedback->marker_name.c_str());
     frame_store_[feedback->marker_name].second.pose = p;   
@@ -2595,9 +2600,9 @@ bool AffordanceTemplate::setObjectScaling(const std::string& key, double scale_f
 
 bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 {
-  bool found = false;
-  
   ROS_INFO("[AffordanceTemplate::setObjectPose] setting pose for object %s in template %s:%d", obj.name.c_str(), obj.type.c_str(), obj.id);
+  
+  bool found = false;
   for (auto& d : structure_.display_objects)
   {
     std::string obj_name = obj.name + ":" + std::to_string(obj.id);
@@ -2607,17 +2612,15 @@ bool AffordanceTemplate::setObjectPose(const DisplayObjectInfo& obj)
 
       geometry_msgs::PoseStamped ps;
       try {
-        ros::Time now = ros::Time::now();
-        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, ros::Time(0), ros::Duration(3.0));
+        tf_listener_.waitForTransform(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose.header.frame_id, obj.stamped_pose.header.stamp, ros::Duration(3.0));
         tf_listener_.transformPose(frame_store_[obj_name].second.header.frame_id, obj.stamped_pose, ps);
-      } catch(...) {
-        ROS_WARN("tf lookup error");  
+        frame_store_[obj_name].second = ps;
+        server_->setPose(obj_name, ps.pose);
+        found = true;
+      } catch(tf::TransformException ex){
+        ROS_ERROR("[AffordanceTemplate::setObjectPose] trouble transforming pose from %s to %s. TransformException: %s",frame_store_[obj_name].second.header.frame_id.c_str(), obj.stamped_pose.header.frame_id.c_str(), ex.what());
       }
-      frame_store_[obj_name].second = ps;
 
-      server_->setPose(obj_name, ps.pose);
-              
-      found = true;
       break;
     }
   }

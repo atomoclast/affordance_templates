@@ -156,6 +156,7 @@ namespace rviz_affordance_template_panel
 
         // status flag
         bool running_;
+        bool busy_flag_;
         int server_status_;
         
         // ros node handle
