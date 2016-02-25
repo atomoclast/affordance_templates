@@ -136,8 +136,8 @@ void AffordanceTemplateRVizClient::updateServerStatus() {
     server_status_ = -1;
   }
 
-  // if (server_status_ != old_status && server_status_ == 1)
-  //   getRunningItems();
+  if (server_status_ != old_status && server_status_ == 1)
+    getRunningItems();
 }
 
 void AffordanceTemplateRVizClient::setLabelText(QColor color, std::string text) {
