@@ -2521,13 +2521,27 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
 
   std::string manipulator_name = robot_interface_->getManipulator(ee);
   std::vector<std::pair<std::string, moveit::planning_interface::MoveGroup::Plan> > plans_to_exe;
-  for ( auto& p : continuous_plans_[trajectory])
-    if (p.group == ee || p.group == manipulator_name)
+  bool ee_wp = false, man_wp = false;
+  for ( auto& p : continuous_plans_[trajectory]) {
+    if (p.group == ee && !ee_wp) {
       plans_to_exe.push_back(std::make_pair(p.group, p.plan));
+      ee_wp = true;
+    }
 
-  if (!robot_interface_->getPlanner()->executeContinuousPlans(plans_to_exe)) {
-    ROS_ERROR("[AffordanceTemplate::continuousMoveToWaypoints] execution failed");
-    return false;
+    if (p.group == manipulator_name && !man_wp) {
+      plans_to_exe.push_back(std::make_pair(p.group, p.plan));
+      man_wp = true; 
+    }
+
+    if (man_wp && ee_wp) {
+      if (!robot_interface_->getPlanner()->executeContinuousPlans(plans_to_exe)) {
+        ROS_ERROR("[AffordanceTemplate::continuousMoveToWaypoints] execution failed");
+        return false;
+      }
+
+      man_wp = ee_wp = false;
+      plans_to_exe.clear();
+    }
   }
 
   plan_status_[trajectory][ee].current_idx = plan_status_[trajectory][ee].goal_idx;
