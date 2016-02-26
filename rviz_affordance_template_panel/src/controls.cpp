@@ -74,6 +74,10 @@ bool Controls::requestPlan(Controls::CommandType command_type, bool exe_on_plan)
                 }
             } else if(command_type==CommandType::END) {
                 steps = N;
+                if (steps == 0) {
+                    ROS_WARN("Controls::requestPlan() -- 0 steps for EE %s in the %s trajectory - skipping", ee.first.c_str(), srv.request.trajectory_name.c_str());
+                    continue;
+                }
                 if(idx !=-1) {
                     srv.request.backwards = false;
                 }

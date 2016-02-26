@@ -2118,6 +2118,7 @@ bool AffordanceTemplate::computePathSequence(std::string traj_name,
                                              std::vector<int> &sequence_ids, 
                                              int &next_path_idx)
 { 
+  ROS_WARN_STREAM("computing path seq for traj "<<traj_name<<" for ee "<<ee_id<<" at index "<<idx<<" with "<<steps<<" steps and will "<<(direct?"be ":"not be ")<<"direct motion");
   sequence_ids.clear();
   if (direct) {
     sequence_ids.push_back(steps-1);
@@ -2286,8 +2287,14 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
       // get the rest of the waypoint infor for goal
       affordance_template_object::EndEffectorWaypoint wp;
-      if(!getWaypoint(goal->trajectory, ee_id, plan_seq, wp))
-        ROS_ERROR("[AffordanceTemplate::planRequest] problem getting waypoint from structure");
+      if(!getWaypoint(goal->trajectory, ee_id, plan_seq, wp)) {
+        ROS_ERROR("[AffordanceTemplate::planRequest] waypoint vector size does not match up!!");
+        planning.progress = -1;
+        planning_server_.publishFeedback(planning);
+        result.succeeded = false;
+        planning_server_.setSucceeded(result);
+        return;
+      }
 
       pg.task_compatibility = taskCompatibilityToPoseMsg(wp.task_compatibility);  
       pg.conditioning_metric = wp.conditioning_metric;
