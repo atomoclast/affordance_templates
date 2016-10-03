@@ -30,7 +30,7 @@ NOTE: if you receive a 'broken packages' error, try uninstalling libsdformat2
 ```
 1. Add necessary dispalys in RViz; an [RViz config](https://bitbucket.org/traclabs/affordance_templates/downloads/at_public.rviz) is available.
     * `RobotModel` (robot model) - Robot Description: `robot_description`
-    * `InteractiveMarkers` - Update Topic: /affordance_template_interactive_marker_server/update
+    * `InteractiveMarkers` - Update Topic: `/affordance_template_interactive_marker_server/update`
 2. Add the *affordance template panel* by going to `Panels->Add New Panel->RVizAffordanceTemplatePanel`
 
 
