@@ -2356,7 +2356,7 @@ void AffordanceTemplate::planRequest(const PlanGoalConstPtr& goal)
 
         plan_status_[goal->trajectory][ee].plan_valid = true;
         
-        moveit::planning_interface::MoveGroup::Plan plan;
+        moveit::planning_interface::MoveGroupInterface::Plan plan;
         if (!robot_interface_->getPlanner()->getPlan(manipulator_name, plan)) {
           ROS_FATAL("[AffordanceTemplate::planRequest] couldn't find stored plan for %s waypoint!! this shouldn't happen, something is wrong!.", next_path_str.c_str());
           planning.progress = -1;
@@ -2557,7 +2557,7 @@ bool AffordanceTemplate::continuousMoveToWaypoints(const std::string& trajectory
   }
 
   std::string manipulator_name = robot_interface_->getManipulator(ee);
-  std::vector<std::pair<std::string, moveit::planning_interface::MoveGroup::Plan> > plans_to_exe;
+  std::vector<std::pair<std::string, moveit::planning_interface::MoveGroupInterface::Plan> > plans_to_exe;
   bool ee_wp = false, man_wp = false;
   for ( auto& p : continuous_plans_[trajectory]) {
     if (p.group == ee && !ee_wp) {

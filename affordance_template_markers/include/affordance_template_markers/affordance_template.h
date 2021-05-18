@@ -99,7 +99,7 @@ namespace affordance_template
     std::string group; // left_arm, left_hand, etc
     PlanningGroup type;
     sensor_msgs::JointState start_state;
-    moveit::planning_interface::MoveGroup::Plan plan;
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
   };
 
   class AffordanceTemplate
