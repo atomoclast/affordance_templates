@@ -28,8 +28,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************************/
 
-#ifndef AFFORDANCE_HPP
-#define AFFORDANCE_HPP
+#ifndef AFFORDANCE_RVIZ_PANEL_HPP
+#define AFFORDANCE_RVIZ_PANEL_HPP
 
 // qt
 #include <QGraphicsPixmapItem>

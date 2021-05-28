@@ -1,35 +1,26 @@
 <?xml version="1.0"?>
-<package>
+<package format="2">
   <name>rviz_affordance_template_panel</name>
-  <version>0.0.0</version>
+  <version>1.0.0</version>
   <description>The rviz_affordance_template_panel package</description>
 
   <maintainer email="swhart@traclabs.com">Stephen Hart</maintainer>
   <maintainer email="seth@traclabs.com">Seth Gee</maintainer>
 
-  <license>TODO</license>
+  <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>interactive_markers</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>roslib</build_depend>
-  <build_depend>rviz</build_depend>
-  <build_depend>affordance_template_server</build_depend>
-  <build_depend>affordance_template_msgs</build_depend>
-  <build_depend>visualization_msgs</build_depend>
-  <build_depend>orocos_kdl</build_depend>
   
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>interactive_markers</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>roslib</run_depend>
-  <run_depend>rviz</run_depend>
-  <run_depend>affordance_template_server</run_depend>
-  <run_depend>affordance_template_msgs</run_depend>
-  <run_depend>visualization_msgs</run_depend>
-  <run_depend>orocos_kdl</run_depend>
-  
+  <depend>geometry_msgs</depend>
+  <depend>interactive_markers</depend>
+  <depend>roscpp</depend>
+  <depend>roslib</depend>
+  <depend>rviz</depend>
+  <depend>affordance_template_server</depend>
+  <depend>affordance_template_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>orocos_kdl</depend>
+    
   <export>
     <rviz plugin="${prefix}/plugin_description.xml"/>
   </export>

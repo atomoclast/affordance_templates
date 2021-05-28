@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/thread.hpp> 
 #include <boost/thread/mutex.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <rviz_affordance_template_panel/msg_headers.h>
 
